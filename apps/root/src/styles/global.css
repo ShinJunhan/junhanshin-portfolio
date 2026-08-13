@@ -29,11 +29,16 @@
     0 2px 4px rgba(31, 46, 68, 0.16),
     0 6px 18px rgba(31, 46, 68, 0.10);
 
-  /* Terminal surface — reused by the popup and the skill clouds. */
+  /* Terminal surface — used by the popup. */
   --terminal-bg: #1E2530;
-  --terminal-bg-soft: #26303E;
   --terminal-border: #38445A;
   --terminal-ink: #C7D3E3;
+
+  /* Skill cloud — a light indigo wash, the one shade used across all
+     five cards regardless of that card's title color. */
+  --cloud-bg: #DCE4F4;
+  --cloud-border: #B7C6E4;
+  --cloud-tile: #FFFFFF;
 
   /* Fonts */
   --font-header: 'Archivo', sans-serif;
@@ -51,8 +56,9 @@
 
   /* Section headings deliberately track the hero headline's size so the
      page keeps one typographic voice from the hero downward. */
-  --h1-size: clamp(1.4rem, 0.95rem + 2.1vw, 2.5rem);
-  --h2-size: clamp(1.3rem, 0.9rem + 1.9vw, 2.2rem);
+  --h1-size: clamp(1.75rem, 1.1rem + 2.7vw, 3.2rem);
+  /* Skill-card titles — a clear step below the section headings. */
+  --h3-size: clamp(0.95rem, 0.88rem + 0.32vw, 1.15rem);
   --body-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem);
   /* Translucent accent wash behind emphasized words — same family as the
      hero headline's highlight sweeps. */
@@ -86,11 +92,12 @@
     0 2px 6px rgba(0, 0, 0, 0.55),
     0 8px 24px rgba(0, 0, 0, 0.45);
 
-  /* Lifted above the dark band tones so the skill clouds stay legible
-     instead of sinking into the page. */
   --terminal-bg: #222C3B;
-  --terminal-bg-soft: #2D394B;
   --terminal-border: #465569;
+
+  --cloud-bg: #2C3A57;
+  --cloud-border: #45557A;
+  --cloud-tile: #3A4A6B;
 
   color-scheme: dark;
 }
@@ -137,19 +144,9 @@ a {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 var(--gutter);
-  min-height: clamp(320px, 58vh, 480px);
+  min-height: clamp(280px, 46vh, 400px);
   display: flex;
   align-items: stretch;
-}
-
-/* Skill categories are short, repeating rows — giving each a full-height
-   band would turn Skills into a long scroll for very little content. */
-.band__inner--compact {
-  min-height: clamp(240px, 40vh, 340px);
-}
-
-.band__inner--compact .section-row__content {
-  padding: clamp(1.5rem, 3vh, 2.5rem) 0;
 }
 
 /* Heading on the left, its detail on the right, both vertically centered
@@ -170,9 +167,70 @@ a {
   padding: clamp(2.5rem, 5vh, 4rem) 0;
 }
 
+/* min-content floor: a long single-word heading ("Certifications") is wider
+   than 36% of the row, and without this it would overflow its column and
+   collide with the detail beside it. */
 .section-row__heading {
   flex: 0 0 36%;
-  min-width: 0;
+  min-width: min-content;
+}
+
+/* Skills hands more of the row to its detail column so more of the card
+   stack is visible before you start sliding. */
+.section-row--wide .section-row__heading {
+  flex: 0 0 24%;
+}
+
+/* Horizontal card stack — slide/swipe across. Snapping per card so it
+   settles on a card rather than mid-gap. */
+.carousel {
+  display: flex;
+  gap: clamp(0.75rem, 1.5vw, 1.15rem);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.85rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.carousel::-webkit-scrollbar {
+  height: 7px;
+}
+
+.carousel::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+.carousel > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.skill-card {
+  width: clamp(158px, 19vw, 196px);
+  aspect-ratio: 9 / 16;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: clamp(0.7rem, 1.4vw, 1rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  box-shadow: 0 2px 10px rgba(31, 46, 68, 0.07);
+}
+
+.skill-card__title {
+  font-family: var(--font-header);
+  font-weight: 800;
+  font-size: var(--h3-size);
+  line-height: 1.25;
+  text-align: center;
+  margin: 0;
+  text-wrap: balance;
 }
 
 .section-row__body {

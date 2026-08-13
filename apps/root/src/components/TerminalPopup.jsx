@@ -58,34 +58,49 @@ export default function TerminalPopup() {
   return (
     <>
       {/* Floating trigger — fixed position, bottom-right, follows scroll, static icon */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Open terminal — ask me about Junhan"
+      <div
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          height: '60px',
-          padding: '0 22px',
-          borderRadius: '18px',
-          background: 'var(--accent-base)',
-          color: 'white',
-          border: 'none',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          cursor: 'pointer',
-          boxShadow: '0 4px 14px rgba(37,52,73,0.32)',
           display: open ? 'none' : 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          gap: '10px',
-          whiteSpace: 'nowrap',
+          gap: '7px',
           zIndex: 1000,
         }}
       >
-        <span style={{ fontSize: '1.15rem' }}>&gt;_</span>
-        Ask Me about JunHan
-      </button>
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Open terminal — ask me about Junhan"
+          style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '14px',
+            background: 'var(--accent-base)',
+            color: 'white',
+            border: 'none',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '18px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(37,52,73,0.25)',
+          }}
+        >
+          &gt;_
+        </button>
+        {/* Caption floats free under the icon — no chrome of its own. */}
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.7rem',
+            color: 'var(--text-secondary)',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+          }}
+        >
+          Ask me about JunHan
+        </span>
+      </div>
 
       {open && (
         <div

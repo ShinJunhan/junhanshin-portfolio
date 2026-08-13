@@ -1,46 +1,14 @@
-import { useRef } from 'react'
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
-import SkillCloud from './SkillCloud.jsx'
+import { useEffect, useLayoutEffect, useRef, useState, Children, useContext } from 'react'
+import { motion, useScroll, useTransform, useReducedMotion, useInView } from 'framer-motion'
+import SkillsCarousel from './SkillsCarousel.jsx'
+import { BandReveal } from './bandReveal.js'
 
-const AWS_SERVICES = [
-  { slug: 'ec2', label: 'EC2', glyph: 'server' },
-  { slug: 's3', label: 'S3', glyph: 'archive' },
-  { slug: 'vpc', label: 'VPC', glyph: 'network' },
-  { slug: 'route53', label: 'Route 53', glyph: 'globe' },
-  { slug: 'alb', label: 'ALB', glyph: 'shuffle' },
-  { slug: 'rds', label: 'RDS', glyph: 'database' },
-  { slug: 'iam', label: 'IAM', glyph: 'key' },
-  { slug: 'cloudwatch', label: 'CloudWatch', glyph: 'pulse' },
-  { slug: 'dynamodb', label: 'DynamoDB', glyph: 'layers' },
-  { slug: 'lambda', label: 'Lambda', glyph: 'bolt' },
-]
-
-const IAC = [
-  { slug: 'terraform', label: 'Terraform', glyph: 'layers' },
-  { slug: 'ansible', label: 'Ansible', glyph: 'gear' },
-]
-
-const CONTAINERS = [
-  { slug: 'docker', label: 'Docker', glyph: 'box' },
-  { slug: 'kubernetes', label: 'Kubernetes', glyph: 'hexagon' },
-  { slug: 'helm', label: 'Helm', glyph: 'wheel' },
-  { slug: 'keda', label: 'KEDA', glyph: 'arrows-updown' },
-  { slug: 'karpenter', label: 'Karpenter', glyph: 'network' },
-  { slug: 'eks', label: 'EKS', glyph: 'cloud' },
-]
-
-const CICD = [
-  { slug: 'github-actions', label: 'GitHub Actions', glyph: 'play' },
-  { slug: 'jenkins', label: 'Jenkins', glyph: 'wrench' },
-  { slug: 'argocd', label: 'ArgoCD', glyph: 'sync' },
-  { slug: 'gitea', label: 'Gitea', glyph: 'git-branch' },
-]
-
-const MONITORING = [
-  { slug: 'prometheus', label: 'Prometheus', glyph: 'flame' },
-  { slug: 'grafana', label: 'Grafana', glyph: 'chart-bar' },
-  { slug: 'alertmanager', label: 'AlertManager', glyph: 'bell' },
-]
+// How long the heading takes to pop in centred and then settle left, and
+// how long the detail column waits before following it in.
+const HEADING_DURATION = 1.45
+// Sits just past the heading's settle so the two never occupy the same
+// space — the heading has fully cleared the detail column before it fills.
+const DETAIL_DELAY = HEADING_DURATION + 0.08
 
 const CONTACT_ITEMS = [
   {
@@ -79,6 +47,22 @@ const PERSON_ICON = (
   </svg>
 )
 
+// Below this width the columns stack, so the heading has no left column to
+// slide back to — it just pops in place instead.
+function useIsNarrow() {
+  const query = '(max-width: 760px)'
+  const [narrow, setNarrow] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(query).matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const onChange = (e) => setNarrow(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
+  return narrow
+}
+
 // The rail runs alongside the headings only — the detail column sits to its
 // right, so the line reads as threading the section titles together. Its
 // fill tracks scroll position directly (useScroll) rather than playing a
@@ -112,53 +96,137 @@ function Rail({ accent, bandBg }) {
   )
 }
 
-// Apple-style feature reveal: slides up and fades in as it enters view.
-function SlideIn({ children, delay = 0, style }) {
+// Arrives large and centred over the row, holds a beat, then scales down
+// and slides into its resting place in the left column. The travel is a
+// measured pixel distance (see Band) rather than a share of the heading's
+// own width — headings differ a lot in width, and a fixed share either
+// undershoots the centre or overshoots off the right edge.
+function SectionHeading({ children, icon, accent, centerShift }) {
   const reduceMotion = useReducedMotion()
+  const narrow = useIsNarrow()
+  const inView = useContext(BandReveal)
+
+  const popScale = narrow ? 1.18 : 1.42
+  const resting = { opacity: 1, scale: 1, x: 0 }
+  const waiting = { opacity: 0, scale: popScale, x: centerShift }
+
+  let animate = waiting
+  if (reduceMotion) animate = resting
+  else if (inView) {
+    animate = {
+      opacity: [0, 1, 1],
+      scale: [popScale, popScale, 1],
+      x: [centerShift, centerShift, 0],
+    }
+  }
+
+  return (
+    <motion.h2
+      initial={reduceMotion ? resting : waiting}
+      animate={animate}
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : { duration: HEADING_DURATION, times: [0, 0.34, 1], ease: ['easeOut', 'easeInOut'] }
+      }
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontFamily: 'var(--font-header)',
+        fontWeight: 800,
+        fontSize: 'var(--h1-size)',
+        lineHeight: 1.15,
+        color: accent,
+        textShadow: 'var(--heading-shadow)',
+        margin: 0,
+      }}
+    >
+      {icon}
+      {children}
+    </motion.h2>
+  )
+}
+
+// Reveals its children one after another once the heading has settled,
+// rather than dropping the whole block in at once.
+function Stagger({ children, delay = DETAIL_DELAY }) {
+  const reduceMotion = useReducedMotion()
+  const inView = useContext(BandReveal)
   return (
     <motion.div
-      style={style}
-      initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.65, ease: 'easeOut', delay: reduceMotion ? 0 : delay }}
+      initial="hidden"
+      animate={inView ? 'visible' : 'hidden'}
+      variants={{
+        hidden: {},
+        visible: {
+          transition: {
+            delayChildren: reduceMotion ? 0 : delay,
+            staggerChildren: reduceMotion ? 0 : 0.14,
+          },
+        },
+      }}
     >
-      {children}
+      {Children.map(children, (child) => (
+        <motion.div
+          variants={{
+            hidden: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 16, scale: reduceMotion ? 1 : 0.97 },
+            visible: {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              transition: { duration: reduceMotion ? 0 : 0.45, ease: 'easeOut' },
+            },
+          }}
+        >
+          {child}
+        </motion.div>
+      ))}
     </motion.div>
   )
 }
 
-function Band({ heading, icon, accent, alt, compact = false, children }) {
+function Band({ heading, icon, accent, alt, wide = false, children }) {
   const bandBg = alt ? 'var(--bg-alt)' : 'var(--bg)'
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, amount: 0.35 })
+
+  // Distance from the heading's resting centre to the centre of the row.
+  // When the columns stack on narrow screens the heading already spans the
+  // row, so this measures to ~0 and the heading simply pops in place.
+  const contentRef = useRef(null)
+  const headingRef = useRef(null)
+  const [centerShift, setCenterShift] = useState(0)
+
+  useLayoutEffect(() => {
+    function measure() {
+      const content = contentRef.current
+      const headingCol = headingRef.current
+      if (!content || !headingCol) return
+      const c = content.getBoundingClientRect()
+      const h = headingCol.getBoundingClientRect()
+      setCenterShift(c.width / 2 - (h.left - c.left + h.width / 2))
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
+
   return (
-    <section className="band snap-section" style={{ background: bandBg }}>
-      <div className={`band__inner${compact ? ' band__inner--compact' : ''}`}>
-        <div className="section-row">
+    <section ref={ref} className="band snap-section" style={{ background: bandBg }}>
+      <div className="band__inner">
+        <div className={`section-row${wide ? ' section-row--wide' : ''}`}>
           <Rail accent={accent} bandBg={bandBg} />
-          <div className="section-row__content">
-            <div className="section-row__heading">
-              <SlideIn>
-                <h2
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    fontFamily: 'var(--font-header)',
-                    fontWeight: 800,
-                    fontSize: 'var(--h1-size)',
-                    lineHeight: 1.15,
-                    color: accent,
-                    textShadow: 'var(--heading-shadow)',
-                    margin: 0,
-                  }}
-                >
-                  {icon}
+          <div className="section-row__content" ref={contentRef}>
+            <div className="section-row__heading" ref={headingRef}>
+              <BandReveal.Provider value={inView}>
+                <SectionHeading icon={icon} accent={accent} centerShift={centerShift}>
                   {heading}
-                </h2>
-              </SlideIn>
+                </SectionHeading>
+              </BandReveal.Provider>
             </div>
             <div className="section-row__body">
-              <SlideIn delay={0.12}>{children}</SlideIn>
+              <BandReveal.Provider value={inView}>{children}</BandReveal.Provider>
             </div>
           </div>
         </div>
@@ -167,36 +235,21 @@ function Band({ heading, icon, accent, alt, compact = false, children }) {
   )
 }
 
-function ContactDetails() {
-  const reduceMotion = useReducedMotion()
+function ContactRow({ item }) {
   return (
-    <motion.div
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.3 }}
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.12 } } }}
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.8rem',
+        marginBottom: '0.9rem',
+        color: 'var(--text-primary)',
+        fontSize: 'var(--body-size)',
+      }}
     >
-      {CONTACT_ITEMS.map((item) => (
-        <motion.div
-          key={item.text}
-          variants={{
-            hidden: { opacity: reduceMotion ? 1 : 0, scale: reduceMotion ? 1 : 0.85, y: reduceMotion ? 0 : 10 },
-            visible: { opacity: 1, scale: 1, y: 0, transition: { duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' } },
-          }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.8rem',
-            marginBottom: '0.9rem',
-            color: 'var(--text-primary)',
-            fontSize: 'var(--body-size)',
-          }}
-        >
-          <span style={{ color: 'var(--c-coral)', display: 'flex', fontSize: '1.3rem' }}>{item.icon}</span>
-          {item.text}
-        </motion.div>
-      ))}
-    </motion.div>
+      <span style={{ color: 'var(--c-coral)', display: 'flex', fontSize: '1.3rem' }}>{item.icon}</span>
+      {item.text}
+    </div>
   )
 }
 
@@ -204,63 +257,48 @@ export default function Timeline() {
   return (
     <>
       <Band heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt={false}>
-        <ContactDetails />
+        <Stagger>
+          {CONTACT_ITEMS.map((item) => (
+            <ContactRow key={item.text} item={item} />
+          ))}
+        </Stagger>
       </Band>
 
       <Band heading="Projects" accent="var(--c-orange)" alt>
-        <p style={{
-          fontFamily: 'var(--font-header)',
-          fontWeight: 800,
-          fontSize: 'clamp(2.75rem, 1.8rem + 4vw, 4.5rem)',
-          color: 'var(--c-orange)',
-          textShadow: 'var(--heading-shadow)',
-          margin: '0 0 0.4rem',
-          lineHeight: 1,
-        }}>
-          7
-        </p>
-        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '34ch' }}>
-          completed cloud infrastructure projects (3 individual + 4 team)
-        </p>
-      </Band>
-
-      <Band heading="Skills" accent="var(--c-emerald)" alt={false}>
-        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '36ch' }}>
-          Five areas — cloud, infrastructure as code, containers, delivery,
-          and observability. Hover any icon for its name.
-        </p>
-      </Band>
-
-      <Band heading="Cloud (AWS)" accent="var(--c-indigo)" alt compact>
-        <SkillCloud services={AWS_SERVICES} basePath="/icons/aws" accent="var(--c-indigo)" />
-      </Band>
-
-      <Band heading="IaC" accent="var(--c-orange)" alt={false} compact>
-        <SkillCloud services={IAC} basePath="/icons/tools" accent="var(--c-orange)" />
-      </Band>
-
-      <Band heading="Containers / Orchestration" accent="var(--c-emerald)" alt compact>
-        <SkillCloud services={CONTAINERS} basePath="/icons/tools" accent="var(--c-emerald)" />
-      </Band>
-
-      <Band heading="CI/CD & GitOps" accent="var(--c-coral)" alt={false} compact>
-        <SkillCloud services={CICD} basePath="/icons/tools" accent="var(--c-coral)" />
-      </Band>
-
-      <Band heading="Monitoring" accent="var(--c-steel)" alt compact>
-        <SkillCloud services={MONITORING} basePath="/icons/tools" accent="var(--c-steel)" />
-      </Band>
-
-      <Band heading="Certifications" accent="var(--c-forest)" alt={false}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-            <circle cx="12" cy="9" r="6" />
-            <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
-          </svg>
-          <p style={{ fontSize: 'var(--body-size)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
-            AWS Certified Solutions Architect – Associate
+        <Stagger>
+          <p style={{
+            fontFamily: 'var(--font-header)',
+            fontWeight: 800,
+            fontSize: 'clamp(2.75rem, 1.8rem + 4vw, 4.5rem)',
+            color: 'var(--c-orange)',
+            textShadow: 'var(--heading-shadow)',
+            margin: '0 0 0.4rem',
+            lineHeight: 1,
+          }}>
+            7
           </p>
-        </div>
+          <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '34ch' }}>
+            completed cloud infrastructure projects (3 individual + 4 team)
+          </p>
+        </Stagger>
+      </Band>
+
+      <Band heading="Skills" accent="var(--c-emerald)" alt={false} wide>
+        <SkillsCarousel baseDelay={DETAIL_DELAY} />
+      </Band>
+
+      <Band heading="Certifications" accent="var(--c-forest)" alt>
+        <Stagger>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+              <circle cx="12" cy="9" r="6" />
+              <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+            </svg>
+            <p style={{ fontSize: 'var(--body-size)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+              AWS Certified Solutions Architect – Associate
+            </p>
+          </div>
+        </Stagger>
       </Band>
     </>
   )

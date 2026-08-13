@@ -2,15 +2,15 @@ export default function CTAButtons() {
   const buttonStyle = {
     display: 'block',
     textAlign: 'center',
-    padding: '0.8rem',
+    padding: '1.1rem 1.5rem',
     borderRadius: 'var(--radius-sm)',
     background: 'var(--accent-base)',
     color: 'white',
     fontWeight: 700,
     fontFamily: 'var(--font-body)',
-    fontSize: '0.9rem',
+    fontSize: 'clamp(1rem, 0.9rem + 0.3vw, 1.15rem)',
     textDecoration: 'none',
-    marginBottom: '10px',
+    marginBottom: '14px',
   }
 
   return (

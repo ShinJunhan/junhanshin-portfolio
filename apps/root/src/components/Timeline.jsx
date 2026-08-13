@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
-import AwsOrbit from './AwsOrbit.jsx'
+import IconOrbit from './IconOrbit.jsx'
 
 const SECTION_HEADING_STYLE = {
   fontFamily: 'var(--font-header)',
@@ -13,7 +13,7 @@ const SECTION_HEADING_STYLE = {
 const CATEGORY_LABEL_STYLE = {
   fontFamily: 'var(--font-header)',
   fontWeight: 800,
-  fontSize: 'clamp(1.8rem, 1.2rem + 2vw, 2.5rem)',
+  fontSize: 'var(--h2-size)',
   color: 'var(--accent-base)',
   margin: 0,
 }
@@ -22,7 +22,7 @@ const CONTACT_ITEMS = [
   {
     text: 'Methuen, MA',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" />
         <circle cx="12" cy="10" r="3" />
       </svg>
@@ -32,7 +32,7 @@ const CONTACT_ITEMS = [
     // TODO: swap in the real phone number
     text: '999-999-999',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a2 2 0 0 1-2 2C9.5 22 2 14.5 2 6a2 2 0 0 1 2-2z" />
       </svg>
     ),
@@ -40,7 +40,7 @@ const CONTACT_ITEMS = [
   {
     text: 'junhanshin17@gmail.com',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2" />
         <path d="M4 6.5l8 6.5 8-6.5" />
       </svg>
@@ -48,11 +48,55 @@ const CONTACT_ITEMS = [
   },
 ]
 
-const OTHER_SKILL_GROUPS = [
-  { label: 'IaC', items: ['Terraform', 'Ansible'] },
-  { label: 'Containers / Orchestration', items: ['Docker', 'Kubernetes', 'Helm', 'KEDA', 'Karpenter', 'EKS'] },
-  { label: 'CI/CD & GitOps', items: ['GitHub Actions', 'Jenkins', 'ArgoCD', 'Gitea'] },
-  { label: 'Monitoring', items: ['Prometheus', 'Grafana', 'AlertManager'] },
+const AWS_SERVICES = [
+  { slug: 'ec2', label: 'EC2', glyph: 'server' },
+  { slug: 's3', label: 'S3', glyph: 'archive' },
+  { slug: 'vpc', label: 'VPC', glyph: 'network' },
+  { slug: 'route53', label: 'Route 53', glyph: 'globe' },
+  { slug: 'alb', label: 'ALB', glyph: 'shuffle' },
+  { slug: 'rds', label: 'RDS', glyph: 'database' },
+  { slug: 'iam', label: 'IAM', glyph: 'key' },
+  { slug: 'cloudwatch', label: 'CloudWatch', glyph: 'pulse' },
+  { slug: 'dynamodb', label: 'DynamoDB', glyph: 'layers' },
+  { slug: 'lambda', label: 'Lambda', glyph: 'bolt' },
+]
+
+const SKILL_GROUPS = [
+  {
+    label: 'IaC',
+    services: [
+      { slug: 'terraform', label: 'Terraform', glyph: 'layers' },
+      { slug: 'ansible', label: 'Ansible', glyph: 'gear' },
+    ],
+  },
+  {
+    label: 'Containers / Orchestration',
+    services: [
+      { slug: 'docker', label: 'Docker', glyph: 'box' },
+      { slug: 'kubernetes', label: 'Kubernetes', glyph: 'hexagon' },
+      { slug: 'helm', label: 'Helm', glyph: 'wheel' },
+      { slug: 'keda', label: 'KEDA', glyph: 'arrows-updown' },
+      { slug: 'karpenter', label: 'Karpenter', glyph: 'network' },
+      { slug: 'eks', label: 'EKS', glyph: 'cloud' },
+    ],
+  },
+  {
+    label: 'CI/CD & GitOps',
+    services: [
+      { slug: 'github-actions', label: 'GitHub Actions', glyph: 'play' },
+      { slug: 'jenkins', label: 'Jenkins', glyph: 'wrench' },
+      { slug: 'argocd', label: 'ArgoCD', glyph: 'sync' },
+      { slug: 'gitea', label: 'Gitea', glyph: 'git-branch' },
+    ],
+  },
+  {
+    label: 'Monitoring',
+    services: [
+      { slug: 'prometheus', label: 'Prometheus', glyph: 'flame' },
+      { slug: 'grafana', label: 'Grafana', glyph: 'chart-bar' },
+      { slug: 'alertmanager', label: 'AlertManager', glyph: 'bell' },
+    ],
+  },
 ]
 
 // A colored wash behind a word, matching the hero headline's highlight
@@ -120,7 +164,6 @@ function Connector() {
       style={{
         flex: 1,
         width: '2px',
-        minHeight: '110px',
         background: 'var(--border)',
         marginTop: '6px',
         position: 'relative',
@@ -139,9 +182,10 @@ function Milestone({ children, showConnector = true }) {
         <Dot />
         {showConnector && <Connector />}
       </div>
-      {/* Generous bottom padding keeps each "feature" its own moment as you
-          scroll, instead of the next one crowding in underneath it. */}
-      <div style={{ flex: 1, paddingBottom: '6rem', minWidth: 0 }}>{children}</div>
+      {/* Each section gets a tall minimum height so it commands its own
+          screen as you scroll, apple.com-style, instead of the next
+          section's heading crowding into the same view. */}
+      <div style={{ flex: 1, minHeight: 'clamp(420px, 62vh, 680px)', paddingBottom: '4rem', minWidth: 0 }}>{children}</div>
     </div>
   )
 }
@@ -180,13 +224,13 @@ function ContactMilestone() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.65rem',
-            marginBottom: '0.6rem',
+            gap: '0.85rem',
+            marginBottom: '1rem',
             color: 'var(--text-primary)',
-            fontSize: '0.95rem',
+            fontSize: 'var(--body-size)',
           }}
         >
-          <span style={{ color: 'var(--accent-base)', display: 'flex' }}>{item.icon}</span>
+          <span style={{ color: 'var(--accent-base)', display: 'flex', fontSize: '1.4rem' }}>{item.icon}</span>
           {item.text}
         </motion.div>
       ))}
@@ -204,16 +248,16 @@ function ProjectsMilestone() {
         <p style={{
           fontFamily: 'var(--font-header)',
           fontWeight: 800,
-          fontSize: 'clamp(3rem, 2rem + 4vw, 4.5rem)',
+          fontSize: 'clamp(3.5rem, 2rem + 6vw, 6rem)',
           color: 'var(--ink)',
-          margin: '0 0 0.4rem',
+          margin: '0 0 0.5rem',
           lineHeight: 1,
         }}>
           7
         </p>
       </SlideIn>
       <SlideIn delay={0.18}>
-        <p style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0 }}>
+        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '32ch' }}>
           completed cloud infrastructure projects (3 individual + 4 team)
         </p>
       </SlideIn>
@@ -221,16 +265,23 @@ function ProjectsMilestone() {
   )
 }
 
-function SkillGroup({ label, items }) {
+// Category name on the left, its icon-orbit floated to the right — used
+// identically for Cloud (AWS) and every other skill group below it.
+function SkillGroup({ label, services, delay = 0 }) {
   return (
-    <SlideIn>
-      <div style={{ marginBottom: '2.5rem' }}>
+    <SlideIn delay={delay}>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '2rem',
+        marginBottom: '4.5rem',
+      }}>
         <p style={CATEGORY_LABEL_STYLE}>
           <Highlight>{label}</Highlight>
         </p>
-        <p style={{ fontSize: '1.05rem', color: 'var(--text-primary)', margin: '0.6rem 0 0', lineHeight: 1.7 }}>
-          {items.join(' · ')}
-        </p>
+        <IconOrbit services={services} basePath={label === 'Cloud (AWS)' ? '/icons/aws' : '/icons/tools'} />
       </div>
     </SlideIn>
   )
@@ -243,19 +294,10 @@ function SkillsMilestone() {
         <h2 style={SECTION_HEADING_STYLE}>Skills</h2>
       </SlideIn>
 
-      <SlideIn delay={0.1}>
-        <div style={{ marginBottom: '2.5rem' }}>
-          <p style={CATEGORY_LABEL_STYLE}>
-            <Highlight>Cloud (AWS)</Highlight>
-          </p>
-          <div style={{ marginTop: '1rem' }}>
-            <AwsOrbit />
-          </div>
-        </div>
-      </SlideIn>
+      <SkillGroup label="Cloud (AWS)" services={AWS_SERVICES} delay={0.1} />
 
-      {OTHER_SKILL_GROUPS.map((g) => (
-        <SkillGroup key={g.label} label={g.label} items={g.items} />
+      {SKILL_GROUPS.map((g) => (
+        <SkillGroup key={g.label} label={g.label} services={g.services} />
       ))}
     </div>
   )
@@ -268,12 +310,12 @@ function CertificationsMilestone() {
         <h2 style={SECTION_HEADING_STYLE}>Certifications</h2>
       </SlideIn>
       <SlideIn delay={0.1}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent-base)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent-base)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
             <circle cx="12" cy="9" r="6" />
             <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
           </svg>
-          <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+          <p style={{ fontSize: 'clamp(1.2rem, 1rem + 0.6vw, 1.6rem)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
             AWS Certified Solutions Architect – Associate
           </p>
         </div>

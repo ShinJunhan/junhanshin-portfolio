@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Hero from './components/Hero.jsx'
-import Bio from './components/Bio.jsx'
 import Timeline from './components/Timeline.jsx'
 import CTAButtons from './components/CTAButtons.jsx'
 import Footer from './components/Footer.jsx'
@@ -17,15 +16,20 @@ export default function App() {
       <Hero onComplete={() => setHeroDone(true)} />
       {/* id is the auto-nudge scroll's landing target, so the hero pushes
           the viewer exactly to the top of this section — no dead gap. */}
-      <div id="main-content" className="container">
+      <main id="main-content">
         {/* Gated on the headline actually finishing, not a guessed timer —
             so these can never appear out of order relative to the headline. */}
-        <Reveal gate={heroDone}><Bio /></Reveal>
         {heroDone && <Timeline />}
-        <Reveal delay={0.1}><CTAButtons /></Reveal>
-        <Reveal delay={0.1}><Footer /></Reveal>
-        <TerminalPopup />
-      </div>
+        {/* Timeline's last band is the base tone, so this one alternates
+            off it to keep the banding rhythm unbroken. */}
+        <section className="band" style={{ background: 'var(--bg-alt)' }}>
+          <div className="container">
+            <Reveal delay={0.1}><CTAButtons /></Reveal>
+            <Reveal delay={0.1}><Footer /></Reveal>
+          </div>
+        </section>
+      </main>
+      <TerminalPopup />
     </>
   )
 }

@@ -1,6 +1,9 @@
 :root {
   /* Base indigo palette — from portfolio_color_palette.md / DESIGN.md */
   --bg: #F5F7FA;
+  /* Alternating band tone — every other section sits on this so the page
+     reads as a stack of distinct sections instead of one flat sheet. */
+  --bg-alt: #E9EEF5;
   --text-primary: #253449;
   --text-secondary: #8FA3BD;
   --card-bg: #FFFFFF;
@@ -9,6 +12,28 @@
   /* Indigo-tinted ink for large headline text — darker than accent-base but
      still visibly blue, instead of reading as flat/neutral black. */
   --ink: #1F2E44;
+
+  /* Section heading accents — warm/earthy companions to the indigo base,
+     one per section so consecutive sections never repeat a color. */
+  --c-indigo: #3E5C89;
+  --c-coral: #D9645A;
+  --c-orange: #E08A3C;
+  --c-emerald: #4FA88F;
+  --c-steel: #5C6670;
+  --c-forest: #3D6B52;
+
+  /* Lifts headings off the page instead of letting them sit flat on the
+     background: a hairline highlight above, then two soft drop shadows. */
+  --heading-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.75),
+    0 2px 4px rgba(31, 46, 68, 0.16),
+    0 6px 18px rgba(31, 46, 68, 0.10);
+
+  /* Terminal surface — reused by the popup and the skill clouds. */
+  --terminal-bg: #1E2530;
+  --terminal-bg-soft: #26303E;
+  --terminal-border: #38445A;
+  --terminal-ink: #C7D3E3;
 
   /* Fonts */
   --font-header: 'Archivo', sans-serif;
@@ -24,18 +49,13 @@
   --content-width: 880px;
   --gutter: clamp(1.5rem, 6vw, 4rem);
 
-  /* Shared big-section-heading size — "About Me", "Projects", "Skills",
-     and "Certifications" all render at this same scale. Scales up
-     noticeably further on wide/desktop viewports (apple.com-sized). */
-  --h1-size: clamp(2.6rem, 1.3rem + 4.6vw, 4.75rem);
-  /* Skill category names (Cloud (AWS), IaC, ...) — one step below the
-     section headings. */
-  --h2-size: clamp(2.1rem, 1.2rem + 3vw, 3.25rem);
-  /* General body copy (contact rows, descriptions) — noticeably larger
-     on desktop than a typical 16px default. */
-  --body-size: clamp(1.15rem, 1rem + 0.5vw, 1.5rem);
-  /* Translucent accent wash behind emphasized words (skill category
-     names) — same family as the hero headline's highlight sweeps. */
+  /* Section headings deliberately track the hero headline's size so the
+     page keeps one typographic voice from the hero downward. */
+  --h1-size: clamp(1.4rem, 0.95rem + 2.1vw, 2.5rem);
+  --h2-size: clamp(1.3rem, 0.9rem + 1.9vw, 2.2rem);
+  --body-size: clamp(1.05rem, 0.95rem + 0.4vw, 1.25rem);
+  /* Translucent accent wash behind emphasized words — same family as the
+     hero headline's highlight sweeps. */
   --accent-highlight: rgba(43, 155, 255, 0.22);
 
   color-scheme: light;
@@ -43,6 +63,7 @@
 
 [data-theme='dark'] {
   --bg: #10151F;
+  --bg-alt: #161E2B;
   --text-primary: #E4E9F2;
   --text-secondary: #92A3BE;
   --card-bg: #182131;
@@ -51,6 +72,25 @@
   --accent-base: #3B82F6;
   --ink: #F1F5FC;
   --accent-highlight: rgba(59, 130, 246, 0.3);
+
+  /* Lightened so each accent keeps its identity against a dark ground */
+  --c-indigo: #7EA3D8;
+  --c-coral: #F08A80;
+  --c-orange: #F0A860;
+  --c-emerald: #6FCFB3;
+  --c-steel: #9AA6B2;
+  --c-forest: #6BAA88;
+
+  --heading-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06),
+    0 2px 6px rgba(0, 0, 0, 0.55),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+
+  /* Lifted above the dark band tones so the skill clouds stay legible
+     instead of sinking into the page. */
+  --terminal-bg: #222C3B;
+  --terminal-bg-soft: #2D394B;
+  --terminal-border: #465569;
 
   color-scheme: dark;
 }
@@ -82,6 +122,87 @@ a {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 3rem var(--gutter) 6rem;
+}
+
+/* Full-bleed colored band with its content held to the shared measure. */
+.band {
+  width: 100%;
+  transition: background-color 0.25s ease;
+}
+
+/* No vertical padding here: the rail is a child and must reach the band's
+   top and bottom edges so consecutive bands' rails meet and read as one
+   continuous line. The breathing room lives on __content instead. */
+.band__inner {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  min-height: clamp(320px, 58vh, 480px);
+  display: flex;
+  align-items: stretch;
+}
+
+/* Skill categories are short, repeating rows — giving each a full-height
+   band would turn Skills into a long scroll for very little content. */
+.band__inner--compact {
+  min-height: clamp(240px, 40vh, 340px);
+}
+
+.band__inner--compact .section-row__content {
+  padding: clamp(1.5rem, 3vh, 2.5rem) 0;
+}
+
+/* Heading on the left, its detail on the right, both vertically centered
+   against the timeline rail. Stacks on narrow screens. */
+.section-row {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  width: 100%;
+}
+
+.section-row__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: clamp(1.25rem, 3vw, 2.75rem);
+  padding: clamp(2.5rem, 5vh, 4rem) 0;
+}
+
+.section-row__heading {
+  flex: 0 0 36%;
+  min-width: 0;
+}
+
+.section-row__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .section-row__content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .section-row__heading,
+  .section-row__body {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+}
+
+/* Gentle settle at each section boundary as you scroll, so a section's
+   content has landed before the next one comes into play. "proximity"
+   (not "mandatory") means it only assists near a boundary and never traps
+   the reader mid-section. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-snap-type: y proximity;
+  }
+  .snap-section {
+    scroll-snap-align: start;
+  }
 }
 
 /* Visible keyboard focus — accessibility floor per frontend-design guidance */

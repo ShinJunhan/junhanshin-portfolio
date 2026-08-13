@@ -1,22 +1,39 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Concentric-ring placement: one center icon (largest), a ring of 5, then
-// an outer ring of 4 — mimics the varied-size honeycomb of a watchOS app
-// grid rather than a plain rectangular grid. `rf` is the icon's distance
-// from center as a fraction of the circle's radius.
-const LAYOUT = [
-  { size: 0.24, rf: 0, angle: 0 },
-  { size: 0.19, rf: 0.42, angle: 0 },
-  { size: 0.19, rf: 0.42, angle: 72 },
-  { size: 0.19, rf: 0.42, angle: 144 },
-  { size: 0.19, rf: 0.42, angle: 216 },
-  { size: 0.19, rf: 0.42, angle: 288 },
-  { size: 0.15, rf: 0.78, angle: 36 },
-  { size: 0.15, rf: 0.78, angle: 108 },
-  { size: 0.15, rf: 0.78, angle: 180 },
-  { size: 0.15, rf: 0.78, angle: 252 },
-]
+// The cloud silhouette is drawn as overlapping circles plus a rounded body
+// sharing one fill, so it merges into a single soft shape that scales with
+// the viewBox instead of being pinned to fixed pixel coordinates.
+const VB = { w: 260, h: 150 }
+
+// Icons sit in tidy centered rows rather than scattered rings — same
+// alignment discipline as an app grid, just inside a cloud outline.
+const ROW_PLANS = {
+  1: [1], 2: [2], 3: [3], 4: [4], 5: [5],
+  6: [3, 3], 7: [4, 3], 8: [4, 4], 9: [5, 4], 10: [5, 5],
+}
+
+// Small groups get proportionally larger tiles so a 2-icon cloud doesn't
+// read as mostly empty space.
+function iconUnitsFor(count) {
+  if (count <= 3) return 42
+  if (count <= 6) return 36
+  return 30
+}
+
+function layoutFor(count) {
+  const plan = ROW_PLANS[count] || [5, 5]
+  const rowYs = plan.length === 1 ? [80] : [60, 98]
+  const units = iconUnitsFor(count)
+  const spots = []
+  plan.forEach((n, rowIdx) => {
+    const spacing = units + (n >= 5 ? 6 : 8)
+    for (let i = 0; i < n; i++) {
+      spots.push({ x: 130 + (i - (n - 1) / 2) * spacing, y: rowYs[rowIdx] })
+    }
+  })
+  return spots
+}
 
 function Glyph({ type }) {
   const common = {
@@ -219,26 +236,22 @@ function ServiceIcon({ slug, glyph, basePath }) {
   )
 }
 
-// Positioning (this outer plain div) is kept separate from the hover/scale
-// animation (the nested motion.div): framer-motion synthesizes its own
-// `transform` from motion values like `scale`, which silently overrides a
-// plain `transform: translate(...)` string set on the same element — so
-// the centering offset has to live on an element framer isn't animating.
-function OrbitIcon({ service, basePath, layout }) {
+// Positioning (the outer plain div) stays separate from the hover scale
+// (the nested motion.div): framer-motion synthesizes `transform` from
+// animated motion values and would otherwise overwrite the centering
+// translate set on the same element.
+function CloudIcon({ service, basePath, spot, accent, units }) {
   const [hovered, setHovered] = useState(false)
-  const rad = (layout.angle * Math.PI) / 180
-  const left = 50 + layout.rf * 42 * Math.cos(rad)
-  const top = 50 + layout.rf * 42 * Math.sin(rad)
 
   return (
     <div
       style={{
         position: 'absolute',
-        left: `${left}%`,
-        top: `${top}%`,
+        left: `${(spot.x / VB.w) * 100}%`,
+        top: `${(spot.y / VB.h) * 100}%`,
         transform: 'translate(-50%, -50%)',
-        width: `${layout.size * 100}%`,
-        height: `${layout.size * 100}%`,
+        width: `${(units / VB.w) * 100}%`,
+        height: `${(units / VB.h) * 100}%`,
         zIndex: hovered ? 5 : 1,
       }}
     >
@@ -247,7 +260,7 @@ function OrbitIcon({ service, basePath, layout }) {
         onHoverEnd={() => setHovered(false)}
         onFocus={() => setHovered(true)}
         onBlur={() => setHovered(false)}
-        animate={{ scale: hovered ? 1.3 : 1 }}
+        animate={{ scale: hovered ? 1.28 : 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 18 }}
         tabIndex={0}
         role="img"
@@ -256,16 +269,15 @@ function OrbitIcon({ service, basePath, layout }) {
           position: 'relative',
           width: '100%',
           height: '100%',
-          // A squircle (rounded square) rather than a full circle or a
-          // sharp-cornered rectangle — the iOS/watchOS app-icon shape.
+          // Squircle — the iOS/watchOS app-icon shape.
           borderRadius: '30%',
-          background: 'var(--bg)',
-          border: '1px solid var(--border)',
-          color: 'var(--accent-base)',
+          background: 'var(--terminal-bg-soft)',
+          border: `1px solid ${hovered ? accent : 'var(--terminal-border)'}`,
+          color: hovered ? accent : 'var(--terminal-ink)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
         }}
       >
         <div style={{ width: '56%', height: '56%' }}>
@@ -280,15 +292,17 @@ function OrbitIcon({ service, basePath, layout }) {
               transition={{ duration: 0.15 }}
               style={{
                 position: 'absolute',
-                bottom: '115%',
+                bottom: '118%',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 whiteSpace: 'nowrap',
-                background: 'var(--ink)',
-                color: 'var(--bg)',
-                fontSize: '0.75rem',
+                background: 'var(--terminal-bg)',
+                border: `1px solid ${accent}`,
+                color: accent,
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.7rem',
                 fontWeight: 600,
-                padding: '4px 10px',
+                padding: '3px 9px',
                 borderRadius: '999px',
                 pointerEvents: 'none',
                 zIndex: 6,
@@ -303,25 +317,54 @@ function OrbitIcon({ service, basePath, layout }) {
   )
 }
 
-// A circular "app grid" of icons — center icon largest, then two rings of
-// progressively smaller ones. Hover (or focus, for keyboard users) grows
-// an icon and reveals its name.
-export default function IconOrbit({ services, basePath, diameter = 'clamp(260px, 24vw, 380px)' }) {
+export default function SkillCloud({ services, basePath, accent }) {
+  const spots = layoutFor(services.length)
+  const units = iconUnitsFor(services.length)
+
   return (
     <div
       style={{
         position: 'relative',
-        width: diameter,
-        height: diameter,
-        borderRadius: '50%',
-        background: 'var(--card-bg)',
-        border: '1px solid var(--border)',
-        overflow: 'visible',
-        flexShrink: 0,
+        width: '100%',
+        maxWidth: 'clamp(240px, 30vw, 360px)',
+        aspectRatio: `${VB.w} / ${VB.h}`,
+        marginLeft: 'auto',
       }}
     >
+      <svg
+        viewBox={`0 0 ${VB.w} ${VB.h}`}
+        aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      >
+        {/* Drawn twice: once stroked to give the whole silhouette an outline,
+            then again slightly inset and unstroked to erase the internal
+            seams where the pieces overlap — so it reads as one soft cloud
+            rather than a pile of circles. */}
+        <g fill="var(--terminal-bg)" stroke="var(--terminal-border)" strokeWidth="1.5">
+          <circle cx="85" cy="60" r="40" />
+          <circle cx="150" cy="54" r="44" />
+          <circle cx="200" cy="78" r="36" />
+          <circle cx="58" cy="88" r="38" />
+          <rect x="46" y="76" width="174" height="54" rx="26" />
+        </g>
+        <g fill="var(--terminal-bg)">
+          <circle cx="85" cy="60" r="39" />
+          <circle cx="150" cy="54" r="43" />
+          <circle cx="200" cy="78" r="35" />
+          <circle cx="58" cy="88" r="37" />
+          <rect x="47" y="77" width="172" height="52" rx="25" />
+        </g>
+      </svg>
+
       {services.map((s, i) => (
-        <OrbitIcon key={s.slug} service={s} basePath={basePath} layout={LAYOUT[i % LAYOUT.length]} />
+        <CloudIcon
+          key={s.slug}
+          service={s}
+          basePath={basePath}
+          spot={spots[i]}
+          accent={accent}
+          units={units}
+        />
       ))}
     </div>
   )

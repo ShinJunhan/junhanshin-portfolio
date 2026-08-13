@@ -1,20 +1,20 @@
 export default function Bio() {
   return (
-    <h2
+    <h1
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem',
+        gap: '0.6rem',
         fontFamily: 'var(--font-header)',
-        fontSize: '1.15rem',
+        fontSize: 'clamp(1.9rem, 1.3rem + 2.4vw, 2.75rem)',
         fontWeight: 800,
         color: 'var(--accent-base)',
-        marginBottom: '1.25rem',
+        marginBottom: '1.75rem',
       }}
     >
       <svg
-        width="22"
-        height="22"
+        width="1.1em"
+        height="1.1em"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -27,6 +27,6 @@ export default function Bio() {
         <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
       </svg>
       About Me
-    </h2>
+    </h1>
   )
 }

@@ -33,7 +33,8 @@
   --text-secondary: #92A3BE;
   --card-bg: #182131;
   --border: #2B3548;
-  --accent-base: #5C7CFA;
+  /* Clean, unambiguous blue (not the purple-leaning indigo this replaced) */
+  --accent-base: #3B82F6;
   --ink: #F1F5FC;
 
   color-scheme: dark;

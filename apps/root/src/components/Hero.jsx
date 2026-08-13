@@ -16,7 +16,6 @@ const POST_GREETING_HOLD = 500    // ms after the name color settles, before the
 const NUDGE_DELAY = 1400          // ms after the scroll hint appears before the auto-nudge scroll fires
 
 const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 500 }
-const INDIGO_POP = '#3355FF'
 const INK_FALLBACK = '#1F2E44'
 
 // Solid versions of each sentence's highlight hue, used to color the
@@ -26,6 +25,9 @@ const OPERATOR_HUE = 'rgb(224,138,60)'
 // Brighter/more saturated than the other two — this is the word the
 // headline wants the reader's eye to land on.
 const ENGINEER_HUE = 'rgb(43,155,255)'
+// Same tonal family as TEACHER_HUE/OPERATOR_HUE (mid-saturation, not neon) —
+// "Junhan" settles into this indigo blue at the end of the greeting.
+const INDIGO_POP = 'rgb(58,125,214)'
 
 function Highlight({ children, color, show, glow }) {
   return (

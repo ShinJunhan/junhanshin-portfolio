@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import Hero from './components/Hero.jsx'
 import Bio from './components/Bio.jsx'
-import StatCards from './components/StatCards.jsx'
-import Skills from './components/Skills.jsx'
+import Timeline from './components/Timeline.jsx'
 import CTAButtons from './components/CTAButtons.jsx'
 import Footer from './components/Footer.jsx'
 import TerminalPopup from './components/TerminalPopup.jsx'
@@ -22,8 +21,7 @@ export default function App() {
         {/* Gated on the headline actually finishing, not a guessed timer —
             so these can never appear out of order relative to the headline. */}
         <Reveal gate={heroDone}><Bio /></Reveal>
-        {heroDone && <StatCards />}
-        <Reveal><Skills /></Reveal>
+        {heroDone && <Timeline />}
         <Reveal delay={0.1}><CTAButtons /></Reveal>
         <Reveal delay={0.1}><Footer /></Reveal>
         <TerminalPopup />

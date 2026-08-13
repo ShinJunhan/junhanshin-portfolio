@@ -18,6 +18,11 @@
   /* Spacing */
   --radius: 12px;
   --radius-sm: 8px;
+
+  /* Shared content measure — headline, body copy, and cards all line up
+     against these same two values, at every viewport width. */
+  --content-width: 880px;
+  --gutter: clamp(1.5rem, 6vw, 4rem);
 }
 
 * {
@@ -43,9 +48,9 @@ a {
 }
 
 .container {
-  max-width: 720px;
+  max-width: var(--content-width);
   margin: 0 auto;
-  padding: 3rem 1.5rem 6rem;
+  padding: 3rem var(--gutter) 6rem;
 }
 
 /* Visible keyboard focus — accessibility floor per frontend-design guidance */

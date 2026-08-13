@@ -6,6 +6,9 @@
   --card-bg: #FFFFFF;
   --border: #E2E7ED;
   --accent-base: #3E5C89;
+  /* Indigo-tinted ink for large headline text — darker than accent-base but
+     still visibly blue, instead of reading as flat/neutral black. */
+  --ink: #1F2E44;
 
   /* Fonts */
   --font-header: 'Archivo', sans-serif;

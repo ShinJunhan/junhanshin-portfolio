@@ -12,16 +12,18 @@ export default function App() {
   const [heroDone, setHeroDone] = useState(false)
 
   return (
-    <div className="container">
+    <>
       <Hero onComplete={() => setHeroDone(true)} />
-      {/* Gated on the headline actually finishing, not a guessed timer —
-          so these can never appear out of order relative to the headline. */}
-      <Reveal gate={heroDone}><Bio /></Reveal>
-      {heroDone && <StatCards />}
-      <Reveal><Skills /></Reveal>
-      <Reveal delay={0.1}><CTAButtons /></Reveal>
-      <Reveal delay={0.1}><Footer /></Reveal>
-      <TerminalPopup />
-    </div>
+      <div className="container">
+        {/* Gated on the headline actually finishing, not a guessed timer —
+            so these can never appear out of order relative to the headline. */}
+        <Reveal gate={heroDone}><Bio /></Reveal>
+        {heroDone && <StatCards />}
+        <Reveal><Skills /></Reveal>
+        <Reveal delay={0.1}><CTAButtons /></Reveal>
+        <Reveal delay={0.1}><Footer /></Reveal>
+        <TerminalPopup />
+      </div>
+    </>
   )
 }

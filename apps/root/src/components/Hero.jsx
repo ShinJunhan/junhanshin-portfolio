@@ -215,7 +215,7 @@ export default function Hero({ onComplete }) {
                 opacity: { duration: FADE_DURATION, ease: 'easeOut' },
               }}
               style={{
-                fontSize: 'clamp(1.6rem, 1.05rem + 2.45vw, 2.9rem)',
+                fontSize: 'clamp(1.5rem, 0.9rem + 2.2vw, 2.5rem)',
                 lineHeight: 1.6,
                 letterSpacing: '0.01em',
                 fontWeight: 700,
@@ -242,7 +242,7 @@ export default function Hero({ onComplete }) {
               ))}
             </motion.h1>
           ) : (
-            <Greeting fontSize="clamp(1.85rem, 1.2rem + 2.7vw, 3.3rem)" />
+            <Greeting fontSize="clamp(1.7rem, 1.05rem + 2.5vw, 3rem)" />
           )}
         </AnimatePresence>
       </motion.div>

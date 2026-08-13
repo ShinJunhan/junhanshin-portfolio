@@ -186,7 +186,7 @@ function Stagger({ children, delay = DETAIL_DELAY }) {
   )
 }
 
-function Band({ heading, icon, accent, alt, wide = false, children }) {
+function Band({ heading, icon, accent, alt, wide = false, stack = false, aside = null, children }) {
   const bandBg = alt ? 'var(--bg-alt)' : 'var(--bg)'
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, amount: 0.35 })
@@ -212,23 +212,34 @@ function Band({ heading, icon, accent, alt, wide = false, children }) {
     return () => window.removeEventListener('resize', measure)
   }, [])
 
+  const headingRow = (
+    <div className="section-row__content" ref={contentRef}>
+      <div className="section-row__heading" ref={headingRef}>
+        <BandReveal.Provider value={inView}>
+          <SectionHeading icon={icon} accent={accent} centerShift={centerShift}>
+            {heading}
+          </SectionHeading>
+        </BandReveal.Provider>
+      </div>
+      <div className="section-row__body">
+        <BandReveal.Provider value={inView}>{stack ? aside : children}</BandReveal.Provider>
+      </div>
+    </div>
+  )
+
   return (
     <section ref={ref} className="band snap-section" style={{ background: bandBg }}>
       <div className="band__inner">
         <div className={`section-row${wide ? ' section-row--wide' : ''}`}>
           <Rail accent={accent} bandBg={bandBg} />
-          <div className="section-row__content" ref={contentRef}>
-            <div className="section-row__heading" ref={headingRef}>
-              <BandReveal.Provider value={inView}>
-                <SectionHeading icon={icon} accent={accent} centerShift={centerShift}>
-                  {heading}
-                </SectionHeading>
-              </BandReveal.Provider>
-            </div>
-            <div className="section-row__body">
+          {stack ? (
+            <div className="band__stack">
+              {headingRow}
               <BandReveal.Provider value={inView}>{children}</BandReveal.Provider>
             </div>
-          </div>
+          ) : (
+            headingRow
+          )}
         </div>
       </div>
     </section>
@@ -277,14 +288,28 @@ export default function Timeline() {
           }}>
             7
           </p>
-          <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '34ch' }}>
-            completed cloud infrastructure projects (3 individual + 4 team)
+          <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0 }}>
+            completed cloud infrastructure projects
+            <span style={{ display: 'block' }}>(3 individual + 4 team)</span>
           </p>
         </Stagger>
       </Band>
 
-      <Band heading="Skills" accent="var(--c-emerald)" alt={false} wide>
-        <SkillsCarousel baseDelay={DETAIL_DELAY} />
+      <Band
+        heading="Skills"
+        accent="var(--c-emerald)"
+        alt={false}
+        wide
+        stack
+        aside={
+          <Stagger>
+            <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0 }}>
+              Hover any icon for its name.
+            </p>
+          </Stagger>
+        }
+      >
+        <SkillsCarousel baseDelay={DETAIL_DELAY} className="carousel--bleed" />
       </Band>
 
       <Band heading="Certifications" accent="var(--c-forest)" alt>

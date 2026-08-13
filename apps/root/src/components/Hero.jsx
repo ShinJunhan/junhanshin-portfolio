@@ -187,6 +187,7 @@ export default function Hero({ onComplete }) {
 
   return (
     <section
+      className="snap-section"
       style={{
         minHeight: '100vh',
         width: '100%',

@@ -1,22 +1,46 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
-import IconOrbit from './IconOrbit.jsx'
+import SkillCloud from './SkillCloud.jsx'
 
-const SECTION_HEADING_STYLE = {
-  fontFamily: 'var(--font-header)',
-  fontWeight: 800,
-  fontSize: 'var(--h1-size)',
-  color: 'var(--accent-base)',
-  margin: '0 0 1.5rem',
-}
+const AWS_SERVICES = [
+  { slug: 'ec2', label: 'EC2', glyph: 'server' },
+  { slug: 's3', label: 'S3', glyph: 'archive' },
+  { slug: 'vpc', label: 'VPC', glyph: 'network' },
+  { slug: 'route53', label: 'Route 53', glyph: 'globe' },
+  { slug: 'alb', label: 'ALB', glyph: 'shuffle' },
+  { slug: 'rds', label: 'RDS', glyph: 'database' },
+  { slug: 'iam', label: 'IAM', glyph: 'key' },
+  { slug: 'cloudwatch', label: 'CloudWatch', glyph: 'pulse' },
+  { slug: 'dynamodb', label: 'DynamoDB', glyph: 'layers' },
+  { slug: 'lambda', label: 'Lambda', glyph: 'bolt' },
+]
 
-const CATEGORY_LABEL_STYLE = {
-  fontFamily: 'var(--font-header)',
-  fontWeight: 800,
-  fontSize: 'var(--h2-size)',
-  color: 'var(--accent-base)',
-  margin: 0,
-}
+const IAC = [
+  { slug: 'terraform', label: 'Terraform', glyph: 'layers' },
+  { slug: 'ansible', label: 'Ansible', glyph: 'gear' },
+]
+
+const CONTAINERS = [
+  { slug: 'docker', label: 'Docker', glyph: 'box' },
+  { slug: 'kubernetes', label: 'Kubernetes', glyph: 'hexagon' },
+  { slug: 'helm', label: 'Helm', glyph: 'wheel' },
+  { slug: 'keda', label: 'KEDA', glyph: 'arrows-updown' },
+  { slug: 'karpenter', label: 'Karpenter', glyph: 'network' },
+  { slug: 'eks', label: 'EKS', glyph: 'cloud' },
+]
+
+const CICD = [
+  { slug: 'github-actions', label: 'GitHub Actions', glyph: 'play' },
+  { slug: 'jenkins', label: 'Jenkins', glyph: 'wrench' },
+  { slug: 'argocd', label: 'ArgoCD', glyph: 'sync' },
+  { slug: 'gitea', label: 'Gitea', glyph: 'git-branch' },
+]
+
+const MONITORING = [
+  { slug: 'prometheus', label: 'Prometheus', glyph: 'flame' },
+  { slug: 'grafana', label: 'Grafana', glyph: 'chart-bar' },
+  { slug: 'alertmanager', label: 'AlertManager', glyph: 'bell' },
+]
 
 const CONTACT_ITEMS = [
   {
@@ -48,164 +72,102 @@ const CONTACT_ITEMS = [
   },
 ]
 
-const AWS_SERVICES = [
-  { slug: 'ec2', label: 'EC2', glyph: 'server' },
-  { slug: 's3', label: 'S3', glyph: 'archive' },
-  { slug: 'vpc', label: 'VPC', glyph: 'network' },
-  { slug: 'route53', label: 'Route 53', glyph: 'globe' },
-  { slug: 'alb', label: 'ALB', glyph: 'shuffle' },
-  { slug: 'rds', label: 'RDS', glyph: 'database' },
-  { slug: 'iam', label: 'IAM', glyph: 'key' },
-  { slug: 'cloudwatch', label: 'CloudWatch', glyph: 'pulse' },
-  { slug: 'dynamodb', label: 'DynamoDB', glyph: 'layers' },
-  { slug: 'lambda', label: 'Lambda', glyph: 'bolt' },
-]
+const PERSON_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+  </svg>
+)
 
-const SKILL_GROUPS = [
-  {
-    label: 'IaC',
-    services: [
-      { slug: 'terraform', label: 'Terraform', glyph: 'layers' },
-      { slug: 'ansible', label: 'Ansible', glyph: 'gear' },
-    ],
-  },
-  {
-    label: 'Containers / Orchestration',
-    services: [
-      { slug: 'docker', label: 'Docker', glyph: 'box' },
-      { slug: 'kubernetes', label: 'Kubernetes', glyph: 'hexagon' },
-      { slug: 'helm', label: 'Helm', glyph: 'wheel' },
-      { slug: 'keda', label: 'KEDA', glyph: 'arrows-updown' },
-      { slug: 'karpenter', label: 'Karpenter', glyph: 'network' },
-      { slug: 'eks', label: 'EKS', glyph: 'cloud' },
-    ],
-  },
-  {
-    label: 'CI/CD & GitOps',
-    services: [
-      { slug: 'github-actions', label: 'GitHub Actions', glyph: 'play' },
-      { slug: 'jenkins', label: 'Jenkins', glyph: 'wrench' },
-      { slug: 'argocd', label: 'ArgoCD', glyph: 'sync' },
-      { slug: 'gitea', label: 'Gitea', glyph: 'git-branch' },
-    ],
-  },
-  {
-    label: 'Monitoring',
-    services: [
-      { slug: 'prometheus', label: 'Prometheus', glyph: 'flame' },
-      { slug: 'grafana', label: 'Grafana', glyph: 'chart-bar' },
-      { slug: 'alertmanager', label: 'AlertManager', glyph: 'bell' },
-    ],
-  },
-]
-
-// A colored wash behind a word, matching the hero headline's highlight
-// language — sweeps in the first time it scrolls into view.
-function Highlight({ children }) {
-  const reduceMotion = useReducedMotion()
-  return (
-    <span style={{ position: 'relative', display: 'inline-block' }}>
-      <span style={{ position: 'relative', zIndex: 1 }}>{children}</span>
-      <motion.span
-        aria-hidden="true"
-        initial={{ scaleX: reduceMotion ? 1 : 0 }}
-        whileInView={{ scaleX: 1 }}
-        viewport={{ once: true, amount: 0.6 }}
-        transition={{ duration: 0.45, ease: 'easeOut', delay: reduceMotion ? 0 : 0.1 }}
-        style={{
-          position: 'absolute',
-          left: '-6px',
-          right: '-6px',
-          bottom: '2px',
-          height: '30%',
-          background: 'var(--accent-highlight)',
-          borderRadius: '4px',
-          transformOrigin: 'left',
-          zIndex: 0,
-        }}
-      />
-    </span>
-  )
-}
-
-function Dot() {
-  const reduceMotion = useReducedMotion()
-  return (
-    <motion.div
-      initial={{ scale: reduceMotion ? 1 : 0 }}
-      whileInView={{ scale: 1 }}
-      viewport={{ once: true, amount: 0.6 }}
-      transition={{ duration: 0.35, ease: 'easeOut' }}
-      style={{
-        width: '14px',
-        height: '14px',
-        borderRadius: '50%',
-        background: 'var(--card-bg)',
-        border: '3px solid var(--accent-base)',
-        marginTop: '6px',
-        flexShrink: 0,
-      }}
-    />
-  )
-}
-
-// The fill only grows while the connector is actually passing through the
-// viewport during a real scroll gesture — it's driven directly off scroll
-// position (useScroll), not an independent timed animation, so it never
-// "finishes connecting" on its own while the reader is sitting still.
-function Connector() {
+// The rail runs alongside the headings only — the detail column sits to its
+// right, so the line reads as threading the section titles together. Its
+// fill tracks scroll position directly (useScroll) rather than playing a
+// timed tween, so it never advances while the reader is sitting still.
+function Rail({ accent, bandBg }) {
   const ref = useRef(null)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'end 0.55'] })
-  const fillHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.5'] })
+  const fill = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
 
   return (
     <div
       ref={ref}
-      style={{
-        flex: 1,
-        width: '2px',
-        background: 'var(--border)',
-        marginTop: '6px',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      aria-hidden="true"
+      style={{ position: 'relative', width: '2px', alignSelf: 'stretch', background: 'var(--border)', flexShrink: 0 }}
     >
-      <motion.div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'var(--accent-base)', height: fillHeight }} />
-    </div>
-  )
-}
-
-function Milestone({ children, showConnector = true }) {
-  return (
-    <div style={{ display: 'flex', gap: '1.5rem' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '20px', flexShrink: 0 }}>
-        <Dot />
-        {showConnector && <Connector />}
-      </div>
-      {/* Each section gets a tall minimum height so it commands its own
-          screen as you scroll, apple.com-style, instead of the next
-          section's heading crowding into the same view. */}
-      <div style={{ flex: 1, minHeight: 'clamp(420px, 62vh, 680px)', paddingBottom: '4rem', minWidth: 0 }}>{children}</div>
+      <motion.div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: fill, background: accent }} />
+      <span
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '14px',
+          height: '14px',
+          borderRadius: '50%',
+          background: bandBg,
+          border: `3px solid ${accent}`,
+        }}
+      />
     </div>
   )
 }
 
 // Apple-style feature reveal: slides up and fades in as it enters view.
-function SlideIn({ children, delay = 0 }) {
+function SlideIn({ children, delay = 0, style }) {
   const reduceMotion = useReducedMotion()
   return (
     <motion.div
-      initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 48 }}
+      style={style}
+      initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 40 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.35 }}
-      transition={{ duration: 0.7, ease: 'easeOut', delay: reduceMotion ? 0 : delay }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.65, ease: 'easeOut', delay: reduceMotion ? 0 : delay }}
     >
       {children}
     </motion.div>
   )
 }
 
-function ContactMilestone() {
+function Band({ heading, icon, accent, alt, compact = false, children }) {
+  const bandBg = alt ? 'var(--bg-alt)' : 'var(--bg)'
+  return (
+    <section className="band snap-section" style={{ background: bandBg }}>
+      <div className={`band__inner${compact ? ' band__inner--compact' : ''}`}>
+        <div className="section-row">
+          <Rail accent={accent} bandBg={bandBg} />
+          <div className="section-row__content">
+            <div className="section-row__heading">
+              <SlideIn>
+                <h2
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontFamily: 'var(--font-header)',
+                    fontWeight: 800,
+                    fontSize: 'var(--h1-size)',
+                    lineHeight: 1.15,
+                    color: accent,
+                    textShadow: 'var(--heading-shadow)',
+                    margin: 0,
+                  }}
+                >
+                  {icon}
+                  {heading}
+                </h2>
+              </SlideIn>
+            </div>
+            <div className="section-row__body">
+              <SlideIn delay={0.12}>{children}</SlideIn>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ContactDetails() {
   const reduceMotion = useReducedMotion()
   return (
     <motion.div
@@ -224,13 +186,13 @@ function ContactMilestone() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.85rem',
-            marginBottom: '1rem',
+            gap: '0.8rem',
+            marginBottom: '0.9rem',
             color: 'var(--text-primary)',
             fontSize: 'var(--body-size)',
           }}
         >
-          <span style={{ color: 'var(--accent-base)', display: 'flex', fontSize: '1.4rem' }}>{item.icon}</span>
+          <span style={{ color: 'var(--c-coral)', display: 'flex', fontSize: '1.3rem' }}>{item.icon}</span>
           {item.text}
         </motion.div>
       ))}
@@ -238,107 +200,68 @@ function ContactMilestone() {
   )
 }
 
-function ProjectsMilestone() {
+export default function Timeline() {
   return (
-    <div>
-      <SlideIn>
-        <h2 style={SECTION_HEADING_STYLE}>Projects</h2>
-      </SlideIn>
-      <SlideIn delay={0.1}>
+    <>
+      <Band heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt={false}>
+        <ContactDetails />
+      </Band>
+
+      <Band heading="Projects" accent="var(--c-orange)" alt>
         <p style={{
           fontFamily: 'var(--font-header)',
           fontWeight: 800,
-          fontSize: 'clamp(3.5rem, 2rem + 6vw, 6rem)',
-          color: 'var(--ink)',
-          margin: '0 0 0.5rem',
+          fontSize: 'clamp(2.75rem, 1.8rem + 4vw, 4.5rem)',
+          color: 'var(--c-orange)',
+          textShadow: 'var(--heading-shadow)',
+          margin: '0 0 0.4rem',
           lineHeight: 1,
         }}>
           7
         </p>
-      </SlideIn>
-      <SlideIn delay={0.18}>
-        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '32ch' }}>
+        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '34ch' }}>
           completed cloud infrastructure projects (3 individual + 4 team)
         </p>
-      </SlideIn>
-    </div>
-  )
-}
+      </Band>
 
-// Category name on the left, its icon-orbit floated to the right — used
-// identically for Cloud (AWS) and every other skill group below it.
-function SkillGroup({ label, services, delay = 0 }) {
-  return (
-    <SlideIn delay={delay}>
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '2rem',
-        marginBottom: '4.5rem',
-      }}>
-        <p style={CATEGORY_LABEL_STYLE}>
-          <Highlight>{label}</Highlight>
+      <Band heading="Skills" accent="var(--c-emerald)" alt={false}>
+        <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0, maxWidth: '36ch' }}>
+          Five areas — cloud, infrastructure as code, containers, delivery,
+          and observability. Hover any icon for its name.
         </p>
-        <IconOrbit services={services} basePath={label === 'Cloud (AWS)' ? '/icons/aws' : '/icons/tools'} />
-      </div>
-    </SlideIn>
-  )
-}
+      </Band>
 
-function SkillsMilestone() {
-  return (
-    <div>
-      <SlideIn>
-        <h2 style={SECTION_HEADING_STYLE}>Skills</h2>
-      </SlideIn>
+      <Band heading="Cloud (AWS)" accent="var(--c-indigo)" alt compact>
+        <SkillCloud services={AWS_SERVICES} basePath="/icons/aws" accent="var(--c-indigo)" />
+      </Band>
 
-      <SkillGroup label="Cloud (AWS)" services={AWS_SERVICES} delay={0.1} />
+      <Band heading="IaC" accent="var(--c-orange)" alt={false} compact>
+        <SkillCloud services={IAC} basePath="/icons/tools" accent="var(--c-orange)" />
+      </Band>
 
-      {SKILL_GROUPS.map((g) => (
-        <SkillGroup key={g.label} label={g.label} services={g.services} />
-      ))}
-    </div>
-  )
-}
+      <Band heading="Containers / Orchestration" accent="var(--c-emerald)" alt compact>
+        <SkillCloud services={CONTAINERS} basePath="/icons/tools" accent="var(--c-emerald)" />
+      </Band>
 
-function CertificationsMilestone() {
-  return (
-    <div>
-      <SlideIn>
-        <h2 style={SECTION_HEADING_STYLE}>Certifications</h2>
-      </SlideIn>
-      <SlideIn delay={0.1}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--accent-base)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <Band heading="CI/CD & GitOps" accent="var(--c-coral)" alt={false} compact>
+        <SkillCloud services={CICD} basePath="/icons/tools" accent="var(--c-coral)" />
+      </Band>
+
+      <Band heading="Monitoring" accent="var(--c-steel)" alt compact>
+        <SkillCloud services={MONITORING} basePath="/icons/tools" accent="var(--c-steel)" />
+      </Band>
+
+      <Band heading="Certifications" accent="var(--c-forest)" alt={false}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
             <circle cx="12" cy="9" r="6" />
             <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
           </svg>
-          <p style={{ fontSize: 'clamp(1.2rem, 1rem + 0.6vw, 1.6rem)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
+          <p style={{ fontSize: 'var(--body-size)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
             AWS Certified Solutions Architect – Associate
           </p>
         </div>
-      </SlideIn>
-    </div>
-  )
-}
-
-export default function Timeline() {
-  return (
-    <section style={{ marginBottom: '1rem' }}>
-      <Milestone>
-        <ContactMilestone />
-      </Milestone>
-      <Milestone>
-        <ProjectsMilestone />
-      </Milestone>
-      <Milestone>
-        <SkillsMilestone />
-      </Milestone>
-      <Milestone showConnector={false}>
-        <CertificationsMilestone />
-      </Milestone>
-    </section>
+      </Band>
+    </>
   )
 }

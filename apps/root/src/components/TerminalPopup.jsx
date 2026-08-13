@@ -60,26 +60,31 @@ export default function TerminalPopup() {
       {/* Floating trigger — fixed position, bottom-right, follows scroll, static icon */}
       <button
         onClick={() => setOpen(true)}
-        aria-label="Open terminal"
+        aria-label="Open terminal — ask me about Junhan"
         style={{
           position: 'fixed',
           bottom: '24px',
           right: '24px',
-          width: '52px',
-          height: '52px',
-          borderRadius: '14px',
+          height: '60px',
+          padding: '0 22px',
+          borderRadius: '18px',
           background: 'var(--accent-base)',
           color: 'white',
           border: 'none',
           fontFamily: 'var(--font-mono)',
-          fontSize: '18px',
+          fontSize: '0.9rem',
+          fontWeight: 600,
           cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(37,52,73,0.25)',
-          display: open ? 'none' : 'block',
+          boxShadow: '0 4px 14px rgba(37,52,73,0.32)',
+          display: open ? 'none' : 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          whiteSpace: 'nowrap',
           zIndex: 1000,
         }}
       >
-        &gt;_
+        <span style={{ fontSize: '1.15rem' }}>&gt;_</span>
+        Ask Me about JunHan
       </button>
 
       {open && (

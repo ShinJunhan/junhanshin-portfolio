@@ -1,0 +1,60 @@
+:root {
+  /* Base indigo palette — from portfolio_color_palette.md / DESIGN.md */
+  --bg: #F5F7FA;
+  --text-primary: #253449;
+  --text-secondary: #8FA3BD;
+  --card-bg: #FFFFFF;
+  --border: #E2E7ED;
+  --accent-base: #3E5C89;
+
+  /* Fonts */
+  --font-header: 'Archivo', sans-serif;
+  --font-body: 'Manrope', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Spacing */
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-header);
+  font-weight: 800;
+  margin: 0;
+}
+
+a {
+  color: var(--accent-base);
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 6rem;
+}
+
+/* Visible keyboard focus — accessibility floor per frontend-design guidance */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent-base);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

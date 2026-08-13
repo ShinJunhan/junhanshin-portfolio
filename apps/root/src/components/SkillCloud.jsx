@@ -1,35 +1,46 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// The cloud silhouette is drawn as overlapping circles plus a rounded body
-// sharing one fill, so it merges into a single soft shape that scales with
-// the viewBox instead of being pinned to fixed pixel coordinates.
-const VB = { w: 260, h: 150 }
+// Mostly a circle, with three soft bumps riding the top edge — enough
+// cloud to read as one without losing the roundness.
+const VB = { w: 200, h: 180 }
+const CX = 100
+const CY = 104
 
-// Icons sit in tidy centered rows rather than scattered rings — same
-// alignment discipline as an app grid, just inside a cloud outline.
+// Honeycomb packing: rows are offset from each other and spaced by
+// spacing * sin(60deg), so each icon nests into the gap of the row above.
 const ROW_PLANS = {
-  1: [1], 2: [2], 3: [3], 4: [4], 5: [5],
-  6: [3, 3], 7: [4, 3], 8: [4, 4], 9: [5, 4], 10: [5, 5],
+  1: [1], 2: [2], 3: [2, 1], 4: [2, 2], 5: [2, 3],
+  6: [3, 3], 7: [3, 4], 8: [4, 4], 9: [3, 3, 3], 10: [3, 4, 3],
 }
+const ROW_PITCH = 0.866 // sin(60deg)
 
-// Small groups get proportionally larger tiles so a 2-icon cloud doesn't
-// read as mostly empty space.
-function iconUnitsFor(count) {
-  if (count <= 3) return 42
-  if (count <= 6) return 36
-  return 30
+// Smaller groups get proportionally larger tiles so a 2-icon cloud does
+// not read as mostly empty space.
+function metricsFor(count) {
+  if (count <= 2) return { units: 46, spacing: 54 }
+  if (count <= 4) return { units: 40, spacing: 48 }
+  if (count <= 6) return { units: 32, spacing: 38 }
+  return { units: 26, spacing: 34 }
 }
 
 function layoutFor(count) {
-  const plan = ROW_PLANS[count] || [5, 5]
-  const rowYs = plan.length === 1 ? [80] : [60, 98]
-  const units = iconUnitsFor(count)
+  const plan = ROW_PLANS[count] || [3, 4, 3]
+  const { spacing } = metricsFor(count)
+  const dy = spacing * ROW_PITCH
+  // Rows of differing length already stagger from being centred; rows of
+  // equal length need a nudge to avoid stacking into a plain grid.
+  const uniform = plan.every((n) => n === plan[0])
+  const top = CY - (dy * (plan.length - 1)) / 2
+
   const spots = []
-  plan.forEach((n, rowIdx) => {
-    const spacing = units + (n >= 5 ? 6 : 8)
+  plan.forEach((n, row) => {
+    const nudge = uniform && plan.length > 1 ? (row % 2 ? spacing / 4 : -spacing / 4) : 0
     for (let i = 0; i < n; i++) {
-      spots.push({ x: 130 + (i - (n - 1) / 2) * spacing, y: rowYs[rowIdx] })
+      spots.push({
+        x: CX + nudge + (i - (n - 1) / 2) * spacing,
+        y: top + row * dy,
+      })
     }
   })
   return spots
@@ -240,7 +251,7 @@ function ServiceIcon({ slug, glyph, basePath }) {
 // (the nested motion.div): framer-motion synthesizes `transform` from
 // animated motion values and would otherwise overwrite the centering
 // translate set on the same element.
-function CloudIcon({ service, basePath, spot, accent, units }) {
+function CloudIcon({ service, basePath, spot, units }) {
   const [hovered, setHovered] = useState(false)
 
   return (
@@ -271,13 +282,13 @@ function CloudIcon({ service, basePath, spot, accent, units }) {
           height: '100%',
           // Squircle — the iOS/watchOS app-icon shape.
           borderRadius: '30%',
-          background: 'var(--terminal-bg-soft)',
-          border: `1px solid ${hovered ? accent : 'var(--terminal-border)'}`,
-          color: hovered ? accent : 'var(--terminal-ink)',
+          background: 'var(--cloud-tile)',
+          border: `1px solid ${hovered ? 'var(--c-indigo)' : 'var(--cloud-border)'}`,
+          color: 'var(--c-indigo)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 2px 6px rgba(0,0,0,0.35)',
+          boxShadow: '0 1px 4px rgba(31,46,68,0.16)',
         }}
       >
         <div style={{ width: '56%', height: '56%' }}>
@@ -296,9 +307,8 @@ function CloudIcon({ service, basePath, spot, accent, units }) {
                 left: '50%',
                 transform: 'translateX(-50%)',
                 whiteSpace: 'nowrap',
-                background: 'var(--terminal-bg)',
-                border: `1px solid ${accent}`,
-                color: accent,
+                background: 'var(--ink)',
+                color: 'var(--bg)',
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.7rem',
                 fontWeight: 600,
@@ -317,18 +327,16 @@ function CloudIcon({ service, basePath, spot, accent, units }) {
   )
 }
 
-export default function SkillCloud({ services, basePath, accent }) {
+export default function SkillCloud({ services, basePath }) {
   const spots = layoutFor(services.length)
-  const units = iconUnitsFor(services.length)
+  const { units } = metricsFor(services.length)
 
   return (
     <div
       style={{
         position: 'relative',
         width: '100%',
-        maxWidth: 'clamp(240px, 30vw, 360px)',
         aspectRatio: `${VB.w} / ${VB.h}`,
-        marginLeft: 'auto',
       }}
     >
       <svg
@@ -336,23 +344,21 @@ export default function SkillCloud({ services, basePath, accent }) {
         aria-hidden="true"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       >
-        {/* Drawn twice: once stroked to give the whole silhouette an outline,
-            then again slightly inset and unstroked to erase the internal
-            seams where the pieces overlap — so it reads as one soft cloud
-            rather than a pile of circles. */}
-        <g fill="var(--terminal-bg)" stroke="var(--terminal-border)" strokeWidth="1.5">
-          <circle cx="85" cy="60" r="40" />
-          <circle cx="150" cy="54" r="44" />
-          <circle cx="200" cy="78" r="36" />
-          <circle cx="58" cy="88" r="38" />
-          <rect x="46" y="76" width="174" height="54" rx="26" />
+        {/* Drawn twice: once stroked to outline the whole silhouette, then
+            again a hair inset and unstroked to erase the seams where the
+            pieces overlap — so it reads as one soft shape, not a pile of
+            circles. */}
+        <g fill="var(--cloud-bg)" stroke="var(--cloud-border)" strokeWidth="1.5">
+          <circle cx="62" cy="56" r="30" />
+          <circle cx="104" cy="42" r="36" />
+          <circle cx="144" cy="64" r="27" />
+          <circle cx={CX} cy={CY} r="70" />
         </g>
-        <g fill="var(--terminal-bg)">
-          <circle cx="85" cy="60" r="39" />
-          <circle cx="150" cy="54" r="43" />
-          <circle cx="200" cy="78" r="35" />
-          <circle cx="58" cy="88" r="37" />
-          <rect x="47" y="77" width="172" height="52" rx="25" />
+        <g fill="var(--cloud-bg)">
+          <circle cx="62" cy="56" r="29" />
+          <circle cx="104" cy="42" r="35" />
+          <circle cx="144" cy="64" r="26" />
+          <circle cx={CX} cy={CY} r="69" />
         </g>
       </svg>
 
@@ -362,7 +368,6 @@ export default function SkillCloud({ services, basePath, accent }) {
           service={s}
           basePath={basePath}
           spot={spots[i]}
-          accent={accent}
           units={units}
         />
       ))}

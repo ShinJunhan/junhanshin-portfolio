@@ -189,7 +189,7 @@ export default function Hero({ onComplete }) {
     <section
       className="snap-section"
       style={{
-        minHeight: '100vh',
+        minHeight: '88vh',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -215,7 +215,7 @@ export default function Hero({ onComplete }) {
                 opacity: { duration: FADE_DURATION, ease: 'easeOut' },
               }}
               style={{
-                fontSize: 'clamp(1.4rem, 0.95rem + 2.1vw, 2.5rem)',
+                fontSize: 'clamp(1.6rem, 1.05rem + 2.45vw, 2.9rem)',
                 lineHeight: 1.6,
                 letterSpacing: '0.01em',
                 fontWeight: 700,
@@ -242,7 +242,7 @@ export default function Hero({ onComplete }) {
               ))}
             </motion.h1>
           ) : (
-            <Greeting fontSize="clamp(1.6rem, 1.05rem + 2.3vw, 2.75rem)" />
+            <Greeting fontSize="clamp(1.85rem, 1.2rem + 2.7vw, 3.3rem)" />
           )}
         </AnimatePresence>
       </motion.div>

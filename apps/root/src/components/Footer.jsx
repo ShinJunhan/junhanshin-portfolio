@@ -2,8 +2,8 @@ function IconBadge({ children }) {
   return (
     <span
       style={{
-        width: '34px',
-        height: '34px',
+        width: '40px',
+        height: '40px',
         borderRadius: '30%',
         border: '1px solid var(--border)',
         background: 'var(--card-bg)',
@@ -13,7 +13,7 @@ function IconBadge({ children }) {
         justifyContent: 'center',
         flexShrink: 0,
         fontFamily: 'var(--font-header)',
-        fontSize: '0.7rem',
+        fontSize: '0.8rem',
         fontWeight: 800,
       }}
     >
@@ -23,8 +23,8 @@ function IconBadge({ children }) {
 }
 
 const ICON_PROPS = {
-  width: 17,
-  height: 17,
+  width: 19,
+  height: 19,
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
@@ -81,9 +81,9 @@ export default function Footer() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '0.6rem',
+            gap: '0.65rem',
             color: 'var(--text-secondary)',
-            fontSize: '0.85rem',
+            fontSize: 'clamp(0.95rem, 0.9rem + 0.15vw, 1.05rem)',
             textDecoration: 'none',
           }}
         >

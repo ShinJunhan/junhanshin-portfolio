@@ -25,8 +25,15 @@
   --gutter: clamp(1.5rem, 6vw, 4rem);
 
   /* Shared big-section-heading size — "About Me", "Projects", "Skills",
-     and "Certifications" all render at this same scale. */
-  --h1-size: clamp(2.4rem, 1.5rem + 3.6vw, 4rem);
+     and "Certifications" all render at this same scale. Scales up
+     noticeably further on wide/desktop viewports (apple.com-sized). */
+  --h1-size: clamp(2.6rem, 1.3rem + 4.6vw, 4.75rem);
+  /* Skill category names (Cloud (AWS), IaC, ...) — one step below the
+     section headings. */
+  --h2-size: clamp(2.1rem, 1.2rem + 3vw, 3.25rem);
+  /* General body copy (contact rows, descriptions) — noticeably larger
+     on desktop than a typical 16px default. */
+  --body-size: clamp(1.15rem, 1rem + 0.5vw, 1.5rem);
   /* Translucent accent wash behind emphasized words (skill category
      names) — same family as the hero headline's highlight sweeps. */
   --accent-highlight: rgba(43, 155, 255, 0.22);

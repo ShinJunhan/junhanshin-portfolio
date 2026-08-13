@@ -1,17 +1,32 @@
 export default function Bio() {
   return (
-    <p style={{
-      fontSize: '1rem',
-      lineHeight: 1.6,
-      color: 'var(--text-primary)',
-      marginBottom: '2rem',
-    }}>
-      I'm transitioning into cloud engineering after leading a government-funded
-      workforce program — managing budgets, vendor partnerships, and end-to-end
-      program delivery. That same ownership now shows up in infrastructure: I've
-      led Terraform-based deployments, DevSecOps pipelines, and Kubernetes-based
-      autoscaling systems through a 6-month cloud infrastructure bootcamp. Fully
-      authorized to work in the United States.
-    </p>
+    <h2
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontFamily: 'var(--font-header)',
+        fontSize: '1.15rem',
+        fontWeight: 800,
+        color: 'var(--accent-base)',
+        marginBottom: '1.25rem',
+      }}
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" />
+      </svg>
+      About Me
+    </h2>
   )
 }

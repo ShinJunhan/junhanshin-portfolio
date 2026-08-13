@@ -8,12 +8,12 @@ const LAYOUT_DURATION = 0.6   // seconds, the "push up" reflow animation
 const HIGHLIGHT_DELAY_AFTER_MOUNT = 0.75 // seconds after a line mounts, before its own highlight sweeps
 const HIGHLIGHT_DURATION = 0.35
 
-const PLAIN_TEXT_STYLE = { color: '#3A4B63', fontWeight: 600 }
+const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 500 }
 
 function Highlight({ children, color, show }) {
   return (
-    <span style={{ position: 'relative', display: 'inline-block', fontWeight: 800 }}>
-      <span style={{ position: 'relative', zIndex: 1, color: 'var(--text-primary)' }}>
+    <span style={{ position: 'relative', display: 'inline-block', fontWeight: 700 }}>
+      <span style={{ position: 'relative', zIndex: 1, color: 'var(--ink)' }}>
         {children}
       </span>
       <motion.span
@@ -103,48 +103,63 @@ export default function Hero({ onComplete }) {
     <section
       style={{
         minHeight: '100vh',
+        width: '100%',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
+        alignItems: 'center',
         position: 'relative',
+        padding: '0 clamp(1.5rem, 6vw, 4rem)',
       }}
     >
-      <motion.h1
-        layout
-        style={{ fontSize: '1.9rem', lineHeight: 1.4, marginBottom: '0.5rem', display: 'flex', flexDirection: 'column' }}
-        transition={{ layout: { duration: LAYOUT_DURATION, ease: 'easeOut' } }}
-      >
-        {lines.slice(0, revealedCount).map((line, i) => (
-          <motion.span
-            key={i}
-            layout
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{
-              opacity: { duration: FADE_DURATION, ease: 'easeOut' },
-              layout: { duration: LAYOUT_DURATION, ease: 'easeOut' },
-            }}
-            style={{ display: 'block' }}
-          >
-            {line}
-          </motion.span>
-        ))}
-      </motion.h1>
+      <div style={{ maxWidth: '900px', width: '100%' }}>
+        <motion.h1
+          layout
+          style={{
+            fontSize: 'clamp(1.75rem, 1.1rem + 3vw, 3.25rem)',
+            lineHeight: 1.6,
+            letterSpacing: '0.01em',
+            fontWeight: 700,
+            marginBottom: '1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.35em',
+          }}
+          transition={{ layout: { duration: LAYOUT_DURATION, ease: 'easeOut' } }}
+        >
+          {lines.slice(0, revealedCount).map((line, i) => (
+            <motion.span
+              key={i}
+              layout
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{
+                opacity: { duration: FADE_DURATION, ease: 'easeOut' },
+                layout: { duration: LAYOUT_DURATION, ease: 'easeOut' },
+              }}
+              style={{ display: 'block' }}
+            >
+              {line}
+            </motion.span>
+          ))}
+        </motion.h1>
 
-      <motion.p
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: showSubtitle ? 1 : 0, y: showSubtitle ? 0 : 8 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        style={{
-          fontFamily: 'var(--font-body)',
-          fontWeight: 500,
-          fontSize: '1.15rem',
-          color: 'var(--text-primary)',
-          margin: 0,
-        }}
-      >
-        Junhan Shin — Methuen, MA
-      </motion.p>
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: showSubtitle ? 1 : 0, y: showSubtitle ? 0 : 8 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontWeight: 500,
+            fontSize: 'clamp(1rem, 0.85rem + 0.5vw, 1.35rem)',
+            letterSpacing: '0.01em',
+            color: 'var(--ink)',
+            margin: 0,
+          }}
+        >
+          Junhan Shin — Methuen, MA
+        </motion.p>
+      </div>
 
       <motion.div
         initial={{ opacity: 0 }}

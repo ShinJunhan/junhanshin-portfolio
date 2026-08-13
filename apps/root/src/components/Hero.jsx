@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion, useReducedMotion } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 
 const START_DELAY = 500       // before sentence 1 appears
 const HOLD = 1300             // each sentence's alone-time before the next mounts
@@ -7,9 +7,17 @@ const FADE_DURATION = 0.6     // seconds, each sentence's own cross-fade in
 const LAYOUT_DURATION = 0.6   // seconds, the "push up" reflow animation
 const HIGHLIGHT_DELAY_AFTER_MOUNT = 0.75 // seconds after a line mounts, before its own highlight sweeps
 const HIGHLIGHT_DURATION = 0.35
-const NUDGE_DELAY = 1400      // ms after the scroll hint appears before the auto-nudge scroll fires
+
+const GREETING_DELAY = 1500       // ms after the headline finishes sweeping, before it fades into the greeting
+const GREETING_FADE_DURATION = 0.6 // seconds, headline <-> greeting cross-fade
+const NAME_COLOR_DELAY = 0.5      // seconds after the greeting mounts, before "Junhan" turns indigo
+const NAME_COLOR_DURATION = 0.7
+const POST_GREETING_HOLD = 500    // ms after the name color settles, before the hero reports "done"
+const NUDGE_DELAY = 1400          // ms after the scroll hint appears before the auto-nudge scroll fires
 
 const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 500 }
+const INDIGO_POP = '#3355FF'
+const INK_FALLBACK = '#1F2E44'
 
 // Solid versions of each sentence's highlight hue, used to color the
 // number that leads into that sentence's occupation.
@@ -47,10 +55,56 @@ function Highlight({ children, color, show, glow }) {
   )
 }
 
+// "Hi, I'm Junhan." — resolves the current theme's ink color at mount so the
+// before/after of the animation is a real, interpolatable color pair rather
+// than an unresolved CSS variable, then sweeps "Junhan" to indigo.
+function Greeting({ fontSize }) {
+  const reduceMotion = useReducedMotion()
+  const [nameColor, setNameColor] = useState(INK_FALLBACK)
+
+  useEffect(() => {
+    const startColor = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || INK_FALLBACK
+    setNameColor(startColor)
+    if (reduceMotion) {
+      setNameColor(INDIGO_POP)
+      return
+    }
+    const t = setTimeout(() => setNameColor(INDIGO_POP), NAME_COLOR_DELAY * 1000)
+    return () => clearTimeout(t)
+  }, [reduceMotion])
+
+  return (
+    <motion.h1
+      key="greeting"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: GREETING_FADE_DURATION, ease: 'easeOut' }}
+      style={{
+        fontSize,
+        lineHeight: 1.5,
+        letterSpacing: '0.01em',
+        fontWeight: 700,
+        margin: 0,
+      }}
+    >
+      <span style={PLAIN_TEXT_STYLE}>Hi, I'm </span>
+      <motion.span
+        style={{ fontWeight: 700 }}
+        animate={{ color: nameColor }}
+        transition={{ duration: NAME_COLOR_DURATION, ease: 'easeOut' }}
+      >
+        Junhan
+      </motion.span>
+      <span style={PLAIN_TEXT_STYLE}>.</span>
+    </motion.h1>
+  )
+}
+
 export default function Hero({ onComplete }) {
   const reduceMotion = useReducedMotion()
   const [revealedCount, setRevealedCount] = useState(reduceMotion ? 3 : 0)
-  const [showSubtitle, setShowSubtitle] = useState(reduceMotion)
+  const [showGreeting, setShowGreeting] = useState(reduceMotion)
   const [showScrollHint, setShowScrollHint] = useState(reduceMotion)
   const [hasScrolled, setHasScrolled] = useState(false)
 
@@ -73,13 +127,15 @@ export default function Hero({ onComplete }) {
     timers.push(setTimeout(() => setRevealedCount(2), START_DELAY + HOLD))
     timers.push(setTimeout(() => setRevealedCount(3), START_DELAY + HOLD * 2))
 
-    const afterSentence3 = START_DELAY + HOLD * 2 + FADE_DURATION * 1000
-    timers.push(setTimeout(() => setShowSubtitle(true), afterSentence3 + 150))
-
-    // Line 3's own highlight fires HIGHLIGHT_DELAY_AFTER_MOUNT after it mounts —
-    // report "done" once that last sweep has actually finished.
+    // The headline's own highlight sweep finishes this long after line 3 mounts.
     const line3MountTime = START_DELAY + HOLD * 2
-    const doneAt = line3MountTime + (HIGHLIGHT_DELAY_AFTER_MOUNT + HIGHLIGHT_DURATION) * 1000
+    const headlineSweepDone = line3MountTime + (HIGHLIGHT_DELAY_AFTER_MOUNT + HIGHLIGHT_DURATION) * 1000
+
+    timers.push(setTimeout(() => setShowGreeting(true), headlineSweepDone + GREETING_DELAY))
+
+    const greetingMountTime = headlineSweepDone + GREETING_DELAY
+    const nameColorDone = greetingMountTime + (NAME_COLOR_DELAY + NAME_COLOR_DURATION) * 1000
+    const doneAt = nameColorDone + POST_GREETING_HOLD
     timers.push(setTimeout(() => {
       onComplete?.()
       setShowScrollHint(true)
@@ -89,15 +145,16 @@ export default function Hero({ onComplete }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-nudge: once the headline has finished its sequence, gently scroll
-  // the page down on the viewer's behalf instead of leaving the hero
-  // "stuck" at full viewport height. It only fires if they haven't already
-  // started scrolling themselves, and respects reduced-motion preference.
+  // Auto-nudge: once the hero has finished its sequence, gently scroll the
+  // page down to the start of the next section on the viewer's behalf,
+  // instead of leaving the hero "stuck" at full viewport height. It only
+  // fires if they haven't already started scrolling themselves, and
+  // respects reduced-motion preference.
   useEffect(() => {
     if (reduceMotion || !showScrollHint || hasScrolled) return
     const t = setTimeout(() => {
       if (window.scrollY < 40) {
-        window.scrollBy({ top: window.innerHeight * 0.55, behavior: 'smooth' })
+        document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     }, NUDGE_DELAY)
     return () => clearTimeout(t)
@@ -139,54 +196,53 @@ export default function Hero({ onComplete }) {
         padding: '0 var(--gutter)',
       }}
     >
-      <div style={{ maxWidth: 'var(--content-width)', width: '100%' }}>
-        <motion.h1
-          layout
-          style={{
-            fontSize: 'clamp(1.4rem, 0.95rem + 2.1vw, 2.5rem)',
-            lineHeight: 1.6,
-            letterSpacing: '0.01em',
-            fontWeight: 700,
-            marginBottom: '1.25rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.35em',
-          }}
-          transition={{ layout: { duration: LAYOUT_DURATION, ease: 'easeOut' } }}
-        >
-          {lines.slice(0, revealedCount).map((line, i) => (
-            <motion.span
-              key={i}
+      <motion.div
+        layout
+        transition={{ layout: { duration: LAYOUT_DURATION, ease: 'easeOut' } }}
+        style={{ maxWidth: 'var(--content-width)', width: '100%' }}
+      >
+        <AnimatePresence mode="wait">
+          {!showGreeting ? (
+            <motion.h1
+              key="headline"
               layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{
-                opacity: { duration: FADE_DURATION, ease: 'easeOut' },
                 layout: { duration: LAYOUT_DURATION, ease: 'easeOut' },
+                opacity: { duration: FADE_DURATION, ease: 'easeOut' },
               }}
-              style={{ display: 'block' }}
+              style={{
+                fontSize: 'clamp(1.4rem, 0.95rem + 2.1vw, 2.5rem)',
+                lineHeight: 1.6,
+                letterSpacing: '0.01em',
+                fontWeight: 700,
+                margin: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.35em',
+              }}
             >
-              {line}
-            </motion.span>
-          ))}
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: showSubtitle ? 1 : 0, y: showSubtitle ? 0 : 8 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontWeight: 500,
-            fontSize: 'clamp(1rem, 0.85rem + 0.5vw, 1.35rem)',
-            letterSpacing: '0.01em',
-            color: 'var(--ink)',
-            margin: 0,
-          }}
-        >
-          Junhan Shin — Methuen, MA
-        </motion.p>
-      </div>
+              {lines.slice(0, revealedCount).map((line, i) => (
+                <motion.span
+                  key={i}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{
+                    opacity: { duration: FADE_DURATION, ease: 'easeOut' },
+                    layout: { duration: LAYOUT_DURATION, ease: 'easeOut' },
+                  }}
+                  style={{ display: 'block' }}
+                >
+                  {line}
+                </motion.span>
+              ))}
+            </motion.h1>
+          ) : (
+            <Greeting fontSize="clamp(1.6rem, 1.05rem + 2.3vw, 2.75rem)" />
+          )}
+        </AnimatePresence>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0 }}

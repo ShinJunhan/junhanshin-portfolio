@@ -23,6 +23,20 @@
      against these same two values, at every viewport width. */
   --content-width: 880px;
   --gutter: clamp(1.5rem, 6vw, 4rem);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #10151F;
+  --text-primary: #E4E9F2;
+  --text-secondary: #92A3BE;
+  --card-bg: #182131;
+  --border: #2B3548;
+  --accent-base: #5C7CFA;
+  --ink: #F1F5FC;
+
+  color-scheme: dark;
 }
 
 * {
@@ -35,6 +49,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 h1, h2, h3 {

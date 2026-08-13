@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import SkillCloud from './SkillCloud.jsx'
+import SkillCluster from './SkillCluster.jsx'
 import { BandReveal } from './bandReveal.js'
 
 const GROUPS = [
@@ -66,7 +66,7 @@ const GROUPS = [
   },
 ]
 
-export default function SkillsCarousel({ baseDelay = 0 }) {
+export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
   const reduceMotion = useReducedMotion()
   // Shares the band's single trigger so the cards never start filling in
   // while the "Skills" heading is still sliding across them.
@@ -74,7 +74,7 @@ export default function SkillsCarousel({ baseDelay = 0 }) {
 
   return (
     <motion.div
-      className="carousel"
+      className={`carousel ${className}`.trim()}
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
       variants={{
@@ -101,7 +101,7 @@ export default function SkillsCarousel({ baseDelay = 0 }) {
             },
           }}
         >
-          <SkillCloud services={g.services} basePath={g.basePath} />
+          <SkillCluster services={g.services} basePath={g.basePath} />
           <h3 className="skill-card__title" style={{ color: g.accent }}>
             {g.label}
           </h3>

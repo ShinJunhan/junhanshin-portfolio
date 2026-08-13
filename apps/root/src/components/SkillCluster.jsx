@@ -1,49 +1,31 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Mostly a circle, with three soft bumps riding the top edge — enough
-// cloud to read as one without losing the roundness.
-const VB = { w: 200, h: 180 }
-const CX = 100
-const CY = 104
-
-// Honeycomb packing: rows are offset from each other and spaced by
-// spacing * sin(60deg), so each icon nests into the gap of the row above.
+// Icons form the shape themselves — no container drawn behind them. Two
+// icons sit side by side; three make a triangle; larger sets fill out
+// toward a hexagonal/circular blob. Plans are portrait-leaning so the
+// cluster fills a tall card rather than sitting as a wide, short band.
 const ROW_PLANS = {
-  1: [1], 2: [2], 3: [2, 1], 4: [2, 2], 5: [2, 3],
-  6: [3, 3], 7: [3, 4], 8: [4, 4], 9: [3, 3, 3], 10: [3, 4, 3],
+  1: [1],
+  2: [2],
+  3: [1, 2],
+  4: [1, 2, 1],
+  5: [2, 3],
+  6: [1, 2, 2, 1],
+  7: [2, 3, 2],
+  8: [1, 3, 3, 1],
+  9: [1, 2, 3, 2, 1],
+  10: [2, 3, 3, 2],
 }
-const ROW_PITCH = 0.866 // sin(60deg)
+const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
+const ICON_FRAC = 0.88  // tile size as a share of the centre-to-centre step
 
-// Smaller groups get proportionally larger tiles so a 2-icon cloud does
-// not read as mostly empty space.
-function metricsFor(count) {
-  if (count <= 2) return { units: 46, spacing: 54 }
-  if (count <= 4) return { units: 40, spacing: 48 }
-  if (count <= 6) return { units: 32, spacing: 38 }
-  return { units: 26, spacing: 34 }
-}
-
-function layoutFor(count) {
-  const plan = ROW_PLANS[count] || [3, 4, 3]
-  const { spacing } = metricsFor(count)
-  const dy = spacing * ROW_PITCH
-  // Rows of differing length already stagger from being centred; rows of
-  // equal length need a nudge to avoid stacking into a plain grid.
-  const uniform = plan.every((n) => n === plan[0])
-  const top = CY - (dy * (plan.length - 1)) / 2
-
-  const spots = []
-  plan.forEach((n, row) => {
-    const nudge = uniform && plan.length > 1 ? (row % 2 ? spacing / 4 : -spacing / 4) : 0
-    for (let i = 0; i < n; i++) {
-      spots.push({
-        x: CX + nudge + (i - (n - 1) / 2) * spacing,
-        y: top + row * dy,
-      })
-    }
-  })
-  return spots
+// Very small sets would otherwise blow up to fill the whole card, ending up
+// larger than the icons on a busy card; these hold them near the same size.
+function widthCapFor(count) {
+  if (count <= 2) return 0.8
+  if (count <= 4) return 0.86
+  return 1
 }
 
 function Glyph({ type }) {
@@ -251,27 +233,17 @@ function ServiceIcon({ slug, glyph, basePath }) {
 // (the nested motion.div): framer-motion synthesizes `transform` from
 // animated motion values and would otherwise overwrite the centering
 // translate set on the same element.
-function CloudIcon({ service, basePath, spot, units }) {
+function ClusterIcon({ service, basePath, left, top, size }) {
   const [hovered, setHovered] = useState(false)
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: `${(spot.x / VB.w) * 100}%`,
-        top: `${(spot.y / VB.h) * 100}%`,
-        transform: 'translate(-50%, -50%)',
-        width: `${(units / VB.w) * 100}%`,
-        height: `${(units / VB.h) * 100}%`,
-        zIndex: hovered ? 5 : 1,
-      }}
-    >
+    <div style={{ position: 'absolute', left, top, width: size, height: size, zIndex: hovered ? 5 : 1 }}>
       <motion.div
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
         onFocus={() => setHovered(true)}
         onBlur={() => setHovered(false)}
-        animate={{ scale: hovered ? 1.28 : 1 }}
+        animate={{ scale: hovered ? 1.16 : 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 18 }}
         tabIndex={0}
         role="img"
@@ -281,14 +253,14 @@ function CloudIcon({ service, basePath, spot, units }) {
           width: '100%',
           height: '100%',
           // Squircle — the iOS/watchOS app-icon shape.
-          borderRadius: '30%',
-          background: 'var(--cloud-tile)',
+          borderRadius: '28%',
+          background: 'var(--cloud-bg)',
           border: `1px solid ${hovered ? 'var(--c-indigo)' : 'var(--cloud-border)'}`,
           color: 'var(--c-indigo)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 1px 4px rgba(31,46,68,0.16)',
+          boxShadow: '0 1px 4px rgba(31,46,68,0.14)',
         }}
       >
         <div style={{ width: '56%', height: '56%' }}>
@@ -303,7 +275,7 @@ function CloudIcon({ service, basePath, spot, units }) {
               transition={{ duration: 0.15 }}
               style={{
                 position: 'absolute',
-                bottom: '118%',
+                bottom: '112%',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 whiteSpace: 'nowrap',
@@ -327,50 +299,53 @@ function CloudIcon({ service, basePath, spot, units }) {
   )
 }
 
-export default function SkillCloud({ services, basePath }) {
-  const spots = layoutFor(services.length)
-  const { units } = metricsFor(services.length)
+// Sized from the measured box rather than a fixed viewBox: the step is
+// whichever of width or height binds first, so the cluster always grows to
+// fill the card without spilling out of it.
+export default function SkillCluster({ services, basePath }) {
+  const ref = useRef(null)
+  const [box, setBox] = useState({ w: 0, h: 0 })
+
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      setBox({ w: width, h: height })
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  const plan = ROW_PLANS[services.length] || ROW_PLANS[10]
+  const unitsWide = Math.max(...plan)
+  const unitsTall = (plan.length - 1) * ROW_PITCH + 1
+  const step = Math.min((box.w * widthCapFor(services.length)) / unitsWide, box.h / unitsTall)
+  const size = step * ICON_FRAC
+
+  const spots = []
+  plan.forEach((n, row) => {
+    for (let i = 0; i < n; i++) {
+      spots.push({
+        cx: box.w / 2 + (i - (n - 1) / 2) * step,
+        cy: box.h / 2 + (row - (plan.length - 1) / 2) * step * ROW_PITCH,
+      })
+    }
+  })
 
   return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        aspectRatio: `${VB.w} / ${VB.h}`,
-      }}
-    >
-      <svg
-        viewBox={`0 0 ${VB.w} ${VB.h}`}
-        aria-hidden="true"
-        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-      >
-        {/* Drawn twice: once stroked to outline the whole silhouette, then
-            again a hair inset and unstroked to erase the seams where the
-            pieces overlap — so it reads as one soft shape, not a pile of
-            circles. */}
-        <g fill="var(--cloud-bg)" stroke="var(--cloud-border)" strokeWidth="1.5">
-          <circle cx="62" cy="56" r="30" />
-          <circle cx="104" cy="42" r="36" />
-          <circle cx="144" cy="64" r="27" />
-          <circle cx={CX} cy={CY} r="70" />
-        </g>
-        <g fill="var(--cloud-bg)">
-          <circle cx="62" cy="56" r="29" />
-          <circle cx="104" cy="42" r="35" />
-          <circle cx="144" cy="64" r="26" />
-          <circle cx={CX} cy={CY} r="69" />
-        </g>
-      </svg>
-
-      {services.map((s, i) => (
-        <CloudIcon
-          key={s.slug}
-          service={s}
-          basePath={basePath}
-          spot={spots[i]}
-          units={units}
-        />
-      ))}
+    <div ref={ref} className="cluster">
+      {step > 0 &&
+        services.map((s, i) => (
+          <ClusterIcon
+            key={s.slug}
+            service={s}
+            basePath={basePath}
+            left={spots[i].cx - size / 2}
+            top={spots[i].cy - size / 2}
+            size={size}
+          />
+        ))}
     </div>
   )
 }

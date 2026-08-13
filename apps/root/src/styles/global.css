@@ -24,6 +24,13 @@
   --content-width: 880px;
   --gutter: clamp(1.5rem, 6vw, 4rem);
 
+  /* Shared big-section-heading size — "About Me", "Projects", "Skills",
+     and "Certifications" all render at this same scale. */
+  --h1-size: clamp(2.4rem, 1.5rem + 3.6vw, 4rem);
+  /* Translucent accent wash behind emphasized words (skill category
+     names) — same family as the hero headline's highlight sweeps. */
+  --accent-highlight: rgba(43, 155, 255, 0.22);
+
   color-scheme: light;
 }
 
@@ -36,6 +43,7 @@
   /* Clean, unambiguous blue (not the purple-leaning indigo this replaced) */
   --accent-base: #3B82F6;
   --ink: #F1F5FC;
+  --accent-highlight: rgba(59, 130, 246, 0.3);
 
   color-scheme: dark;
 }

@@ -1,12 +1,21 @@
-import { motion } from 'framer-motion'
+import { useRef } from 'react'
+import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import AwsOrbit from './AwsOrbit.jsx'
 
-const LABEL_STYLE = {
-  fontSize: '0.85rem',
-  color: 'var(--text-secondary)',
-  fontFamily: 'var(--font-mono)',
-  marginBottom: '0.6rem',
-  fontWeight: 500,
+const SECTION_HEADING_STYLE = {
+  fontFamily: 'var(--font-header)',
+  fontWeight: 800,
+  fontSize: 'var(--h1-size)',
+  color: 'var(--accent-base)',
+  margin: '0 0 1.5rem',
+}
+
+const CATEGORY_LABEL_STYLE = {
+  fontFamily: 'var(--font-header)',
+  fontWeight: 800,
+  fontSize: 'clamp(1.8rem, 1.2rem + 2vw, 2.5rem)',
+  color: 'var(--accent-base)',
+  margin: 0,
 }
 
 const CONTACT_ITEMS = [
@@ -46,10 +55,40 @@ const OTHER_SKILL_GROUPS = [
   { label: 'Monitoring', items: ['Prometheus', 'Grafana', 'AlertManager'] },
 ]
 
+// A colored wash behind a word, matching the hero headline's highlight
+// language — sweeps in the first time it scrolls into view.
+function Highlight({ children }) {
+  const reduceMotion = useReducedMotion()
+  return (
+    <span style={{ position: 'relative', display: 'inline-block' }}>
+      <span style={{ position: 'relative', zIndex: 1 }}>{children}</span>
+      <motion.span
+        aria-hidden="true"
+        initial={{ scaleX: reduceMotion ? 1 : 0 }}
+        whileInView={{ scaleX: 1 }}
+        viewport={{ once: true, amount: 0.6 }}
+        transition={{ duration: 0.45, ease: 'easeOut', delay: reduceMotion ? 0 : 0.1 }}
+        style={{
+          position: 'absolute',
+          left: '-6px',
+          right: '-6px',
+          bottom: '2px',
+          height: '30%',
+          background: 'var(--accent-highlight)',
+          borderRadius: '4px',
+          transformOrigin: 'left',
+          zIndex: 0,
+        }}
+      />
+    </span>
+  )
+}
+
 function Dot() {
+  const reduceMotion = useReducedMotion()
   return (
     <motion.div
-      initial={{ scale: 0 }}
+      initial={{ scale: reduceMotion ? 1 : 0 }}
       whileInView={{ scale: 1 }}
       viewport={{ once: true, amount: 0.6 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -59,51 +98,84 @@ function Dot() {
         borderRadius: '50%',
         background: 'var(--card-bg)',
         border: '3px solid var(--accent-base)',
-        marginTop: '4px',
+        marginTop: '6px',
         flexShrink: 0,
       }}
     />
   )
 }
 
-// Each milestone's connecting line grows independently as it scrolls into
-// view — together they read as one line steadily extending down the page.
-function Milestone({ children, showLine = true }) {
+// The fill only grows while the connector is actually passing through the
+// viewport during a real scroll gesture — it's driven directly off scroll
+// position (useScroll), not an independent timed animation, so it never
+// "finishes connecting" on its own while the reader is sitting still.
+function Connector() {
+  const ref = useRef(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'end 0.55'] })
+  const fillHeight = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
+
   return (
-    <div style={{ display: 'flex', gap: '1.25rem' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '20px', flexShrink: 0 }}>
-        <Dot />
-        {showLine && (
-          <div style={{ flex: 1, width: '2px', background: 'var(--border)', marginTop: '4px', position: 'relative', overflow: 'hidden' }}>
-            <motion.div
-              initial={{ height: 0 }}
-              whileInView={{ height: '100%' }}
-              viewport={{ once: true, amount: 0.1 }}
-              transition={{ duration: 0.9, ease: 'easeInOut', delay: 0.15 }}
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'var(--accent-base)' }}
-            />
-          </div>
-        )}
-      </div>
-      <div style={{ flex: 1, paddingBottom: '3rem', minWidth: 0 }}>{children}</div>
+    <div
+      ref={ref}
+      style={{
+        flex: 1,
+        width: '2px',
+        minHeight: '110px',
+        background: 'var(--border)',
+        marginTop: '6px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <motion.div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: 'var(--accent-base)', height: fillHeight }} />
     </div>
   )
 }
 
+function Milestone({ children, showConnector = true }) {
+  return (
+    <div style={{ display: 'flex', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '20px', flexShrink: 0 }}>
+        <Dot />
+        {showConnector && <Connector />}
+      </div>
+      {/* Generous bottom padding keeps each "feature" its own moment as you
+          scroll, instead of the next one crowding in underneath it. */}
+      <div style={{ flex: 1, paddingBottom: '6rem', minWidth: 0 }}>{children}</div>
+    </div>
+  )
+}
+
+// Apple-style feature reveal: slides up and fades in as it enters view.
+function SlideIn({ children, delay = 0 }) {
+  const reduceMotion = useReducedMotion()
+  return (
+    <motion.div
+      initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 48 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.35 }}
+      transition={{ duration: 0.7, ease: 'easeOut', delay: reduceMotion ? 0 : delay }}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
 function ContactMilestone() {
+  const reduceMotion = useReducedMotion()
   return (
     <motion.div
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
-      variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.12 } } }}
+      variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.12 } } }}
     >
       {CONTACT_ITEMS.map((item) => (
         <motion.div
           key={item.text}
           variants={{
-            hidden: { opacity: 0, scale: 0.85, y: 10 },
-            visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+            hidden: { opacity: reduceMotion ? 1 : 0, scale: reduceMotion ? 1 : 0.85, y: reduceMotion ? 0 : 10 },
+            visible: { opacity: 1, scale: 1, y: 0, transition: { duration: reduceMotion ? 0 : 0.35, ease: 'easeOut' } },
           }}
           style={{
             display: 'flex',
@@ -125,59 +197,87 @@ function ContactMilestone() {
 function ProjectsMilestone() {
   return (
     <div>
-      <p style={LABEL_STYLE}>PROJECTS</p>
-      <motion.p
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.6 }}
-        transition={{ duration: 0.55, ease: 'easeOut' }}
-        style={{
+      <SlideIn>
+        <h2 style={SECTION_HEADING_STYLE}>Projects</h2>
+      </SlideIn>
+      <SlideIn delay={0.1}>
+        <p style={{
           fontFamily: 'var(--font-header)',
           fontWeight: 800,
           fontSize: 'clamp(3rem, 2rem + 4vw, 4.5rem)',
-          color: 'var(--accent-base)',
-          margin: '0.1rem 0 0.4rem',
+          color: 'var(--ink)',
+          margin: '0 0 0.4rem',
           lineHeight: 1,
-        }}
-      >
-        7
-      </motion.p>
-      <p style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0 }}>
-        completed cloud infrastructure projects (3 individual + 4 team)
-      </p>
+        }}>
+          7
+        </p>
+      </SlideIn>
+      <SlideIn delay={0.18}>
+        <p style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0 }}>
+          completed cloud infrastructure projects (3 individual + 4 team)
+        </p>
+      </SlideIn>
     </div>
+  )
+}
+
+function SkillGroup({ label, items }) {
+  return (
+    <SlideIn>
+      <div style={{ marginBottom: '2.5rem' }}>
+        <p style={CATEGORY_LABEL_STYLE}>
+          <Highlight>{label}</Highlight>
+        </p>
+        <p style={{ fontSize: '1.05rem', color: 'var(--text-primary)', margin: '0.6rem 0 0', lineHeight: 1.7 }}>
+          {items.join(' · ')}
+        </p>
+      </div>
+    </SlideIn>
   )
 }
 
 function SkillsMilestone() {
   return (
     <div>
-      <p style={LABEL_STYLE}>SKILLS</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', marginBottom: '1.75rem' }}>
-        <div>
-          <p style={{
-            fontFamily: 'var(--font-header)',
-            fontWeight: 800,
-            fontSize: 'clamp(1.5rem, 1.1rem + 1.6vw, 2.1rem)',
-            color: 'var(--ink)',
-            margin: 0,
-          }}>
-            Cloud (AWS)
+      <SlideIn>
+        <h2 style={SECTION_HEADING_STYLE}>Skills</h2>
+      </SlideIn>
+
+      <SlideIn delay={0.1}>
+        <div style={{ marginBottom: '2.5rem' }}>
+          <p style={CATEGORY_LABEL_STYLE}>
+            <Highlight>Cloud (AWS)</Highlight>
           </p>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.35rem 0 0' }}>
+          <div style={{ marginTop: '1rem' }}>
+            <AwsOrbit />
+          </div>
+        </div>
+      </SlideIn>
+
+      {OTHER_SKILL_GROUPS.map((g) => (
+        <SkillGroup key={g.label} label={g.label} items={g.items} />
+      ))}
+    </div>
+  )
+}
+
+function CertificationsMilestone() {
+  return (
+    <div>
+      <SlideIn>
+        <h2 style={SECTION_HEADING_STYLE}>Certifications</h2>
+      </SlideIn>
+      <SlideIn delay={0.1}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent-base)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <circle cx="12" cy="9" r="6" />
+            <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+          </svg>
+          <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
             AWS Certified Solutions Architect – Associate
           </p>
         </div>
-        <div style={{ flex: '1 1 320px' }}>
-          <AwsOrbit />
-        </div>
-      </div>
-      {OTHER_SKILL_GROUPS.map((g) => (
-        <div key={g.label} style={{ marginBottom: '0.6rem' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, marginRight: '8px' }}>{g.label}:</span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{g.items.join(' · ')}</span>
-        </div>
-      ))}
+      </SlideIn>
     </div>
   )
 }
@@ -191,8 +291,11 @@ export default function Timeline() {
       <Milestone>
         <ProjectsMilestone />
       </Milestone>
-      <Milestone showLine={false}>
+      <Milestone>
         <SkillsMilestone />
+      </Milestone>
+      <Milestone showConnector={false}>
+        <CertificationsMilestone />
       </Milestone>
     </section>
   )

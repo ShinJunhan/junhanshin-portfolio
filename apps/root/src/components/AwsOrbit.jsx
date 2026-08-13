@@ -1,7 +1,5 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const LONG_PRESS_MS = 500
 
 // Drop real AWS Architecture Icons here to replace these placeholders —
 // no code changes needed. Save each as public/icons/aws/<slug>.svg
@@ -125,52 +123,40 @@ function ServiceIcon({ slug, glyph }) {
   )
 }
 
-function OrbitIcon({ service, containerRef }) {
-  const [showLabel, setShowLabel] = useState(false)
-  const pressTimer = useRef(null)
-
-  function startPress() {
-    pressTimer.current = setTimeout(() => setShowLabel(true), LONG_PRESS_MS)
-  }
-  function endPress() {
-    clearTimeout(pressTimer.current)
-    setShowLabel(false)
-  }
+function OrbitIcon({ service }) {
+  const [hovered, setHovered] = useState(false)
 
   return (
     <motion.div
-      drag
-      dragConstraints={containerRef}
-      dragMomentum={false}
-      dragElastic={0.12}
-      whileTap={{ scale: 0.92 }}
-      onDragStart={() => {
-        clearTimeout(pressTimer.current)
-        setShowLabel(false)
-      }}
-      onPointerDown={startPress}
-      onPointerUp={endPress}
-      onPointerLeave={endPress}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      onFocus={() => setHovered(true)}
+      onBlur={() => setHovered(false)}
+      animate={{ scale: hovered ? 1.2 : 1 }}
+      transition={{ type: 'spring', stiffness: 320, damping: 20 }}
+      tabIndex={0}
+      role="img"
+      aria-label={service.label}
       style={{
         position: 'relative',
-        width: 56,
-        height: 56,
-        borderRadius: '50%',
+        width: 60,
+        height: 60,
+        // A squircle (rounded square) rather than a full circle or a
+        // sharp-cornered rectangle — the iOS/watchOS app-icon shape.
+        borderRadius: '30%',
         background: 'var(--bg)',
         border: '1px solid var(--border)',
         color: 'var(--accent-base)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        cursor: 'grab',
-        touchAction: 'none',
         boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
         flexShrink: 0,
       }}
     >
       <ServiceIcon slug={service.slug} glyph={service.glyph} />
       <AnimatePresence>
-        {showLabel && (
+        {hovered && (
           <motion.span
             initial={{ opacity: 0, y: 4, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -178,7 +164,7 @@ function OrbitIcon({ service, containerRef }) {
             transition={{ duration: 0.15 }}
             style={{
               position: 'absolute',
-              bottom: '115%',
+              bottom: '120%',
               left: '50%',
               transform: 'translateX(-50%)',
               whiteSpace: 'nowrap',
@@ -201,25 +187,20 @@ function OrbitIcon({ service, containerRef }) {
 }
 
 export default function AwsOrbit() {
-  const containerRef = useRef(null)
   return (
     <div
-      ref={containerRef}
       style={{
-        position: 'relative',
         display: 'flex',
         flexWrap: 'wrap',
-        gap: '14px',
+        gap: '16px',
         padding: '1.25rem',
         background: 'var(--card-bg)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius)',
-        minHeight: '180px',
-        alignContent: 'flex-start',
       }}
     >
       {SERVICES.map((s) => (
-        <OrbitIcon key={s.slug} service={s} containerRef={containerRef} />
+        <OrbitIcon key={s.slug} service={s} />
       ))}
     </div>
   )

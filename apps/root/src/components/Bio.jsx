@@ -6,7 +6,7 @@ export default function Bio() {
         alignItems: 'center',
         gap: '0.6rem',
         fontFamily: 'var(--font-header)',
-        fontSize: 'clamp(1.9rem, 1.3rem + 2.4vw, 2.75rem)',
+        fontSize: 'var(--h1-size)',
         fontWeight: 800,
         color: 'var(--accent-base)',
         marginBottom: '1.75rem',

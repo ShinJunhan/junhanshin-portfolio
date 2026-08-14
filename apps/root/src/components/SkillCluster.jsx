@@ -16,9 +16,12 @@ const ROW_PLANS = {
   8: [1, 3, 3, 1],
   9: [1, 2, 3, 2, 1],
   10: [2, 3, 3, 2],
+  11: [1, 3, 3, 3, 1],
+  12: [3, 3, 3, 3],
+  13: [2, 3, 3, 3, 2],
 }
 const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
-const ICON_FRAC = 0.88  // tile size as a share of the centre-to-centre step
+const ICON_FRAC = 0.72  // tile size as a share of the centre-to-centre step
 
 // Very small sets would otherwise blow up to fill the whole card, ending up
 // larger than the icons on a busy card; these hold them near the same size.
@@ -201,6 +204,52 @@ function Glyph({ type }) {
         <svg {...common}>
           <path d="M12 3a5 5 0 0 0-5 5v3c0 1-1 2-2 3h14c-1-1-2-2-2-3V8a5 5 0 0 0-5-5z" />
           <path d="M9.5 20a2.5 2.5 0 0 0 5 0" />
+        </svg>
+      )
+    case 'broadcast':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="2" />
+          <path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7" />
+          <path d="M5.5 18.5a9 9 0 0 1 0-13M18.5 5.5a9 9 0 0 1 0 13" />
+        </svg>
+      )
+    case 'console':
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M7 9l3 3-3 3M13 15h4" />
+        </svg>
+      )
+    case 'lock':
+      return (
+        <svg {...common}>
+          <rect x="4" y="10" width="16" height="11" rx="2" />
+          <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          <circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none" />
+        </svg>
+      )
+    case 'anchor':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="5" r="2.5" />
+          <path d="M12 7.5V21" />
+          <path d="M5 13a7 7 0 0 0 14 0" />
+          <path d="M8.5 10.5h7" />
+        </svg>
+      )
+    case 'swap':
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="11" height="9" rx="2" />
+          <rect x="10" y="11" width="11" height="9" rx="2" />
+        </svg>
+      )
+    case 'coin':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v10M14.6 9.6a2.8 2.8 0 0 0-2.6-1.4c-1.6 0-2.6.8-2.6 2s1 1.8 2.6 2 2.8.6 2.8 2-1.2 2-2.8 2a3 3 0 0 1-2.7-1.4" />
         </svg>
       )
     case 'cloud':

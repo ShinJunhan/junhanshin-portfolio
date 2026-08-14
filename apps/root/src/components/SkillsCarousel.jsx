@@ -19,6 +19,9 @@ const GROUPS = [
       { slug: 'cloudwatch', label: 'CloudWatch', glyph: 'pulse' },
       { slug: 'dynamodb', label: 'DynamoDB', glyph: 'layers' },
       { slug: 'lambda', label: 'Lambda', glyph: 'bolt' },
+      { slug: 'cloudfront', label: 'CloudFront', glyph: 'broadcast' },
+      { slug: 'session-manager', label: 'Session Manager', glyph: 'console' },
+      { slug: 'secrets-manager', label: 'Secret Manager', glyph: 'lock' },
     ],
   },
   {
@@ -41,6 +44,7 @@ const GROUPS = [
       { slug: 'keda', label: 'KEDA', glyph: 'arrows-updown' },
       { slug: 'karpenter', label: 'Karpenter', glyph: 'network' },
       { slug: 'eks', label: 'EKS', glyph: 'cloud' },
+      { slug: 'harbor', label: 'Harbor', glyph: 'anchor' },
     ],
   },
   {
@@ -52,6 +56,7 @@ const GROUPS = [
       { slug: 'jenkins', label: 'Jenkins', glyph: 'wrench' },
       { slug: 'argocd', label: 'ArgoCD', glyph: 'sync' },
       { slug: 'gitea', label: 'Gitea', glyph: 'git-branch' },
+      { slug: 'blue-green', label: 'Blue/Green', glyph: 'swap' },
     ],
   },
   {
@@ -62,6 +67,7 @@ const GROUPS = [
       { slug: 'prometheus', label: 'Prometheus', glyph: 'flame' },
       { slug: 'grafana', label: 'Grafana', glyph: 'chart-bar' },
       { slug: 'alertmanager', label: 'AlertManager', glyph: 'bell' },
+      { slug: 'opencost', label: 'OpenCost', glyph: 'coin' },
     ],
   },
 ]

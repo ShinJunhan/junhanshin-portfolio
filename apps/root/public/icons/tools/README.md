@@ -22,5 +22,8 @@ is shown instead.
 | `prometheus.svg`        | Prometheus              |
 | `grafana.svg`           | Grafana                  |
 | `alertmanager.svg`      | AlertManager              |
+| `harbor.svg`            | Harbor                     |
+| `blue-green.svg`        | Blue/Green (deployment)     |
+| `opencost.svg`          | OpenCost                     |
 
 Square, transparent-background SVGs work best.

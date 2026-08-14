@@ -17,6 +17,9 @@ a simple hand-drawn placeholder glyph is shown instead.
 | `cloudwatch.svg`      | CloudWatch|
 | `dynamodb.svg`        | DynamoDB  |
 | `lambda.svg`          | Lambda    |
+| `cloudfront.svg`      | CloudFront |
+| `session-manager.svg` | Session Manager (Systems Manager) |
+| `secrets-manager.svg` | Secret Manager |
 
 Where to get them: AWS publishes a free "AWS Architecture Icons" asset
 pack (search "AWS Architecture Icons" on the AWS website) under AWS's

@@ -21,13 +21,11 @@ export default function ThemeToggle() {
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      /* Sits inline in the top bar, so no fixed positioning of its own. */
       style={{
-        position: 'fixed',
-        top: '1.1rem',
-        right: '1.1rem',
-        zIndex: 1001,
-        width: '42px',
-        height: '42px',
+        flexShrink: 0,
+        width: '36px',
+        height: '36px',
         borderRadius: '999px',
         border: '1px solid var(--border)',
         background: 'var(--card-bg)',
@@ -36,7 +34,6 @@ export default function ThemeToggle() {
         alignItems: 'center',
         justifyContent: 'center',
         cursor: 'pointer',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}
     >
       {isDark ? (

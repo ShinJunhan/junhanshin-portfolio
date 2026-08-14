@@ -93,7 +93,7 @@ export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
         },
       }}
     >
-      {GROUPS.map((g) => (
+      {GROUPS.map((g, gi) => (
         <motion.div
           key={g.label}
           className="skill-slot"
@@ -111,7 +111,7 @@ export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
             {g.label}
           </h3>
           <article className="skill-card">
-            <SkillCluster services={g.services} basePath={g.basePath} />
+            <SkillCluster services={g.services} basePath={g.basePath} phase={gi * 2} />
           </article>
         </motion.div>
       ))}

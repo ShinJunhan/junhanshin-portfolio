@@ -1,5 +1,5 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion'
 
 // Icons form the shape themselves — no container drawn behind them. Two
 // icons sit side by side; three make a triangle; larger sets fill out
@@ -21,7 +21,10 @@ const ROW_PLANS = {
   13: [2, 3, 3, 3, 2],
 }
 const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
-const ICON_FRAC = 0.78  // tile size as a share of the centre-to-centre step
+const ICON_FRAC = 0.78  // disc size as a share of the centre-to-centre step
+// How long each icon holds its turn in the automatic walk-through. Slow
+// enough to read the label without it feeling twitchy.
+const AUTO_DWELL_MS = 1700
 
 // Counts that read better as a named polygon than as honeycomb rows.
 // Points are unit offsets from the centre, in steps.
@@ -299,18 +302,16 @@ function ServiceIcon({ slug, glyph, basePath }) {
 // (the nested motion.div): framer-motion synthesizes `transform` from
 // animated motion values and would otherwise overwrite the centering
 // translate set on the same element.
-function ClusterIcon({ service, basePath, left, top, size }) {
-  const [hovered, setHovered] = useState(false)
-
+function ClusterIcon({ service, basePath, left, top, size, active, onEnter, onLeave }) {
   return (
-    <div style={{ position: 'absolute', left, top, width: size, height: size, zIndex: hovered ? 5 : 1 }}>
+    <div style={{ position: 'absolute', left, top, width: size, height: size, zIndex: active ? 5 : 1 }}>
       <motion.div
-        onHoverStart={() => setHovered(true)}
-        onHoverEnd={() => setHovered(false)}
-        onFocus={() => setHovered(true)}
-        onBlur={() => setHovered(false)}
-        animate={{ scale: hovered ? 1.16 : 1 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 18 }}
+        onHoverStart={onEnter}
+        onHoverEnd={onLeave}
+        onFocus={onEnter}
+        onBlur={onLeave}
+        animate={{ scale: active ? 1.16 : 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
         tabIndex={0}
         role="img"
         aria-label={service.label}
@@ -318,27 +319,26 @@ function ClusterIcon({ service, basePath, left, top, size }) {
           position: 'relative',
           width: '100%',
           height: '100%',
-          // Squircle — the iOS/watchOS app-icon shape.
-          borderRadius: '28%',
-          background: 'var(--cloud-bg)',
-          border: `1px solid ${hovered ? 'var(--c-indigo)' : 'var(--cloud-border)'}`,
+          borderRadius: '50%',
+          background: 'var(--skill-disc-bg)',
+          border: `1px solid ${active ? 'var(--c-indigo)' : 'var(--skill-disc-border)'}`,
           color: 'var(--c-indigo)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          boxShadow: '0 1px 4px rgba(31,46,68,0.14)',
+          boxShadow: 'var(--skill-disc-shadow)',
         }}
       >
-        <div style={{ width: '56%', height: '56%' }}>
+        <div style={{ width: '54%', height: '54%' }}>
           <ServiceIcon slug={service.slug} glyph={service.glyph} basePath={basePath} />
         </div>
         <AnimatePresence>
-          {hovered && (
+          {active && (
             <motion.span
               initial={{ opacity: 0, y: 4, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={{ duration: 0.18 }}
               style={{
                 position: 'absolute',
                 bottom: '112%',
@@ -368,9 +368,15 @@ function ClusterIcon({ service, basePath, left, top, size }) {
 // Sized from the measured box rather than a fixed viewBox: the step is
 // whichever of width or height binds first, so the cluster always grows to
 // fill the card without spilling out of it.
-export default function SkillCluster({ services, basePath }) {
+export default function SkillCluster({ services, basePath, phase = 0 }) {
   const ref = useRef(null)
   const [box, setBox] = useState({ w: 0, h: 0 })
+  const reduceMotion = useReducedMotion()
+  const inView = useInView(ref, { amount: 0.4 })
+  // Which icon the automatic walk-through is on, and which one the pointer
+  // is on. A real hover wins and pauses the walk-through.
+  const [autoIndex, setAutoIndex] = useState(0)
+  const [hoverIndex, setHoverIndex] = useState(null)
 
   useLayoutEffect(() => {
     const el = ref.current
@@ -384,6 +390,22 @@ export default function SkillCluster({ services, basePath }) {
   }, [])
 
   const count = services.length
+
+  // Steps one icon at a time while the card is on screen. `phase` staggers
+  // each card's start so the five don't pulse in lockstep.
+  useEffect(() => {
+    if (reduceMotion || !inView || hoverIndex !== null) return
+    const id = setInterval(() => {
+      setAutoIndex((i) => (i + 1) % count)
+    }, AUTO_DWELL_MS)
+    return () => clearInterval(id)
+  }, [reduceMotion, inView, hoverIndex, count])
+
+  useEffect(() => {
+    setAutoIndex(phase % count)
+  }, [phase, count])
+
+  const activeIndex = hoverIndex ?? (reduceMotion || !inView ? null : autoIndex)
   // Named polygons win where one reads better than honeycomb rows;
   // everything else falls back to the row plans. Both produce offsets in
   // step-units from the centre, so the sizing below is shared.
@@ -426,6 +448,9 @@ export default function SkillCluster({ services, basePath }) {
             left={spots[i].cx - size / 2}
             top={spots[i].cy - size / 2}
             size={size}
+            active={activeIndex === i}
+            onEnter={() => setHoverIndex(i)}
+            onLeave={() => setHoverIndex((cur) => (cur === i ? null : cur))}
           />
         ))}
     </div>

@@ -36,12 +36,13 @@
   --cloud-border: #B7C6E4;
   --cloud-tile: #FFFFFF;
 
-  /* Skill card: a faint indigo, terminal-ish pane you can see the band
-     through — the "hologram" surface. */
-  --holo-a: rgba(62, 92, 137, 0.11);
-  --holo-b: rgba(62, 92, 137, 0.025);
-  --holo-border: rgba(62, 92, 137, 0.2);
-  --holo-sheen: rgba(255, 255, 255, 0.5);
+  /* Skill card: a quiet tinted panel, with the icon discs a clear step
+     lighter so the coloured logos sit forward of it rather than blending in. */
+  --skill-card-bg: #EAEFF6;
+  --skill-card-border: #DBE3EE;
+  --skill-disc-bg: #FFFFFF;
+  --skill-disc-border: rgba(31, 46, 68, 0.09);
+  --skill-disc-shadow: 0 2px 6px rgba(31, 46, 68, 0.1);
 
   /* Fonts */
   --font-header: 'Inter', sans-serif;
@@ -103,10 +104,11 @@
   --cloud-border: #45557A;
   --cloud-tile: #3A4A6B;
 
-  --holo-a: rgba(126, 163, 216, 0.17);
-  --holo-b: rgba(126, 163, 216, 0.04);
-  --holo-border: rgba(126, 163, 216, 0.26);
-  --holo-sheen: rgba(255, 255, 255, 0.09);
+  --skill-card-bg: #19212F;
+  --skill-card-border: #2A3547;
+  --skill-disc-bg: #33415B;
+  --skill-disc-border: rgba(255, 255, 255, 0.1);
+  --skill-disc-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 
   --nav-bg: rgba(16, 21, 31, 0.74);
 
@@ -337,11 +339,13 @@ a.info-card:hover {
   scrollbar-color: var(--border) transparent;
 }
 
-/* Runs out to the page gutter so the cards get the whole width of the page.
+/* Runs out toward the page edge so the cards get most of the page width,
+   but stops a gutter short: the hover labels sit above their disc and
+   would otherwise be clipped by the band's overflow on the last card.
    Never positive, so it collapses once the viewport is narrower than the
    content measure. */
 .carousel--bleed {
-  margin-right: min(0px, calc((var(--content-width) - 100vw) / 2));
+  margin-right: min(0px, calc((var(--content-width) - 100vw) / 2 + var(--gutter)));
 }
 
 .carousel::-webkit-scrollbar {
@@ -384,34 +388,18 @@ a.info-card:hover {
   justify-content: center;
 }
 
-/* Hologram pane: a faint indigo wash you can see the band through, with a
-   soft sheen across the top and a watch-style rounded-square outline. */
+/* A quiet, flat panel — no glass, no gradient, no blur. */
 .skill-card {
   width: 100%;
   aspect-ratio: 9 / 16;
   position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(158deg, var(--holo-a) 0%, var(--holo-b) 52%, var(--holo-a) 100%);
-  border: 1px solid var(--holo-border);
-  border-radius: clamp(24px, 3.4vw, 42px);
-  backdrop-filter: blur(9px) saturate(140%);
-  -webkit-backdrop-filter: blur(9px) saturate(140%);
+  background: var(--skill-card-bg);
+  border: 1px solid var(--skill-card-border);
+  border-radius: clamp(20px, 2.6vw, 30px);
   padding: clamp(1rem, 1.7vw, 1.6rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: inset 0 1px 0 var(--holo-sheen), 0 8px 26px rgba(31, 46, 68, 0.08);
-}
-
-/* Diagonal glint, purely decorative. */
-.skill-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(122deg, transparent 38%, var(--holo-sheen) 50%, transparent 62%);
-  opacity: 0.35;
 }
 
 /* Takes the leftover height so the icon cluster measures against a real
@@ -662,4 +650,15 @@ button:focus-visible {
   .ticker {
     height: clamp(150px, 22vh, 200px);
   }
+}
+
+/* Right-edge gesture strip: slide left from here to open the terminal. */
+.term-edge {
+  position: fixed;
+  top: var(--nav-h);
+  right: 0;
+  width: 22px;
+  height: calc(100dvh - var(--nav-h));
+  z-index: 940;
+  touch-action: pan-y;
 }

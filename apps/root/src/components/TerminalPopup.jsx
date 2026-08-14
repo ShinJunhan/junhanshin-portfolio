@@ -27,8 +27,8 @@ const COMMANDS = {
 
 export default function TerminalPopup() {
   const [open, setOpen] = useState(false)
-  // Drag is started only from the grip and the title bar, so selecting text
-  // in the log or typing in the input never turns into a drag.
+  // Drag can start anywhere on the panel except the input and buttons, so a
+  // slide works from wherever the pointer happens to be.
   const dragControls = useDragControls()
   const [history, setHistory] = useState([
     { type: 'output', text: 'Type "help" to see available commands.' },
@@ -40,6 +40,40 @@ export default function TerminalPopup() {
   useEffect(() => {
     if (open) inputRef.current?.focus()
   }, [open])
+
+  // Slide in from the right edge of the window to open. Tracked manually
+  // rather than with a framer drag because the strip is only a few pixels
+  // wide — there is nothing meaningful to drag, just a gesture to detect.
+  const edgeStart = useRef(null)
+
+  function onEdgePointerDown(e) {
+    edgeStart.current = { x: e.clientX, y: e.clientY }
+    e.currentTarget.setPointerCapture?.(e.pointerId)
+  }
+
+  function onEdgePointerMove(e) {
+    const start = edgeStart.current
+    if (!start) return
+    const dx = e.clientX - start.x
+    const dy = e.clientY - start.y
+    // Leftward, and more horizontal than vertical, so a page scroll that
+    // happens to begin near the edge doesn't yank the panel open.
+    if (dx < -46 && Math.abs(dx) > Math.abs(dy)) {
+      edgeStart.current = null
+      setOpen(true)
+    }
+  }
+
+  function endEdgeGesture() {
+    edgeStart.current = null
+  }
+
+  // Drag starts from anywhere on the panel that isn't a control — typing and
+  // button clicks keep working, everything else is grabbable.
+  function onPanelPointerDown(e) {
+    if (e.target.closest('input, button, textarea, a')) return
+    dragControls.start(e)
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -106,6 +140,18 @@ export default function TerminalPopup() {
         </span>
       </div>
 
+      {/* Invisible strip down the right edge: slide left from here to open. */}
+      <div
+        className="term-edge"
+        aria-hidden="true"
+        style={{ display: open ? 'none' : 'block' }}
+        onPointerDown={onEdgePointerDown}
+        onPointerMove={onEdgePointerMove}
+        onPointerUp={endEdgeGesture}
+        onPointerCancel={endEdgeGesture}
+        onPointerLeave={endEdgeGesture}
+      />
+
       {/* Side panel, Notion-style: no backdrop, so the page behind stays
           scrollable and clickable while the terminal is open. */}
       <motion.aside
@@ -118,29 +164,23 @@ export default function TerminalPopup() {
         drag="x"
         dragControls={dragControls}
         dragListener={false}
+        onPointerDown={onPanelPointerDown}
         dragConstraints={{ left: 0, right: 0 }}
         /* Rubber-bands to the right only; it can't be pulled past its open
            position to the left. */
         dragElastic={{ left: 0, right: 0.85 }}
         dragMomentum={false}
         onDragEnd={(_, info) => {
-          if (info.offset.x > 90 || info.velocity.x > 520) setOpen(false)
+          if (info.offset.x > 70 || info.velocity.x > 420) setOpen(false)
         }}
         style={{ pointerEvents: open ? 'auto' : 'none' }}
       >
         {/* Swipe handle: drag this (or the title bar) right to dismiss. */}
-        <div
-          className="term-panel__grip"
-          onPointerDown={(e) => dragControls.start(e)}
-          role="presentation"
-        >
+        <div className="term-panel__grip" role="presentation">
           <span className="term-panel__grip-bar" />
         </div>
 
-        <div
-          className="term-panel__bar"
-          onPointerDown={(e) => dragControls.start(e)}
-        >
+        <div className="term-panel__bar">
           <span style={{ color: 'var(--terminal-ink)', fontSize: '12px', opacity: 0.75 }}>
             junhan@portfolio: ~
           </span>

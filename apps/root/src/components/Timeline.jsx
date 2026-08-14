@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, Children, useContext } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion, useInView } from 'framer-motion'
 import SkillsCarousel from './SkillsCarousel.jsx'
+import ProjectsTicker from './ProjectsTicker.jsx'
 import { BandReveal } from './bandReveal.js'
 
 // How long the heading takes to pop in centred and then settle left, and
@@ -25,7 +26,6 @@ const CONTACT_ITEMS = [
     label: 'Phone',
     // TODO: swap in the real phone number
     text: '999-999-999',
-    href: 'tel:999999999',
     icon: (
       <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a2 2 0 0 1-2 2C9.5 22 2 14.5 2 6a2 2 0 0 1 2-2z" />
@@ -76,6 +76,20 @@ const CERT_ICON = (
     <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
   </svg>
 )
+
+// Rendered as cards in the same grid as the About Me details.
+const CERTIFICATIONS = [
+  {
+    label: 'Cloud',
+    text: 'AWS Certified Solutions Architect – Associate',
+    icon: (
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="9" r="6" />
+        <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+      </svg>
+    ),
+  },
+]
 
 // Below this width the columns stack, so the heading has no left column to
 // slide back to — it just pops in place instead.
@@ -258,10 +272,14 @@ function Band({ id, heading, icon, accent, alt, children }) {
 }
 
 // Each contact detail gets its own card rather than sitting in a plain list.
-function InfoCard({ item }) {
+function InfoCard({ item, accent = 'var(--c-coral)' }) {
   const Tag = item.href ? 'a' : 'div'
   return (
-    <Tag className="info-card" {...(item.href ? { href: item.href } : {})}>
+    <Tag
+      className="info-card"
+      style={{ '--info-accent': accent }}
+      {...(item.href ? { href: item.href } : {})}
+    >
       <span className="info-card__icon">{item.icon}</span>
       <span className="info-card__label">{item.label}</span>
       <span className="info-card__value">{item.text}</span>
@@ -281,23 +299,26 @@ export default function Timeline() {
       </Band>
 
       <Band id="projects" heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt>
-        <Stagger>
-          <p style={{
-            fontFamily: 'var(--font-header)',
-            fontWeight: 800,
-            fontSize: 'clamp(5rem, 3rem + 9vw, 11rem)',
-            letterSpacing: '-0.04em',
-            color: 'var(--c-orange)',
-            margin: '0 0 0.2rem',
-            lineHeight: 0.9,
-          }}>
-            7
-          </p>
-          <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0 }}>
-            completed cloud infrastructure projects
-            <span style={{ display: 'block' }}>(3 individual + 4 team)</span>
-          </p>
-        </Stagger>
+        <div className="projects-row">
+          <Stagger>
+            <p style={{
+              fontFamily: 'var(--font-header)',
+              fontWeight: 800,
+              fontSize: 'clamp(5rem, 3rem + 9vw, 11rem)',
+              letterSpacing: '-0.04em',
+              color: 'var(--c-orange)',
+              margin: '0 0 0.2rem',
+              lineHeight: 0.9,
+            }}>
+              7
+            </p>
+            <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0 }}>
+              completed cloud infrastructure projects
+              <span style={{ display: 'block' }}>(3 individual + 4 team)</span>
+            </p>
+          </Stagger>
+          <ProjectsTicker />
+        </div>
       </Band>
 
       <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt={false}>
@@ -305,16 +326,10 @@ export default function Timeline() {
       </Band>
 
       <Band id="certifications" heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt>
-        <Stagger>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
-            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>
-              <circle cx="12" cy="9" r="6" />
-              <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
-            </svg>
-            <p style={{ fontSize: 'var(--body-size)', fontWeight: 700, color: 'var(--ink)', margin: 0 }}>
-              AWS Certified Solutions Architect – Associate
-            </p>
-          </div>
+        <Stagger className="info-grid info-grid--cert">
+          {CERTIFICATIONS.map((c) => (
+            <InfoCard key={c.text} item={c} accent="var(--c-forest)" />
+          ))}
         </Stagger>
       </Band>
     </>

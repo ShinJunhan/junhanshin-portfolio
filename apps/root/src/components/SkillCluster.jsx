@@ -21,13 +21,30 @@ const ROW_PLANS = {
   13: [2, 3, 3, 3, 2],
 }
 const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
-const ICON_FRAC = 0.72  // tile size as a share of the centre-to-centre step
+const ICON_FRAC = 0.78  // tile size as a share of the centre-to-centre step
+
+// Counts that read better as a named polygon than as honeycomb rows.
+// Points are unit offsets from the centre, in steps.
+const SQUARE = [
+  { x: -0.5, y: -0.5 }, { x: 0.5, y: -0.5 },
+  { x: -0.5, y: 0.5 }, { x: 0.5, y: 0.5 },
+]
+// Five points around a circle, apex up. The radius is derived so adjacent
+// points sit exactly one step apart — the same neighbour spacing the
+// honeycomb uses — otherwise the tiles would overlap:
+//   chord = 2 * r * sin(pi/5) = 1  =>  r = 1 / (2 * sin(36deg))
+const PENTAGON_R = 1 / (2 * Math.sin(Math.PI / 5))
+const PENTAGON = Array.from({ length: 5 }, (_, i) => {
+  const a = (-90 + i * 72) * (Math.PI / 180)
+  return { x: Math.cos(a) * PENTAGON_R, y: Math.sin(a) * PENTAGON_R }
+})
+const POLYGONS = { 4: SQUARE, 5: PENTAGON }
 
 // Very small sets would otherwise blow up to fill the whole card, ending up
 // larger than the icons on a busy card; these hold them near the same size.
 function widthCapFor(count) {
-  if (count <= 2) return 0.8
-  if (count <= 4) return 0.86
+  if (count <= 2) return 0.86
+  if (count <= 5) return 0.95
   return 1
 }
 
@@ -366,21 +383,37 @@ export default function SkillCluster({ services, basePath }) {
     return () => ro.disconnect()
   }, [])
 
-  const plan = ROW_PLANS[services.length] || ROW_PLANS[10]
-  const unitsWide = Math.max(...plan)
-  const unitsTall = (plan.length - 1) * ROW_PITCH + 1
-  const step = Math.min((box.w * widthCapFor(services.length)) / unitsWide, box.h / unitsTall)
+  const count = services.length
+  // Named polygons win where one reads better than honeycomb rows;
+  // everything else falls back to the row plans. Both produce offsets in
+  // step-units from the centre, so the sizing below is shared.
+  const poly = POLYGONS[count]
+  let offsets
+  if (poly) {
+    offsets = poly
+  } else {
+    const plan = ROW_PLANS[count] || ROW_PLANS[10]
+    offsets = []
+    plan.forEach((n, row) => {
+      for (let i = 0; i < n; i++) {
+        offsets.push({
+          x: i - (n - 1) / 2,
+          y: (row - (plan.length - 1) / 2) * ROW_PITCH,
+        })
+      }
+    })
+  }
+
+  // +1 step so the tiles themselves fit inside the box, not just their centres.
+  const unitsWide = Math.max(...offsets.map((o) => Math.abs(o.x))) * 2 + 1
+  const unitsTall = Math.max(...offsets.map((o) => Math.abs(o.y))) * 2 + 1
+  const step = Math.min((box.w * widthCapFor(count)) / unitsWide, box.h / unitsTall)
   const size = step * ICON_FRAC
 
-  const spots = []
-  plan.forEach((n, row) => {
-    for (let i = 0; i < n; i++) {
-      spots.push({
-        cx: box.w / 2 + (i - (n - 1) / 2) * step,
-        cy: box.h / 2 + (row - (plan.length - 1) / 2) * step * ROW_PITCH,
-      })
-    }
-  })
+  const spots = offsets.map((o) => ({
+    cx: box.w / 2 + o.x * step,
+    cy: box.h / 2 + o.y * step,
+  }))
 
   return (
     <div ref={ref} className="cluster">

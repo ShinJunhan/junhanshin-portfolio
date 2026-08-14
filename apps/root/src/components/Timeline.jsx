@@ -12,6 +12,7 @@ const DETAIL_DELAY = HEADING_DURATION + 0.08
 
 const CONTACT_ITEMS = [
   {
+    label: 'Location',
     text: 'Methuen, MA',
     icon: (
       <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -21,8 +22,10 @@ const CONTACT_ITEMS = [
     ),
   },
   {
+    label: 'Phone',
     // TODO: swap in the real phone number
     text: '999-999-999',
+    href: 'tel:999999999',
     icon: (
       <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L15 14l5 2v4a2 2 0 0 1-2 2C9.5 22 2 14.5 2 6a2 2 0 0 1 2-2z" />
@@ -30,7 +33,9 @@ const CONTACT_ITEMS = [
     ),
   },
   {
+    label: 'Email',
     text: 'junhanshin17@gmail.com',
+    href: 'mailto:junhanshin17@gmail.com',
     icon: (
       <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -92,7 +97,7 @@ function useIsNarrow() {
 // right, so the line reads as threading the section titles together. Its
 // fill tracks scroll position directly (useScroll) rather than playing a
 // timed tween, so it never advances while the reader is sitting still.
-function Rail({ accent, bandBg }) {
+function Rail({ accent, bandBg, dotTop = '50%' }) {
   const ref = useRef(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.5'] })
   const fill = useTransform(scrollYProgress, [0, 1], ['0%', '100%'])
@@ -107,7 +112,7 @@ function Rail({ accent, bandBg }) {
       <span
         style={{
           position: 'absolute',
-          top: '50%',
+          top: dotTop,
           left: '50%',
           transform: 'translate(-50%, -50%)',
           width: '14px',
@@ -147,6 +152,7 @@ function SectionHeading({ children, icon, accent, centerShift }) {
 
   return (
     <motion.h2
+      className="section-heading"
       initial={reduceMotion ? resting : waiting}
       animate={animate}
       transition={
@@ -154,18 +160,6 @@ function SectionHeading({ children, icon, accent, centerShift }) {
           ? { duration: 0 }
           : { duration: HEADING_DURATION, times: [0, 0.34, 1], ease: ['easeOut', 'easeInOut'] }
       }
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontFamily: 'var(--font-header)',
-        fontWeight: 800,
-        fontSize: 'var(--h1-size)',
-        lineHeight: 1.15,
-        color: 'var(--ink)',
-        textShadow: 'var(--heading-shadow)',
-        margin: 0,
-      }}
     >
       <span style={{ color: accent, display: 'inline-flex' }}>{icon}</span>
       {children}
@@ -175,11 +169,12 @@ function SectionHeading({ children, icon, accent, centerShift }) {
 
 // Reveals its children one after another once the heading has settled,
 // rather than dropping the whole block in at once.
-function Stagger({ children, delay = DETAIL_DELAY }) {
+function Stagger({ children, delay = DETAIL_DELAY, className }) {
   const reduceMotion = useReducedMotion()
   const inView = useContext(BandReveal)
   return (
     <motion.div
+      className={className}
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
       variants={{
@@ -211,105 +206,90 @@ function Stagger({ children, delay = DETAIL_DELAY }) {
   )
 }
 
-function Band({ heading, icon, accent, alt, wide = false, stack = false, aside = null, children }) {
+function Band({ id, heading, icon, accent, alt, children }) {
   const bandBg = alt ? 'var(--bg-alt)' : 'var(--bg)'
   const ref = useRef(null)
-  const inView = useInView(ref, { once: true, amount: 0.35 })
+  const inView = useInView(ref, { once: true, amount: 0.3 })
 
-  // Distance from the heading's resting centre to the centre of the row.
-  // When the columns stack on narrow screens the heading already spans the
-  // row, so this measures to ~0 and the heading simply pops in place.
-  const contentRef = useRef(null)
+  // Distance from the heading's resting centre to the centre of the band, so
+  // it can pop in centred and then settle back to the upper left. Measured
+  // rather than assumed: headings differ enough in width that a fixed share
+  // would overshoot or undershoot.
+  const bodyRef = useRef(null)
   const headingRef = useRef(null)
   const [centerShift, setCenterShift] = useState(0)
+  const [dotTop, setDotTop] = useState('50%')
 
   useLayoutEffect(() => {
     function measure() {
-      const content = contentRef.current
-      const headingCol = headingRef.current
-      if (!content || !headingCol) return
-      const c = content.getBoundingClientRect()
-      const h = headingCol.getBoundingClientRect()
-      setCenterShift(c.width / 2 - (h.left - c.left + h.width / 2))
+      const body = bodyRef.current
+      const head = headingRef.current
+      const section = ref.current
+      if (!body || !head || !section) return
+      const b = body.getBoundingClientRect()
+      const h = head.getBoundingClientRect()
+      setCenterShift(b.width / 2 - (h.left - b.left + h.width / 2))
+      // Dot rides level with the heading rather than the band's midpoint.
+      const s = section.getBoundingClientRect()
+      setDotTop(`${((h.top - s.top + h.height / 2) / s.height) * 100}%`)
     }
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [])
-
-  const headingRow = (
-    <div className="section-row__content" ref={contentRef}>
-      <div className="section-row__heading" ref={headingRef}>
-        <BandReveal.Provider value={inView}>
-          <SectionHeading icon={icon} accent={accent} centerShift={centerShift}>
-            {heading}
-          </SectionHeading>
-        </BandReveal.Provider>
-      </div>
-      <div className="section-row__body">
-        <BandReveal.Provider value={inView}>{stack ? aside : children}</BandReveal.Provider>
-      </div>
-    </div>
-  )
+  }, [heading])
 
   return (
-    <section ref={ref} className="band snap-section" style={{ background: bandBg }}>
+    <section ref={ref} id={id} className="band snap-section" style={{ background: bandBg }}>
       <div className="band__inner">
-        <div className={`section-row${wide ? ' section-row--wide' : ''}`}>
-          <Rail accent={accent} bandBg={bandBg} />
-          {stack ? (
-            <div className="band__stack">
-              {headingRow}
-              <BandReveal.Provider value={inView}>{children}</BandReveal.Provider>
+        <Rail accent={accent} bandBg={bandBg} dotTop={dotTop} />
+        <div className="band__body" ref={bodyRef}>
+          <BandReveal.Provider value={inView}>
+            <div ref={headingRef} style={{ alignSelf: 'flex-start' }}>
+              <SectionHeading icon={icon} accent={accent} centerShift={centerShift}>
+                {heading}
+              </SectionHeading>
             </div>
-          ) : (
-            headingRow
-          )}
+            {children}
+          </BandReveal.Provider>
         </div>
       </div>
     </section>
   )
 }
 
-function ContactRow({ item }) {
+// Each contact detail gets its own card rather than sitting in a plain list.
+function InfoCard({ item }) {
+  const Tag = item.href ? 'a' : 'div'
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.8rem',
-        marginBottom: '0.9rem',
-        color: 'var(--text-primary)',
-        fontSize: 'var(--body-size)',
-      }}
-    >
-      <span style={{ color: 'var(--c-coral)', display: 'flex', fontSize: '1.3rem' }}>{item.icon}</span>
-      {item.text}
-    </div>
+    <Tag className="info-card" {...(item.href ? { href: item.href } : {})}>
+      <span className="info-card__icon">{item.icon}</span>
+      <span className="info-card__label">{item.label}</span>
+      <span className="info-card__value">{item.text}</span>
+    </Tag>
   )
 }
 
 export default function Timeline() {
   return (
     <>
-      <Band heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt={false}>
-        <Stagger>
+      <Band id="about" heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt={false}>
+        <Stagger className="info-grid">
           {CONTACT_ITEMS.map((item) => (
-            <ContactRow key={item.text} item={item} />
+            <InfoCard key={item.text} item={item} />
           ))}
         </Stagger>
       </Band>
 
-      <Band heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt>
+      <Band id="projects" heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt>
         <Stagger>
           <p style={{
             fontFamily: 'var(--font-header)',
             fontWeight: 800,
-            fontSize: 'clamp(2.75rem, 1.8rem + 4vw, 4.5rem)',
+            fontSize: 'clamp(5rem, 3rem + 9vw, 11rem)',
+            letterSpacing: '-0.04em',
             color: 'var(--c-orange)',
-            textShadow: 'var(--heading-shadow)',
-            margin: '0 0 0.4rem',
-            lineHeight: 1,
+            margin: '0 0 0.2rem',
+            lineHeight: 0.9,
           }}>
             7
           </p>
@@ -320,25 +300,11 @@ export default function Timeline() {
         </Stagger>
       </Band>
 
-      <Band
-        heading="Skills"
-        icon={SKILLS_ICON}
-        accent="var(--c-emerald)"
-        alt={false}
-        wide
-        stack
-        aside={
-          <Stagger>
-            <p style={{ fontSize: 'var(--body-size)', color: 'var(--text-primary)', margin: 0 }}>
-              Hover any icon for its name.
-            </p>
-          </Stagger>
-        }
-      >
+      <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt={false}>
         <SkillsCarousel baseDelay={DETAIL_DELAY} className="carousel--bleed" />
       </Band>
 
-      <Band heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt>
+      <Band id="certifications" heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt>
         <Stagger>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
             <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>

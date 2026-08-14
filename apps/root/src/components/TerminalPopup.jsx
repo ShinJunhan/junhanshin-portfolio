@@ -102,96 +102,55 @@ export default function TerminalPopup() {
         </span>
       </div>
 
-      {open && (
-        <div
-          className="terminal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(37,52,73,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setOpen(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '520px',
-              maxWidth: '92vw',
-              height: '420px',
-              maxHeight: '80vh',
-              background: '#1E2530',
-              borderRadius: 'var(--radius)',
-              display: 'flex',
-              flexDirection: 'column',
-              fontFamily: 'var(--font-mono)',
-              overflow: 'hidden',
-            }}
+      {/* Side panel, Notion-style: no backdrop, so the page behind stays
+          scrollable and clickable while the terminal is open. */}
+      <aside
+        className={`term-panel${open ? ' term-panel--open' : ''}`}
+        aria-hidden={open ? undefined : 'true'}
+        aria-label="Terminal"
+      >
+        <div className="term-panel__bar">
+          <span style={{ color: 'var(--terminal-ink)', fontSize: '12px', opacity: 0.75 }}>
+            junhan@portfolio: ~
+          </span>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close terminal"
+            style={{ background: 'none', border: 'none', color: 'var(--terminal-ink)', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}
           >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '10px 14px',
-              borderBottom: '1px solid #2E3846',
-            }}>
-              <span style={{ color: '#8FA3BD', fontSize: '12px' }}>junhan@portfolio: ~</span>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Close terminal"
-                style={{ background: 'none', border: 'none', color: '#8FA3BD', cursor: 'pointer', fontSize: '14px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px', fontSize: '13px', color: '#E2E7ED' }}>
-              {history.map((line, i) => (
-                <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '4px' }}>
-                  {line.type === 'input' ? <span style={{ color: '#4FA88F' }}>$ {line.text}</span> : line.text}
-                </div>
-              ))}
-              <div ref={bottomRef} />
-            </div>
-
-            <form onSubmit={handleSubmit} style={{ borderTop: '1px solid #2E3846', padding: '10px 14px', display: 'flex' }}>
-              <span style={{ color: '#4FA88F', marginRight: '8px' }}>$</span>
-              <input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  color: '#E2E7ED',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '13px',
-                }}
-                autoComplete="off"
-                spellCheck="false"
-              />
-            </form>
-          </div>
+            ✕
+          </button>
         </div>
-      )}
 
-      {/* Full-screen takeover on mobile per DESIGN.md terminal spec */}
-      <style>{`
-        @media (max-width: 640px) {
-          .terminal-overlay > div {
-            width: 100vw !important;
-            max-width: 100vw !important;
-            height: 100vh !important;
-            max-height: 100vh !important;
-            border-radius: 0 !important;
-          }
-        }
-      `}</style>
+        <div className="term-panel__log">
+          {history.map((line, i) => (
+            <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '6px' }}>
+              {line.type === 'input' ? <span style={{ color: '#4FA88F' }}>$ {line.text}</span> : line.text}
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+
+        <form onSubmit={handleSubmit} className="term-panel__form">
+          <span style={{ color: '#4FA88F', marginRight: '8px' }}>$</span>
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            style={{
+              flex: 1,
+              background: 'transparent',
+              border: 'none',
+              outline: 'none',
+              color: '#E2E7ED',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '13px',
+            }}
+            autoComplete="off"
+            spellCheck="false"
+          />
+        </form>
+      </aside>
     </>
   )
 }

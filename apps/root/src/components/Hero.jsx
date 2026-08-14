@@ -187,9 +187,12 @@ export default function Hero({ onComplete }) {
 
   return (
     <section
+      id="home"
       className="snap-section"
       style={{
         minHeight: '88vh',
+        /* Clears the fixed top bar so the headline stays optically centred. */
+        paddingTop: 'var(--nav-h)',
         width: '100%',
         display: 'flex',
         flexDirection: 'column',

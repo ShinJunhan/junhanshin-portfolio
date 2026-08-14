@@ -290,7 +290,7 @@ function InfoCard({ item, accent = 'var(--c-coral)' }) {
 export default function Timeline() {
   return (
     <>
-      <Band id="about" heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt={false}>
+      <Band id="about" heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt>
         <Stagger className="info-grid">
           {CONTACT_ITEMS.map((item) => (
             <InfoCard key={item.text} item={item} />
@@ -298,7 +298,7 @@ export default function Timeline() {
         </Stagger>
       </Band>
 
-      <Band id="projects" heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt>
+      <Band id="projects" heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt={false}>
         <div className="projects-row">
           <Stagger>
             <p style={{
@@ -321,11 +321,11 @@ export default function Timeline() {
         </div>
       </Band>
 
-      <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt={false}>
+      <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt>
         <SkillsCarousel baseDelay={DETAIL_DELAY} className="carousel--bleed" />
       </Band>
 
-      <Band id="certifications" heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt>
+      <Band id="certifications" heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt={false}>
         <Stagger className="info-grid info-grid--cert">
           {CERTIFICATIONS.map((c) => (
             <InfoCard key={c.text} item={c} accent="var(--c-forest)" />

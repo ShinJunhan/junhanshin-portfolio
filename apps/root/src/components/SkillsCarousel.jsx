@@ -94,9 +94,9 @@ export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
       }}
     >
       {GROUPS.map((g) => (
-        <motion.article
+        <motion.div
           key={g.label}
-          className="skill-card"
+          className="skill-slot"
           variants={{
             hidden: { opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 26, scale: reduceMotion ? 1 : 0.94 },
             visible: {
@@ -107,11 +107,13 @@ export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
             },
           }}
         >
-          <SkillCluster services={g.services} basePath={g.basePath} />
-          <h3 className="skill-card__title" style={{ color: g.accent }}>
+          <h3 className="skill-slot__title" style={{ color: g.accent }}>
             {g.label}
           </h3>
-        </motion.article>
+          <article className="skill-card">
+            <SkillCluster services={g.services} basePath={g.basePath} />
+          </article>
+        </motion.div>
       ))}
     </motion.div>
   )

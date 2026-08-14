@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence, useInView, useReducedMotion } from 'framer-motion'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 // Icons form the shape themselves — no container drawn behind them. Two
 // icons sit side by side; three make a triangle; larger sets fill out
@@ -22,9 +22,6 @@ const ROW_PLANS = {
 }
 const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
 const ICON_FRAC = 0.78  // disc size as a share of the centre-to-centre step
-// How long each icon holds its turn in the automatic walk-through. Slow
-// enough to read the label without it feeling twitchy.
-const AUTO_DWELL_MS = 1700
 
 // Counts that read better as a named polygon than as honeycomb rows.
 // Points are unit offsets from the centre, in steps.
@@ -368,14 +365,11 @@ function ClusterIcon({ service, basePath, left, top, size, active, onEnter, onLe
 // Sized from the measured box rather than a fixed viewBox: the step is
 // whichever of width or height binds first, so the cluster always grows to
 // fill the card without spilling out of it.
-export default function SkillCluster({ services, basePath, phase = 0 }) {
+// `autoIndex` is driven by the carousel, which spotlights exactly one icon
+// across all five cards at a time. A real hover on this card wins over it.
+export default function SkillCluster({ services, basePath, autoIndex = null }) {
   const ref = useRef(null)
   const [box, setBox] = useState({ w: 0, h: 0 })
-  const reduceMotion = useReducedMotion()
-  const inView = useInView(ref, { amount: 0.4 })
-  // Which icon the automatic walk-through is on, and which one the pointer
-  // is on. A real hover wins and pauses the walk-through.
-  const [autoIndex, setAutoIndex] = useState(0)
   const [hoverIndex, setHoverIndex] = useState(null)
 
   useLayoutEffect(() => {
@@ -390,22 +384,7 @@ export default function SkillCluster({ services, basePath, phase = 0 }) {
   }, [])
 
   const count = services.length
-
-  // Steps one icon at a time while the card is on screen. `phase` staggers
-  // each card's start so the five don't pulse in lockstep.
-  useEffect(() => {
-    if (reduceMotion || !inView || hoverIndex !== null) return
-    const id = setInterval(() => {
-      setAutoIndex((i) => (i + 1) % count)
-    }, AUTO_DWELL_MS)
-    return () => clearInterval(id)
-  }, [reduceMotion, inView, hoverIndex, count])
-
-  useEffect(() => {
-    setAutoIndex(phase % count)
-  }, [phase, count])
-
-  const activeIndex = hoverIndex ?? (reduceMotion || !inView ? null : autoIndex)
+  const activeIndex = hoverIndex ?? autoIndex
   // Named polygons win where one reads better than honeycomb rows;
   // everything else falls back to the row plans. Both produce offsets in
   // step-units from the centre, so the sizing below is shared.

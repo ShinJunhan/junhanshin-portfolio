@@ -1,4 +1,4 @@
-import { useContext } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import SkillCluster from './SkillCluster.jsx'
 import { BandReveal } from './bandReveal.js'
@@ -72,11 +72,41 @@ const GROUPS = [
   },
 ]
 
+// One icon anywhere in the section holds the spotlight at a time, rather
+// than every card lighting one of its own simultaneously.
+const SPOTLIGHT_MS = 1900
+
 export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
   const reduceMotion = useReducedMotion()
   // Shares the band's single trigger so the cards never start filling in
   // while the "Skills" heading is still sliding across them.
   const inView = useContext(BandReveal)
+
+  // {group, index} of the single spotlit icon. Hops to a different category
+  // each time so the attention moves around the section instead of walking
+  // one card end to end.
+  const [spot, setSpot] = useState(null)
+  // Held in a ref so the next pick can read the previous one without the
+  // updater itself being random — StrictMode double-invokes updaters, and an
+  // impure one would roll the dice twice per tick.
+  const spotRef = useRef(null)
+
+  useEffect(() => {
+    if (reduceMotion || !inView) return
+    function next() {
+      const prev = spotRef.current
+      let g
+      do {
+        g = Math.floor(Math.random() * GROUPS.length)
+      } while (prev && g === prev.g && GROUPS.length > 1)
+      const picked = { g, i: Math.floor(Math.random() * GROUPS[g].services.length) }
+      spotRef.current = picked
+      setSpot(picked)
+    }
+    next()
+    const id = setInterval(next, SPOTLIGHT_MS)
+    return () => clearInterval(id)
+  }, [reduceMotion, inView])
 
   return (
     <motion.div
@@ -111,7 +141,11 @@ export default function SkillsCarousel({ baseDelay = 0, className = '' }) {
             {g.label}
           </h3>
           <article className="skill-card">
-            <SkillCluster services={g.services} basePath={g.basePath} phase={gi * 2} />
+            <SkillCluster
+              services={g.services}
+              basePath={g.basePath}
+              autoIndex={spot && spot.g === gi ? spot.i : null}
+            />
           </article>
         </motion.div>
       ))}

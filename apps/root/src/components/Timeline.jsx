@@ -47,6 +47,31 @@ const PERSON_ICON = (
   </svg>
 )
 
+// Stacked layers — represents a body of completed work.
+const PROJECTS_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <polygon points="12 2 2 7 12 12 22 7 12 2" />
+    <polyline points="2 17 12 22 22 17" />
+    <polyline points="2 12 12 17 22 12" />
+  </svg>
+)
+
+// Hexagon — echoes the honeycomb shape used throughout the skill cards below.
+const SKILLS_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2l8.66 5v10L12 22l-8.66-5V7z" />
+  </svg>
+)
+
+// Badge/ribbon — same shape already used inline next to the AWS SAA line,
+// reused here so the heading icon and the credential icon read as one motif.
+const CERT_ICON = (
+  <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="9" r="6" />
+    <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+  </svg>
+)
+
 // Below this width the columns stack, so the heading has no left column to
 // slide back to — it just pops in place instead.
 function useIsNarrow() {
@@ -137,12 +162,12 @@ function SectionHeading({ children, icon, accent, centerShift }) {
         fontWeight: 800,
         fontSize: 'var(--h1-size)',
         lineHeight: 1.15,
-        color: accent,
+        color: 'var(--ink)',
         textShadow: 'var(--heading-shadow)',
         margin: 0,
       }}
     >
-      {icon}
+      <span style={{ color: accent, display: 'inline-flex' }}>{icon}</span>
       {children}
     </motion.h2>
   )
@@ -275,7 +300,7 @@ export default function Timeline() {
         </Stagger>
       </Band>
 
-      <Band heading="Projects" accent="var(--c-orange)" alt>
+      <Band heading="Projects" icon={PROJECTS_ICON} accent="var(--c-orange)" alt>
         <Stagger>
           <p style={{
             fontFamily: 'var(--font-header)',
@@ -297,6 +322,7 @@ export default function Timeline() {
 
       <Band
         heading="Skills"
+        icon={SKILLS_ICON}
         accent="var(--c-emerald)"
         alt={false}
         wide
@@ -312,7 +338,7 @@ export default function Timeline() {
         <SkillsCarousel baseDelay={DETAIL_DELAY} className="carousel--bleed" />
       </Band>
 
-      <Band heading="Certifications" accent="var(--c-forest)" alt>
+      <Band heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt>
         <Stagger>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
             <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--c-forest)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flexShrink: 0 }}>

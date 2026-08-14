@@ -22,12 +22,8 @@
   --c-steel: #5C6670;
   --c-forest: #3D6B52;
 
-  /* Lifts headings off the page instead of letting them sit flat on the
-     background: a hairline highlight above, then two soft drop shadows. */
-  --heading-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.75),
-    0 2px 4px rgba(31, 46, 68, 0.16),
-    0 6px 18px rgba(31, 46, 68, 0.10);
+  /* Flat, no shadow — matches the clean/Apple-style direction. */
+  --heading-shadow: none;
 
   /* Terminal surface — used by the popup. */
   --terminal-bg: #1E2530;
@@ -41,8 +37,8 @@
   --cloud-tile: #FFFFFF;
 
   /* Fonts */
-  --font-header: 'Archivo', sans-serif;
-  --font-body: 'Manrope', sans-serif;
+  --font-header: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --font-mono: 'Fira Code', monospace;
 
   /* Spacing */
@@ -87,10 +83,7 @@
   --c-steel: #9AA6B2;
   --c-forest: #6BAA88;
 
-  --heading-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06),
-    0 2px 6px rgba(0, 0, 0, 0.55),
-    0 8px 24px rgba(0, 0, 0, 0.45);
+  --heading-shadow: none;
 
   --terminal-bg: #222C3B;
   --terminal-border: #465569;
@@ -135,9 +128,6 @@ a {
 .band {
   width: 100%;
   transition: background-color 0.25s ease;
-  /* The bleeding card track is measured against 100vw, which includes the
-     scrollbar; clip so that overhang can never scroll the page sideways.
-     `clip` (not `hidden`) leaves the vertical axis alone. */
   overflow-x: clip;
 }
 
@@ -192,6 +182,7 @@ a {
 .section-row__heading {
   flex: 0 0 36%;
   min-width: min-content;
+  white-space: nowrap;
 }
 
 /* Skills hands more of the row to its detail column so more of the card
@@ -323,3 +314,20 @@ button:focus-visible {
     transition: none !important;
   }
 }
+
+/* CTA buttons: the arrow icon nudges right on hover, a small "expensive"
+   micro-interaction instead of a static arrow character. */
+.cta-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.cta-button__arrow {
+  display: inline-flex;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.cta-button:hover .cta-button__arrow {
+  transform: translateX(4px);
+}
+

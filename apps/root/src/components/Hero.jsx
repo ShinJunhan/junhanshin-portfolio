@@ -164,14 +164,14 @@ export default function Hero({ onComplete }) {
 
   const lines = [
     <>
-      <span style={{ ...PLAIN_TEXT_STYLE, color: TEACHER_HUE }}>10+</span>
+      <span style={{ ...PLAIN_TEXT_STYLE, color: TEACHER_HUE, fontWeight: 800 }}>10+</span>
       <span style={PLAIN_TEXT_STYLE}> years as a </span>
       <Highlight color="rgba(79,168,143,0.4)" show={revealedCount > 0}>Teacher</Highlight>
       <span style={PLAIN_TEXT_STYLE}>.</span>
     </>,
     <>
       <span style={PLAIN_TEXT_STYLE}>Then, </span>
-      <span style={{ ...PLAIN_TEXT_STYLE, color: OPERATOR_HUE }}>3</span>
+      <span style={{ ...PLAIN_TEXT_STYLE, color: OPERATOR_HUE, fontWeight: 800 }}>3</span>
       <span style={PLAIN_TEXT_STYLE}> years as a </span>
       <Highlight color="rgba(224,138,60,0.4)" show={revealedCount > 1}>Public-Private Operator</Highlight>
       <span style={PLAIN_TEXT_STYLE}>.</span>

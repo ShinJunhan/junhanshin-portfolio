@@ -143,23 +143,39 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+/* Three columns so the links sit on the bar's true centre: a spacer the
+   same width as the toggle, the links, then the toggle. */
 .navbar__inner {
   max-width: var(--content-width);
   height: 100%;
   margin: 0 auto;
   padding: 0 var(--gutter);
-  display: flex;
+  display: grid;
+  grid-template-columns: 36px 1fr 36px;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
 }
 
 .navbar__links {
+  grid-column: 2;
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: clamp(0.15rem, 1vw, 0.75rem);
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* On a phone the links need the whole bar to scroll through, so the
+   spacer collapses and they align left. */
+@media (max-width: 680px) {
+  .navbar__inner {
+    grid-template-columns: 1fr 36px;
+  }
+  .navbar__links {
+    grid-column: 1;
+    justify-content: flex-start;
+  }
 }
 
 .navbar__links::-webkit-scrollbar {
@@ -264,7 +280,7 @@ a {
 
 a.info-card:hover {
   transform: translateY(-3px);
-  border-color: var(--c-coral);
+  border-color: var(--info-accent, var(--c-coral));
   box-shadow: 0 10px 26px rgba(31, 46, 68, 0.1);
 }
 
@@ -275,7 +291,7 @@ a.info-card:hover {
   display: grid;
   place-items: center;
   background: var(--cloud-bg);
-  color: var(--c-coral);
+  color: var(--info-accent, var(--c-coral));
 }
 
 .info-card__label {
@@ -504,4 +520,72 @@ button:focus-visible {
    clears the fixed top bar. */
 #main-content {
   scroll-margin-top: var(--nav-h);
+}
+
+/* A lone certification shouldn't stretch across the whole row, so cap the
+   track width instead of letting one card fill it. */
+.info-grid--cert {
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 380px));
+}
+
+/* ---------- Projects ---------- */
+
+/* Big number on the left, rolling titles filling the space on the right. */
+.projects-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 4rem);
+}
+
+/* Fades the list out at both ends so entries appear and leave rather than
+   being cut off by a hard edge. */
+.ticker {
+  height: clamp(190px, 26vh, 260px);
+  overflow: hidden;
+  position: relative;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+
+.ticker__track {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ticker__item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.85rem;
+  padding: 0.6rem 0;
+  white-space: nowrap;
+}
+
+.ticker__index {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--c-orange);
+  flex-shrink: 0;
+}
+
+.ticker__title {
+  font-family: var(--font-header);
+  font-weight: 600;
+  font-size: clamp(1rem, 0.85rem + 0.6vw, 1.4rem);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 860px) {
+  .projects-row {
+    grid-template-columns: 1fr;
+  }
+  .ticker {
+    height: clamp(150px, 22vh, 200px);
+  }
 }

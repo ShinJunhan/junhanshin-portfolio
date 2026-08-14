@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { motion, useDragControls } from 'framer-motion'
 
 const COMMANDS = {
   help: () =>
@@ -26,6 +27,9 @@ const COMMANDS = {
 
 export default function TerminalPopup() {
   const [open, setOpen] = useState(false)
+  // Drag is started only from the grip and the title bar, so selecting text
+  // in the log or typing in the input never turns into a drag.
+  const dragControls = useDragControls()
   const [history, setHistory] = useState([
     { type: 'output', text: 'Type "help" to see available commands.' },
   ])
@@ -104,12 +108,39 @@ export default function TerminalPopup() {
 
       {/* Side panel, Notion-style: no backdrop, so the page behind stays
           scrollable and clickable while the terminal is open. */}
-      <aside
-        className={`term-panel${open ? ' term-panel--open' : ''}`}
+      <motion.aside
+        className="term-panel"
         aria-hidden={open ? undefined : 'true'}
         aria-label="Terminal"
+        initial={false}
+        animate={{ x: open ? 0 : '100%' }}
+        transition={{ type: 'spring', stiffness: 340, damping: 36 }}
+        drag="x"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{ left: 0, right: 0 }}
+        /* Rubber-bands to the right only; it can't be pulled past its open
+           position to the left. */
+        dragElastic={{ left: 0, right: 0.85 }}
+        dragMomentum={false}
+        onDragEnd={(_, info) => {
+          if (info.offset.x > 90 || info.velocity.x > 520) setOpen(false)
+        }}
+        style={{ pointerEvents: open ? 'auto' : 'none' }}
       >
-        <div className="term-panel__bar">
+        {/* Swipe handle: drag this (or the title bar) right to dismiss. */}
+        <div
+          className="term-panel__grip"
+          onPointerDown={(e) => dragControls.start(e)}
+          role="presentation"
+        >
+          <span className="term-panel__grip-bar" />
+        </div>
+
+        <div
+          className="term-panel__bar"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
           <span style={{ color: 'var(--terminal-ink)', fontSize: '12px', opacity: 0.75 }}>
             junhan@portfolio: ~
           </span>
@@ -150,7 +181,7 @@ export default function TerminalPopup() {
             spellCheck="false"
           />
         </form>
-      </aside>
+      </motion.aside>
     </>
   )
 }

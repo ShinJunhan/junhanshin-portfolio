@@ -36,6 +36,13 @@
   --cloud-border: #B7C6E4;
   --cloud-tile: #FFFFFF;
 
+  /* Skill card: a faint indigo, terminal-ish pane you can see the band
+     through — the "hologram" surface. */
+  --holo-a: rgba(62, 92, 137, 0.11);
+  --holo-b: rgba(62, 92, 137, 0.025);
+  --holo-border: rgba(62, 92, 137, 0.2);
+  --holo-sheen: rgba(255, 255, 255, 0.5);
+
   /* Fonts */
   --font-header: 'Inter', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -95,6 +102,11 @@
   --cloud-bg: #2C3A57;
   --cloud-border: #45557A;
   --cloud-tile: #3A4A6B;
+
+  --holo-a: rgba(126, 163, 216, 0.17);
+  --holo-b: rgba(126, 163, 216, 0.04);
+  --holo-border: rgba(126, 163, 216, 0.26);
+  --holo-sheen: rgba(255, 255, 255, 0.09);
 
   --nav-bg: rgba(16, 21, 31, 0.74);
 
@@ -345,20 +357,61 @@ a.info-card:hover {
   scroll-snap-align: start;
 }
 
-.skill-card {
+/* The slot owns the track sizing; the title sits above the pane. */
+.skill-slot {
   /* Only (n-1) gaps exist for n cards, so subtract exactly that much —
      subtracting a full gap per card would leave the track short. */
   flex: 0 0 calc((100% - (var(--cards-visible) - 1) * var(--card-gap)) / var(--cards-visible));
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.skill-slot__title {
+  font-family: var(--font-header);
+  font-weight: 700;
+  font-size: clamp(1rem, 0.9rem + 0.45vw, 1.35rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  text-align: center;
+  margin: 0;
+  text-wrap: balance;
+  /* Reserve two lines for every title so a wrapped one ("Containers /
+     Orchestration") doesn't push its card below the others. */
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Hologram pane: a faint indigo wash you can see the band through, with a
+   soft sheen across the top and a watch-style rounded-square outline. */
+.skill-card {
+  width: 100%;
   aspect-ratio: 9 / 16;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(158deg, var(--holo-a) 0%, var(--holo-b) 52%, var(--holo-a) 100%);
+  border: 1px solid var(--holo-border);
+  border-radius: clamp(24px, 3.4vw, 42px);
+  backdrop-filter: blur(9px) saturate(140%);
+  -webkit-backdrop-filter: blur(9px) saturate(140%);
   padding: clamp(1rem, 1.7vw, 1.6rem);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.9rem;
-  box-shadow: 0 2px 10px rgba(31, 46, 68, 0.07);
+  box-shadow: inset 0 1px 0 var(--holo-sheen), 0 8px 26px rgba(31, 46, 68, 0.08);
+}
+
+/* Diagonal glint, purely decorative. */
+.skill-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(122deg, transparent 38%, var(--holo-sheen) 50%, transparent 62%);
+  opacity: 0.35;
 }
 
 /* Takes the leftover height so the icon cluster measures against a real
@@ -368,17 +421,6 @@ a.info-card:hover {
   flex: 1 1 auto;
   width: 100%;
   min-height: 0;
-}
-
-.skill-card__title {
-  font-family: var(--font-header);
-  font-weight: 700;
-  font-size: var(--h3-size);
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-  text-align: center;
-  margin: 0;
-  text-wrap: balance;
 }
 
 @media (max-width: 1180px) {
@@ -467,14 +509,46 @@ button:focus-visible {
   border-left: 1px solid var(--terminal-border);
   box-shadow: -18px 0 46px rgba(15, 20, 30, 0.24);
   font-family: var(--font-mono);
-  transform: translateX(100%);
-  visibility: hidden;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.35s;
+  /* Position is animated by framer-motion (so it can also be dragged), so
+     no CSS transform here — the two would fight over `transform`. */
+  touch-action: pan-y;
 }
 
-.term-panel--open {
-  transform: translateX(0);
-  visibility: visible;
+/* Grab handle down the panel's left edge. */
+.term-panel__grip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.term-panel__grip:active {
+  cursor: grabbing;
+}
+
+.term-panel__grip-bar {
+  width: 4px;
+  height: 42px;
+  border-radius: 999px;
+  background: var(--terminal-border);
+}
+
+/* Clear the grip so it never sits under the bar's contents. */
+.term-panel__bar,
+.term-panel__log,
+.term-panel__form {
+  padding-left: 24px;
+}
+
+.term-panel__bar {
+  cursor: grab;
+  touch-action: none;
 }
 
 .term-panel__bar {
@@ -533,9 +607,11 @@ button:focus-visible {
 /* Big number on the left, rolling titles filling the space on the right. */
 .projects-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* Narrower left column and a tighter gap, so the rolling titles sit
+     closer to the number and get the width long names need. */
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
   align-items: center;
-  gap: clamp(1.5rem, 4vw, 4rem);
+  gap: clamp(1rem, 2vw, 2.25rem);
 }
 
 /* Fades the list out at both ends so entries appear and leave rather than
@@ -560,8 +636,7 @@ button:focus-visible {
   display: flex;
   align-items: baseline;
   gap: 0.85rem;
-  padding: 0.6rem 0;
-  white-space: nowrap;
+  padding: 0.55rem 0;
 }
 
 .ticker__index {
@@ -576,9 +651,8 @@ button:focus-visible {
   font-weight: 600;
   font-size: clamp(1rem, 0.85rem + 0.6vw, 1.4rem);
   letter-spacing: -0.01em;
+  line-height: 1.3;
   color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 @media (max-width: 860px) {

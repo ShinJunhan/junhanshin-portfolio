@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, Children, useContext } from 'react'
 import { motion, useScroll, useTransform, useReducedMotion, useInView } from 'framer-motion'
-import SkillsCarousel from './SkillsCarousel.jsx'
+import SkillsHoneycomb from './SkillsHoneycomb.jsx'
+import SoftSkills from './SoftSkills.jsx'
 import ProjectsTicker from './ProjectsTicker.jsx'
 import { BandReveal } from './bandReveal.js'
 
@@ -11,7 +12,10 @@ const HEADING_DURATION = 1.45
 // space — the heading has fully cleared the detail column before it fills.
 const DETAIL_DELAY = HEADING_DURATION + 0.08
 
-const CONTACT_ITEMS = [
+// Everything the About Me grid holds — contact details first, then the
+// standing facts (education, languages, credential) that used to live in
+// sections of their own.
+const ABOUT_ITEMS = [
   {
     label: 'Location',
     text: 'Methuen, MA',
@@ -43,7 +47,60 @@ const CONTACT_ITEMS = [
       </svg>
     ),
   },
+  {
+    label: 'Education',
+    text: 'B.S., Information and Statistics',
+    // Broken explicitly rather than left to wrap: the degree, the school,
+    // and the place each get their own line at every width.
+    meta: ['Chungnam National University', 'Daejeon, South Korea'],
+    icon: (
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 4L2 9l10 5 10-5-10-5z" />
+        <path d="M6 11.5V16c0 1.7 2.7 3 6 3s6-1.3 6-3v-4.5" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Certification',
+    text: 'AWS Certified Solutions Architect – Associate',
+    meta: 'Amazon Web Services',
+    icon: (
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="9" r="6" />
+        <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+      </svg>
+    ),
+  },
+  {
+    label: 'Languages',
+    // Three lines carrying equal weight — no language is presented as the
+    // headline with the others as footnotes. Each is short enough to hold
+    // one line at every card width.
+    lines: [
+      { name: 'English', qualifier: 'Fluent' },
+      { name: 'Korean', qualifier: 'Native' },
+      { name: 'Japanese', qualifier: 'Intermediate' },
+    ],
+    icon: (
+      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18M12 3c2.8 2.7 2.8 15.3 0 18M12 3c-2.8 2.7-2.8 15.3 0 18" />
+      </svg>
+    ),
+  },
 ]
+
+// Where the credentials are heading: one held, one underway, three ahead.
+const CERT_TRACK = [
+  { label: 'AWS Certified Solutions Architect – Associate', note: 'Done', state: 'done' },
+  { label: 'HashiCorp Certified: Terraform Associate', note: 'In progress', state: 'active' },
+  { label: 'Certified Kubernetes Administrator (CKA)', note: 'Planned', state: 'planned' },
+  { label: 'AWS Certified SysOps Administrator – Associate', note: 'Planned', state: 'planned' },
+  { label: 'AWS Certified Solutions Architect – Professional', note: 'Long-term', state: 'planned' },
+]
+
+// How long each credential holds the ticker before the next one takes over.
+const TICKER_MS = 2600
 
 const PERSON_ICON = (
   <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -68,28 +125,12 @@ const SKILLS_ICON = (
   </svg>
 )
 
-// Badge/ribbon — same shape already used inline next to the AWS SAA line,
-// reused here so the heading icon and the credential icon read as one motif.
-const CERT_ICON = (
+// Pentagon — the same five-sided shape the soft-skills radar is drawn on.
+const SOFT_ICON = (
   <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <circle cx="12" cy="9" r="6" />
-    <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
+    <path d="M12 2.5l9.5 6.9-3.6 11.1H6.1L2.5 9.4 12 2.5z" />
   </svg>
 )
-
-// Rendered as cards in the same grid as the About Me details.
-const CERTIFICATIONS = [
-  {
-    label: 'Cloud',
-    text: 'AWS Certified Solutions Architect – Associate',
-    icon: (
-      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <circle cx="12" cy="9" r="6" />
-        <path d="M8.5 14.5L7 22l5-2.5L17 22l-1.5-7.5" />
-      </svg>
-    ),
-  },
-]
 
 // Below this width the columns stack, so the heading has no left column to
 // slide back to — it just pops in place instead.
@@ -253,7 +294,7 @@ function Band({ id, heading, icon, accent, alt, children }) {
   }, [heading])
 
   return (
-    <section ref={ref} id={id} className="band snap-section" style={{ background: bandBg }}>
+    <section ref={ref} id={id} className="band" style={{ background: bandBg }}>
       <div className="band__inner">
         <Rail accent={accent} bandBg={bandBg} dotTop={dotTop} />
         <div className="band__body" ref={bodyRef}>
@@ -282,8 +323,118 @@ function InfoCard({ item, accent = 'var(--c-coral)' }) {
     >
       <span className="info-card__icon">{item.icon}</span>
       <span className="info-card__label">{item.label}</span>
-      <span className="info-card__value">{item.text}</span>
+      {item.lines ? (
+        item.lines.map((line) => (
+          <span key={line.name} className="info-card__value">
+            {line.name}
+            <span className="info-card__qualifier"> — {line.qualifier}</span>
+          </span>
+        ))
+      ) : (
+        <span className="info-card__value">{item.text}</span>
+      )}
+      {item.meta && (
+        <span className="info-card__meta">
+          {[].concat(item.meta).map((line) => (
+            <span key={line} className="info-card__meta-line">
+              {line}
+            </span>
+          ))}
+        </span>
+      )}
     </Tag>
+  )
+}
+
+function CertStep({ step }) {
+  return (
+    <div className={`cert-step cert-step--${step.state}`}>
+      <span className="cert-step__dot" aria-hidden="true" />
+      <span className="cert-step__label">{step.label}</span>
+      <span className="cert-step__note">{step.note}</span>
+    </div>
+  )
+}
+
+// One credential at a time, cycling — what's held, what's underway, what's
+// queued behind it. Pauses while the pointer or keyboard focus is on it, so
+// a long name can be read at the reader's own pace rather than the timer's.
+function CertRoadmap() {
+  const reduceMotion = useReducedMotion()
+  const [index, setIndex] = useState(0)
+  const [held, setHeld] = useState(false)
+
+  useEffect(() => {
+    if (reduceMotion || held) return
+    const id = setInterval(() => setIndex((i) => (i + 1) % CERT_TRACK.length), TICKER_MS)
+    return () => clearInterval(id)
+  }, [reduceMotion, held])
+
+  // Anyone who has asked for less motion gets the whole list at once rather
+  // than a thing that moves on its own.
+  if (reduceMotion) {
+    return (
+      <section className="cert-roadmap" aria-labelledby="cert-roadmap-title">
+        <h3 className="cert-roadmap__title" id="cert-roadmap-title">
+          Certification roadmap
+        </h3>
+        <div className="cert-list">
+          {CERT_TRACK.map((step) => (
+            <CertStep key={step.label} step={step} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="cert-roadmap" aria-labelledby="cert-roadmap-title">
+      <h3 className="cert-roadmap__title" id="cert-roadmap-title">
+        Certification roadmap
+      </h3>
+
+      <div
+        className="cert-ticker"
+        onMouseEnter={() => setHeld(true)}
+        onMouseLeave={() => setHeld(false)}
+        onFocusCapture={() => setHeld(true)}
+        onBlurCapture={() => setHeld(false)}
+      >
+        {/* Every entry occupies the same grid cell, so the stage is as tall
+            as the longest of them and never resizes mid-cycle. The one on
+            show is opaque; the rest wait just below it. */}
+        <div className="cert-ticker__stage" aria-hidden="true">
+          {CERT_TRACK.map((step, i) => (
+            <motion.div
+              key={step.label}
+              className="cert-ticker__slide"
+              initial={false}
+              animate={{ opacity: i === index ? 1 : 0, y: i === index ? 0 : 12 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{ pointerEvents: i === index ? 'auto' : 'none' }}
+            >
+              <CertStep step={step} />
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="cert-ticker__pips" aria-hidden="true">
+          {CERT_TRACK.map((step, i) => (
+            <span key={step.label} className={`cert-ticker__pip${i === index ? ' cert-ticker__pip--on' : ''}`} />
+          ))}
+        </div>
+      </div>
+
+      {/* The ticker only ever shows one entry, so the full sequence is kept
+          here for anything reading the page rather than watching it. */}
+      <ol className="sr-only">
+        {CERT_TRACK.map((step) => (
+          <li key={step.label}>
+            {step.label} — {step.note}
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }
 
@@ -292,9 +443,13 @@ export default function Timeline() {
     <>
       <Band id="about" heading="About Me" icon={PERSON_ICON} accent="var(--c-coral)" alt>
         <Stagger className="info-grid">
-          {CONTACT_ITEMS.map((item) => (
+          {ABOUT_ITEMS.map((item) => (
             <InfoCard key={item.text} item={item} />
           ))}
+        </Stagger>
+        {/* Follows the cards in rather than sitting there while they land. */}
+        <Stagger delay={DETAIL_DELAY + ABOUT_ITEMS.length * 0.14}>
+          <CertRoadmap />
         </Stagger>
       </Band>
 
@@ -321,16 +476,12 @@ export default function Timeline() {
         </div>
       </Band>
 
-      <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt>
-        <SkillsCarousel baseDelay={DETAIL_DELAY} className="carousel--bleed" />
+      <Band id="skills" heading="Technical Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt>
+        <SkillsHoneycomb baseDelay={DETAIL_DELAY} />
       </Band>
 
-      <Band id="certifications" heading="Certifications" icon={CERT_ICON} accent="var(--c-forest)" alt={false}>
-        <Stagger className="info-grid info-grid--cert">
-          {CERTIFICATIONS.map((c) => (
-            <InfoCard key={c.text} item={c} accent="var(--c-forest)" />
-          ))}
-        </Stagger>
+      <Band id="soft-skills" heading="Soft Skills" icon={SOFT_ICON} accent="var(--c-indigo)" alt={false}>
+        <SoftSkills baseDelay={DETAIL_DELAY} />
       </Band>
     </>
   )

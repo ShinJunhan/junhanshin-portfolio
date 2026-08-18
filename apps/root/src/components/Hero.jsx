@@ -13,9 +13,11 @@ const GREETING_FADE_DURATION = 0.6 // seconds, headline <-> greeting cross-fade
 const NAME_COLOR_DELAY = 0.5      // seconds after the greeting mounts, before "Junhan" turns indigo
 const NAME_COLOR_DURATION = 0.7
 const POST_GREETING_HOLD = 500    // ms after the name color settles, before the hero reports "done"
-const NUDGE_DELAY = 1400          // ms after the scroll hint appears before the auto-nudge scroll fires
 
 const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 500 }
+// Safeguard behind the explicit break below: if the phrase still has to
+// wrap at some width, it wraps around this pair rather than through it.
+const NOWRAP = { whiteSpace: 'nowrap' }
 const INK_FALLBACK = '#1F2E44'
 
 // Solid versions of each sentence's highlight hue, used to color the
@@ -76,30 +78,52 @@ function Greeting({ fontSize }) {
   }, [reduceMotion])
 
   return (
-    <motion.h1
+    <motion.div
       key="greeting"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: GREETING_FADE_DURATION, ease: 'easeOut' }}
-      style={{
-        fontSize,
-        lineHeight: 1.5,
-        letterSpacing: '0.01em',
-        fontWeight: 700,
-        margin: 0,
-      }}
     >
-      <span style={PLAIN_TEXT_STYLE}>Hi, I'm </span>
-      <motion.span
-        style={{ fontWeight: 700 }}
-        animate={{ color: nameColor }}
-        transition={{ duration: NAME_COLOR_DURATION, ease: 'easeOut' }}
+      <h1
+        style={{
+          fontSize,
+          lineHeight: 1.5,
+          letterSpacing: '0.01em',
+          fontWeight: 700,
+          margin: 0,
+        }}
       >
-        Junhan
-      </motion.span>
-      <span style={PLAIN_TEXT_STYLE}>.</span>
-    </motion.h1>
+        <span style={PLAIN_TEXT_STYLE}>Hi, I'm </span>
+        <motion.span
+          style={{ fontWeight: 700 }}
+          animate={{ color: nameColor }}
+          transition={{ duration: NAME_COLOR_DURATION, ease: 'easeOut' }}
+        >
+          Junhan
+        </motion.span>
+        <span style={PLAIN_TEXT_STYLE}>.</span>
+      </h1>
+
+      {/* Arrives after the name has finished settling into indigo, so the
+          two don't compete for attention in the same beat. */}
+      <motion.p
+        className="hero__narrative"
+        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{
+          duration: reduceMotion ? 0 : 0.7,
+          delay: reduceMotion ? 0 : NAME_COLOR_DELAY + NAME_COLOR_DURATION * 0.6,
+          ease: 'easeOut',
+        }}
+      >
+        I spent a decade helping people grow — first as a teacher, then as an operations
+        lead building a program from the ground up. Somewhere along the way, I realized
+        what I loved most was the systems working quietly underneath: the infrastructure
+        that makes everything else possible. That's what led me to cloud engineering, and
+        it's where I want to build next.
+      </motion.p>
+    </motion.div>
   )
 }
 
@@ -147,20 +171,9 @@ export default function Hero({ onComplete }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Auto-nudge: once the hero has finished its sequence, gently scroll the
-  // page down to the start of the next section on the viewer's behalf,
-  // instead of leaving the hero "stuck" at full viewport height. It only
-  // fires if they haven't already started scrolling themselves, and
-  // respects reduced-motion preference.
-  useEffect(() => {
-    if (reduceMotion || !showScrollHint || hasScrolled) return
-    const t = setTimeout(() => {
-      if (window.scrollY < 40) {
-        document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-    }, NUDGE_DELAY)
-    return () => clearTimeout(t)
-  }, [reduceMotion, showScrollHint, hasScrolled])
+  // No auto-scroll: once the sequence finishes, the page simply waits. The
+  // hint below points at the next section; moving there is the reader's
+  // call, not the page's.
 
   const lines = [
     <>
@@ -179,7 +192,12 @@ export default function Hero({ onComplete }) {
     <>
       <span style={PLAIN_TEXT_STYLE}>Now, a dedicated </span>
       <Highlight color="rgba(43,155,255,0.55)" show={revealedCount > 2} glow>Cloud/DevOps Engineer</Highlight>
-      <span style={PLAIN_TEXT_STYLE}> who builds secure, cost-aware cloud infrastructure.</span>
+      {/* Always breaks here, so the qualifying phrase reads as one unit
+          under the title rather than trailing off the end of it. */}
+      <br />
+      <span style={PLAIN_TEXT_STYLE}>
+        who builds <span style={NOWRAP}>secure, cost-aware</span> cloud infrastructure.
+      </span>
     </>,
   ]
 
@@ -188,7 +206,6 @@ export default function Hero({ onComplete }) {
   return (
     <section
       id="home"
-      className="snap-section"
       style={{
         minHeight: '88vh',
         /* Clears the fixed top bar so the headline stays optically centred. */

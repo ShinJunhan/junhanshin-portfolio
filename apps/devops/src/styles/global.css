@@ -44,7 +44,10 @@
 
   /* Layout */
   --sidebar-w: 272px;
-  --content-width: 880px;
+  /* Widened from 880px: these pages carry diagrams, screenshot grids, and
+     metric rows, which all want more room than a pure reading measure. Prose
+     inside them is still held to its own `ch` limits so lines stay readable. */
+  --content-width: 1180px;
   --gutter: clamp(1.15rem, 3vw, 3rem);
   /* Read back by SectionNav to place the scroll-spy boundary, so this value
      is the single source of truth for the sticky bar's height. */
@@ -267,6 +270,18 @@ button:focus-visible {
   color: var(--ink);
 }
 
+/* ---------- Theme toggle ---------- */
+
+/* Above the mobile strip (50) and the sticky menu (20), but below the drawer
+   button (60) and the drawer itself (70) — so an open drawer covers it rather
+   than leaving it floating over the scrim. */
+.theme-slot {
+  position: fixed;
+  top: 0.7rem;
+  right: 0.9rem;
+  z-index: 55;
+}
+
 /* ---------- Drawer (narrow widths only) ---------- */
 
 .drawer-toggle {
@@ -343,15 +358,18 @@ button:focus-visible {
 .welcome__message {
   margin: 0;
   font-family: var(--font-header);
-  font-weight: 700;
-  font-size: clamp(1.35rem, 1rem + 1.6vw, 2rem);
-  letter-spacing: -0.02em;
+  font-weight: 800;
+  font-size: clamp(1.9rem, 1.2rem + 3.2vw, 3.4rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
   color: var(--ink);
 }
 
 .welcome__hint {
-  margin: 0.9rem 0 0;
-  font-size: 0.9rem;
+  margin: 1.1rem auto 0;
+  max-width: 34ch;
+  font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.15rem);
+  line-height: 1.6;
   color: var(--text-secondary);
 }
 
@@ -382,15 +400,32 @@ button:focus-visible {
 .project__head {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.9rem;
   padding: clamp(2.25rem, 4.5vw, 3.5rem) 0 1.75rem;
 }
 
+/* Small, quiet, and above the title — identifies the project the way the
+   sidebar entry does without taking weight from the real heading. */
+.project__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .project__title {
   font-weight: 800;
-  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  font-size: clamp(1.75rem, 1.25rem + 2vw, 2.7rem);
   letter-spacing: -0.03em;
-  line-height: 1.1;
+  line-height: 1.15;
+  /* No measure cap and no `text-wrap: balance`: left-aligned, each line
+     should run to the edge before it breaks. Balancing would even the lines
+     out and leave the first one short of the width it has — the wrapping
+     this was meant to stop. */
   color: var(--ink);
 }
 
@@ -474,20 +509,19 @@ button:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 
-/* Starts on the title's left edge — the 0.7rem backs out the first item's
-   own padding so the text lines up, not the button box — and runs on to the
-   column's right edge rather than stopping at the reading measure. The max()
-   collapses to a plain gutter once the column is narrower than that measure.
-   Ten menu entries do not fit inside 880px; they do fit across the column. */
+/* Centred in the content column. `safe center` rather than plain `center`:
+   when the entries do overflow — a phone — plain centring pushes the first
+   one off the scrollable start edge where it can never be reached, while
+   `safe` falls back to start alignment at exactly that point.
+   Padding is symmetric so the centring stays true, and wide enough on both
+   sides to clear the fixed theme toggle at the top right. */
 .section-nav__bar {
   display: flex;
   align-items: center;
+  justify-content: safe center;
+  gap: 0.4rem;
   height: 100%;
-  padding-left: max(
-    calc(var(--gutter) - 0.6rem),
-    calc((100% - var(--content-width)) / 2 + var(--gutter) - 0.6rem)
-  );
-  padding-right: var(--gutter);
+  padding: 0 max(var(--gutter), 3.75rem);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -572,11 +606,16 @@ button:focus-visible {
   color: var(--ink);
 }
 
+/* Explanatory copy runs the full width of the column and is justified, so
+   the block reads as one clean rectangle. `hyphens: auto` is doing real work
+   here rather than being decoration: justification without it opens large
+   gaps between words on any line holding a long technical term. */
 .prose p {
   margin: 0 0 1rem;
-  max-width: 68ch;
   font-size: 1rem;
   line-height: 1.7;
+  text-align: justify;
+  hyphens: auto;
   color: var(--text-primary);
 }
 
@@ -584,13 +623,15 @@ button:focus-visible {
   margin-bottom: 0;
 }
 
-/* Role line — a step up from body copy, held to a short measure. */
+/* Role line — a step up from body copy in size and weight, same full-width
+   justified block as the rest. */
 .lede {
   margin: 0;
-  max-width: 56ch;
   font-size: 1.1rem;
   font-weight: 500;
   line-height: 1.6;
+  text-align: justify;
+  hyphens: auto;
   color: var(--ink);
 }
 
@@ -601,7 +642,7 @@ button:focus-visible {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
   gap: 0.75rem;
 }
 
@@ -641,29 +682,33 @@ button:focus-visible {
 /* ---------- Tech stack ---------- */
 
 /* A grid of logos with their names, not a run of chips: no pill, no fill, no
-   border. Auto-fill rather than a fixed column count, so the same rule reads
-   as four across on a laptop and two on a phone without a breakpoint each. */
+   border. Equal-width columns via auto-fit + 1fr, so the marks sit on an even
+   rhythm across the row instead of bunching at the left. The narrow floor
+   lets a full stack fit one or two rows on a desktop and still collapse
+   sensibly on a phone. */
 .stack {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-  gap: clamp(1.1rem, 2.2vw, 1.75rem) 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  gap: clamp(1.5rem, 2.6vw, 2.25rem) 0.75rem;
 }
 
+/* Mark above, name beneath, both centred on the column. */
 .tech {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   min-width: 0;
 }
 
 .tech__mark {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
 }
 
@@ -689,9 +734,10 @@ button:focus-visible {
 }
 
 .tech__label {
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 600;
   line-height: 1.3;
+  text-align: center;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
@@ -763,7 +809,7 @@ button:focus-visible {
   margin: 0 0 1.25rem;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 1rem;
 }
 
@@ -820,9 +866,10 @@ button:focus-visible {
 
 .decision__why {
   margin: 0;
-  max-width: 68ch;
   font-size: 0.95rem;
   line-height: 1.65;
+  text-align: justify;
+  hyphens: auto;
   color: var(--text-primary);
 }
 
@@ -910,13 +957,18 @@ a.link-chip:hover {
   font-weight: 600;
 }
 
-/* Rendered markdown. Held to the same measure as the page's prose so the
-   README doesn't read as a different document pasted in. */
+/* Rendered markdown, on the same full-width justified footing as the page's
+   own prose so the README doesn't read as a different document pasted in. */
 .markdown {
-  max-width: 72ch;
   font-size: 0.96rem;
   line-height: 1.7;
   color: var(--text-primary);
+}
+
+.markdown p,
+.markdown li {
+  text-align: justify;
+  hyphens: auto;
 }
 
 .markdown > *:first-child {
@@ -1020,7 +1072,7 @@ a.link-chip:hover {
 
 .reflection {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1.5rem;
 }
 
@@ -1034,6 +1086,24 @@ a.link-chip:hover {
   color: var(--accent);
 }
 
+/* Tablet and small laptop: the sidebar keeps its own column, but a 272px
+   rail costs too much of a ~900px viewport, so it narrows before the drawer
+   breakpoint takes over entirely. */
+@media (min-width: 861px) and (max-width: 1100px) {
+  :root {
+    --sidebar-w: 224px;
+  }
+  .sidebar {
+    padding: 1.5rem 1.1rem 2rem;
+  }
+  .sidebar__brand {
+    font-size: 1.4rem;
+  }
+  .sidebar__link {
+    font-size: 0.85rem;
+  }
+}
+
 /* Kept at the end of the file, after the rules they override: these set the
    same properties at the same specificity, so source order is what decides. */
 @media (max-width: 860px) {
@@ -1043,6 +1113,48 @@ a.link-chip:hover {
   }
   .section {
     scroll-margin-top: calc(var(--mobile-bar-h) + var(--section-nav-h));
+    padding: 2rem 0;
+  }
+  /* The eyebrow, title, and date need less air above them once the menu bar
+     is already eating the top of the screen. */
+  .project__head {
+    padding-top: 1.75rem;
+  }
+  .project__title {
+    max-width: none;
+  }
+  /* Members: smaller circles and tighter columns so a four-person team still
+     fits across a phone rather than wrapping to one per row. */
+  .avatars {
+    gap: 1.1rem 1.25rem;
+  }
+  .avatars__item {
+    width: 68px;
+  }
+  .avatars__circle {
+    width: 46px;
+    height: 46px;
+    font-size: 0.9rem;
+  }
+  /* Metric numbers are the loudest thing on the page; at phone width they do
+     not need to be. */
+  .metric {
+    padding: 0.85rem 0.95rem;
+  }
+  .decision,
+  .empty-slot {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Stacked marks are narrow enough to keep two across even here — one per
+     row would leave the section mostly empty space. */
+  .stack {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .reflection {
+    grid-template-columns: 1fr;
   }
 }
 

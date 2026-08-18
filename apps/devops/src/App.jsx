@@ -5,6 +5,7 @@ import ProjectPage from './components/ProjectPage.jsx'
 import NotFound from './components/NotFound.jsx'
 import { findProject } from './data/projects.js'
 import { useHashRoute } from './lib/useHashRoute.js'
+import ThemeToggle from './components/ThemeToggle.jsx'
 import { MenuIcon } from './components/icons.jsx'
 
 export default function App() {
@@ -35,6 +36,13 @@ export default function App() {
         <MenuIcon />
         <span className="sr-only">Open navigation</span>
       </button>
+
+      {/* One instance, parked top-right at every width — the same toggle
+          component the landing page uses, so both sites share the theme
+          contract and the `theme` key in localStorage. */}
+      <div className="theme-slot">
+        <ThemeToggle />
+      </div>
 
       {drawerOpen && <div className="drawer-scrim" onClick={closeDrawer} />}
 

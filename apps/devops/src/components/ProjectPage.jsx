@@ -34,7 +34,11 @@ export default function ProjectPage({ project }) {
           to the reading measure, which is why they are separate wrappers. */}
       <div className="project__body">
         <header className="project__head">
-          <h1 className="project__title">{project.title}</h1>
+          {/* The short name — the team's, for team projects — kept as a quiet
+              eyebrow so it still ties the page to the sidebar entry the reader
+              clicked, without competing with the real title for weight. */}
+          <p className="project__eyebrow">{project.title}</p>
+          <h1 className="project__title">{project.fullTitle ?? project.title}</h1>
           {/* The team used to sit here beside the date; it has its own
               Members section now. */}
           <p className="project__period">{project.period}</p>

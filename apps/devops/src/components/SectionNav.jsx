@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import { navGroupsFor, groupIdForSection } from '../data/navGroups.js'
 
-// The sticky in-page nav. It lists exactly the sections the page rendered —
-// it is handed the same filtered list the page mapped over, so it can never
-// point at a heading that isn't there.
+// The sticky in-page menu. It shows five grouped entries rather than one per
+// section — the groups come from navGroups.js, which is a layer over the same
+// section list the page renders, so the two can still never disagree about
+// what exists.
 //
 // These are buttons rather than `<a href="#role">`: the app routes on the
 // hash, so writing a bare fragment into the URL would drop the reader back to
 // the welcome state mid-scroll.
+
 // How far down the viewport the bar comes to rest — its own height plus
 // whatever sits above it, which is nothing on desktop and the mobile button
 // strip below the breakpoint. Measured rather than restated as a number here:
@@ -19,17 +22,19 @@ function stickyOffset(nav) {
 }
 
 export default function SectionNav({ sections }) {
-  const [activeId, setActiveId] = useState(sections[0]?.id)
+  const groups = navGroupsFor(sections)
+  const [activeId, setActiveId] = useState(groups[0]?.id)
   const navRef = useRef(null)
   const barRef = useRef(null)
 
   useEffect(() => {
-    setActiveId(sections[0]?.id)
+    setActiveId(navGroupsFor(sections)[0]?.id)
   }, [sections])
 
-  // Whichever section heading sits nearest under the sticky bar is the active
-  // one. The bottom margin keeps a short trailing section from winning just
-  // because it is fully on screen.
+  // Whichever section heading sits nearest under the sticky bar decides the
+  // active entry — mapped up to the group that covers it. The bottom margin
+  // keeps a short trailing section from winning just because it is fully on
+  // screen.
   useEffect(() => {
     const targets = sections
       .map((section) => document.getElementById(section.id))
@@ -48,7 +53,8 @@ export default function SectionNav({ sections }) {
           const visible = entries
             .filter((entry) => entry.isIntersecting)
             .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-          if (visible[0]) setActiveId(visible[0].target.id)
+          const groupId = visible[0] && groupIdForSection(visible[0].target.id)
+          if (groupId) setActiveId(groupId)
         },
         {
           root: null,
@@ -67,7 +73,7 @@ export default function SectionNav({ sections }) {
     }
   }, [sections])
 
-  // Keep the active chip in view when the bar itself has to scroll sideways.
+  // Keep the active entry in view when the bar itself has to scroll sideways.
   useEffect(() => {
     const bar = barRef.current
     const chip = bar?.querySelector('[data-active="true"]')
@@ -85,15 +91,15 @@ export default function SectionNav({ sections }) {
   return (
     <div className="section-nav" ref={navRef}>
       <div className="section-nav__bar" ref={barRef}>
-        {sections.map((section) => (
+        {groups.map((group) => (
           <button
-            key={section.id}
+            key={group.id}
             type="button"
-            data-active={section.id === activeId}
-            className={`section-nav__item${section.id === activeId ? ' section-nav__item--on' : ''}`}
-            onClick={() => goTo(section.id)}
+            data-active={group.id === activeId}
+            className={`section-nav__item${group.id === activeId ? ' section-nav__item--on' : ''}`}
+            onClick={() => goTo(group.targetId)}
           >
-            {section.navLabel ?? section.label}
+            {group.label}
           </button>
         ))}
       </div>

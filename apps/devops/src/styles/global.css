@@ -1,0 +1,1057 @@
+/* devops.junhanshin.com — workspace shell and the shared project template.
+   Tokens mirror the root app so the two sites read as one system; see
+   DESIGN.md for the palette these come from. */
+
+:root {
+  /* Base indigo palette — DESIGN.md */
+  --bg: #F5F7FA;
+  --bg-alt: #E9EEF5;
+  --text-primary: #253449;
+  --text-secondary: #8FA3BD;
+  --card-bg: #FFFFFF;
+  --border: #E2E7ED;
+  --accent-base: #3E5C89;
+  --ink: #1F2E44;
+
+  /* Per-project accents. A project page picks exactly one of these and binds
+     it to --accent; nothing outside a themed page reads these directly. */
+  --c-indigo: #3E5C89;
+  --c-coral: #D9645A;
+  --c-orange: #E08A3C;
+  --c-emerald: #4FA88F;
+  --c-steel: #5C6670;
+  --c-forest: #3D6B52;
+
+  /* Fallback for anything rendered outside a project page. */
+  --accent: var(--accent-base);
+  /* The tint behind tags and other accent-washed surfaces. Derived from
+     --accent at use sites via color-mix, so a project only ever sets one
+     colour and the wash follows it. */
+  --accent-wash: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
+  --accent-wash-strong: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
+
+  /* Fonts — same stack as the root app. */
+  --font-header: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Deliberately sharp. Not zero — a hairline of radius keeps a 1px border
+     from looking ragged where it turns the corner — but far short of the
+     10–14px the root page uses, so panels read as cut edges rather than
+     bubbles. Avatars stay circular; they are the one exception. */
+  --radius: 2px;
+  --radius-sm: 2px;
+
+  /* Layout */
+  --sidebar-w: 272px;
+  --content-width: 880px;
+  --gutter: clamp(1.15rem, 3vw, 3rem);
+  /* Read back by SectionNav to place the scroll-spy boundary, so this value
+     is the single source of truth for the sticky bar's height. */
+  --section-nav-h: 52px;
+
+  --shadow-card: 0 4px 16px rgba(31, 46, 68, 0.07);
+  --scrim: rgba(15, 21, 31, 0.42);
+
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --bg: #10151F;
+  --bg-alt: #161E2B;
+  --text-primary: #E4E9F2;
+  --text-secondary: #92A3BE;
+  --card-bg: #182131;
+  --border: #2B3548;
+  --accent-base: #3B82F6;
+  --ink: #F1F5FC;
+
+  /* Lifted so each accent keeps its identity against a dark ground. */
+  --c-indigo: #7EA3D8;
+  --c-coral: #F08A80;
+  --c-orange: #F0A860;
+  --c-emerald: #6FCFB3;
+  --c-steel: #9AA6B2;
+  --c-forest: #6BAA88;
+
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
+  --scrim: rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-header);
+  margin: 0;
+}
+
+a {
+  color: var(--accent-base);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* Available to assistive tech, absent from the visual layout. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Shell ---------- */
+
+/* The sidebar is fixed rather than a grid column: it holds its own scroll
+   position while the content column runs long, which a grid track sharing the
+   page scroll cannot do. */
+.workspace {
+  min-height: 100dvh;
+}
+
+.content {
+  margin-left: var(--sidebar-w);
+  min-height: 100dvh;
+}
+
+/* ---------- Sidebar ---------- */
+
+/* Layering, bottom to top: the sticky section nav (20), the mobile button
+   strip (50), the drawer button (60), the scrim (65), the sidebar (70). The
+   open drawer covers the button that opened it — its own close button takes
+   over from there. */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 70;
+  width: var(--sidebar-w);
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding: 1.75rem 1.5rem 2.5rem;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.sidebar__brand {
+  font-family: var(--font-header);
+  font-weight: 800;
+  /* Deliberately a large step above the 0.7rem category headers below —
+     this is the site's name, they are labels for lists. */
+  font-size: 1.65rem;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.sidebar__brand:hover {
+  color: var(--accent-base);
+}
+
+.sidebar__close {
+  display: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.sidebar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sidebar__group-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Numbers come from the list itself, so the count is whatever the data says.
+   The marker is drawn by hand in the monospace face rather than left to the
+   browser, which would not let it be typed differently from the label. */
+.sidebar__list {
+  list-style: none;
+  counter-reset: project;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.sidebar__link {
+  counter-increment: project;
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.42rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.sidebar__link::before {
+  content: counter(project) '.';
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.sidebar__link:hover {
+  background: var(--bg-alt);
+  color: var(--ink);
+}
+
+.sidebar__link--active {
+  background: var(--bg-alt);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.sidebar__link--active::before {
+  color: var(--ink);
+}
+
+/* ---------- Drawer (narrow widths only) ---------- */
+
+.drawer-toggle {
+  display: none;
+  position: fixed;
+  top: 0.85rem;
+  left: 0.85rem;
+  z-index: 60;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.drawer-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: var(--scrim);
+}
+
+@media (max-width: 860px) {
+  :root {
+    /* The strip the drawer button lives in. The sticky section nav parks
+       below it rather than sliding under it. */
+    --mobile-bar-h: 56px;
+  }
+  .content {
+    margin-left: 0;
+    padding-top: var(--mobile-bar-h);
+  }
+  /* An opaque ground for that strip, so page content scrolls under the
+     button instead of through it. Above the sticky nav, below the button. */
+  .content::before {
+    content: '';
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 50;
+    height: var(--mobile-bar-h);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .drawer-toggle {
+    display: grid;
+  }
+  .sidebar__close {
+    display: grid;
+  }
+  .sidebar {
+    width: min(300px, 84vw);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+  .sidebar--open {
+    transform: translateX(0);
+  }
+}
+
+/* ---------- Welcome state ---------- */
+
+.welcome {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  text-align: center;
+}
+
+.welcome__message {
+  margin: 0;
+  font-family: var(--font-header);
+  font-weight: 700;
+  font-size: clamp(1.35rem, 1rem + 1.6vw, 2rem);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.welcome__hint {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* On a phone the welcome line should sit on the screen's centre, not below
+   the space the drawer button reserves. */
+@media (max-width: 860px) {
+  .welcome {
+    min-height: calc(100dvh - 3.5rem);
+  }
+}
+
+/* ---------- Project page ---------- */
+
+/* Spans the whole content column and carries no measure of its own — the
+   menu bar wants the full width, the reading content does not. No top
+   padding either: the bar is the first thing in the column and sits flush
+   against the top edge, already in place before it sticks. */
+.project {
+  padding: 0 0 6rem;
+}
+
+.project__body {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.project__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: clamp(2.25rem, 4.5vw, 3.5rem) 0 1.75rem;
+}
+
+.project__title {
+  font-weight: 800;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.project__period {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+/* ---------- Members ---------- */
+
+/* Its own section now, so the circles get room and each carries its name
+   rather than relying on a tooltip nobody opens. */
+.avatars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem 2rem;
+}
+
+.avatars__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 84px;
+}
+
+.avatars__circle {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--avatar-tint);
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.avatars__name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Empty section slot ---------- */
+
+/* Sections that always render — the diagram, the screenshots, the README —
+   say plainly that nothing is there yet rather than showing a blank space
+   that reads as a layout bug. */
+.empty-slot {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px dashed var(--border);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+/* ---------- Sticky section nav ---------- */
+
+.section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: var(--section-nav-h);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Starts on the title's left edge — the 0.7rem backs out the first item's
+   own padding so the text lines up, not the button box — and runs on to the
+   column's right edge rather than stopping at the reading measure. The max()
+   collapses to a plain gutter once the column is narrower than that measure.
+   Ten menu entries do not fit inside 880px; they do fit across the column. */
+.section-nav__bar {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-left: max(
+    calc(var(--gutter) - 0.6rem),
+    calc((100% - var(--content-width)) / 2 + var(--gutter) - 0.6rem)
+  );
+  padding-right: var(--gutter);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.section-nav__bar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Menu entries, not chips: no fill, no rounding. The active one is marked by
+   a hard accent rule sitting on the bar's own bottom border. */
+.section-nav__item {
+  appearance: none;
+  position: relative;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 100%;
+  padding: 0 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.71rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  transition: color 0.18s ease;
+}
+
+.section-nav__item::after {
+  content: '';
+  position: absolute;
+  left: 0.6rem;
+  right: 0.6rem;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.section-nav__item:hover {
+  color: var(--ink);
+}
+
+.section-nav__item--on {
+  color: var(--accent);
+}
+
+.section-nav__item--on::after {
+  opacity: 1;
+}
+
+/* ---------- Sections ---------- */
+
+.project__sections {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  /* Clears the sticky bar when the nav scrolls a heading into view. */
+  scroll-margin-top: var(--section-nav-h);
+  padding: clamp(2.4rem, 4.5vw, 3.25rem) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Reveal wraps every section, so the last section is the last wrapper's
+   child rather than the last child of the list. */
+.project__sections > *:last-child .section {
+  border-bottom: 0;
+}
+
+.section__title {
+  margin-bottom: 1.35rem;
+  font-weight: 800;
+  /* A real heading rather than a labelled list item — a clear step under the
+     project title, and a clear step over body copy. No bullet: the rule
+     between sections already separates them. */
+  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.7rem);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.prose p {
+  margin: 0 0 1rem;
+  max-width: 68ch;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* Role line — a step up from body copy, held to a short measure. */
+.lede {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 1.1rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+/* ---------- Metrics ---------- */
+
+.metrics {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.1rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.metric__label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.metric__value {
+  font-family: var(--font-header);
+  font-weight: 800;
+  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.1rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--accent);
+}
+
+.metric__note {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* ---------- Tech stack ---------- */
+
+/* A grid of logos with their names, not a run of chips: no pill, no fill, no
+   border. Auto-fill rather than a fixed column count, so the same rule reads
+   as four across on a laptop and two on a phone without a breakpoint each. */
+.stack {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: clamp(1.1rem, 2.2vw, 1.75rem) 1rem;
+}
+
+.tech {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.tech__mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.tech__mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Stand-in for a logo that hasn't been added to src/assets/icons yet. This
+   one keeps a surface, because a bare letter would not read as a mark. */
+.tech__initial {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.tech__label {
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Figures: diagram, screenshots, video ---------- */
+
+.figure {
+  margin: 0;
+}
+
+.figure + .figure {
+  margin-top: 1.25rem;
+}
+
+.figure__frame {
+  display: block;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.figure__frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.figure__frame--video {
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+
+.figure__frame--video iframe,
+.figure__frame--video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
+
+.figure__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  margin-top: 0.55rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.figure__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.figure__link:hover {
+  text-decoration: underline;
+}
+
+.shots {
+  list-style: none;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+/* ---------- Decisions ---------- */
+
+.decisions {
+  list-style: none;
+  counter-reset: decision;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.decision {
+  counter-increment: decision;
+  padding: 1.1rem 1.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* The accent edge is what marks these as the page's argument rather than
+     more prose. */
+  border-left: 3px solid var(--accent);
+}
+
+.decision__title {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--ink);
+}
+
+.decision__title::before {
+  content: counter(decision) '. ';
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.decision__choice {
+  margin: 0.5rem 0 0.6rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.decision__chose {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.decision__over {
+  color: var(--text-secondary);
+}
+
+.decision__why {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+
+/* ---------- Link row ---------- */
+
+.links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+a.link-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Placeholder for a link the project is expected to have but doesn't yet —
+   present so the gap is visible, inert so it can't be clicked. */
+.link-chip--pending {
+  color: var(--text-secondary);
+  border-style: dashed;
+  cursor: default;
+}
+
+/* ---------- README ---------- */
+
+.readme__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-bottom: 1rem;
+  padding: 0.2rem 0.3rem 0.2rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+}
+
+.readme__toggle-icon {
+  display: inline-flex;
+  margin-right: 0.25rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+
+.readme__lang {
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.readme__lang:hover {
+  color: var(--ink);
+}
+
+.readme__lang--on {
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Rendered markdown. Held to the same measure as the page's prose so the
+   README doesn't read as a different document pasted in. */
+.markdown {
+  max-width: 72ch;
+  font-size: 0.96rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.markdown > *:first-child {
+  margin-top: 0;
+}
+
+.markdown h4,
+.markdown h5 {
+  margin: 1.75rem 0 0.6rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.markdown h4 {
+  font-size: 1rem;
+}
+
+.markdown h5 {
+  font-size: 0.92rem;
+}
+
+.markdown p,
+.markdown ul,
+.markdown ol {
+  margin: 0 0 1rem;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.3rem;
+}
+
+.markdown li {
+  margin-bottom: 0.3rem;
+}
+
+.markdown a {
+  color: var(--accent);
+}
+
+.markdown code {
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-alt);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.markdown pre {
+  margin: 0 0 1rem;
+  padding: 0.9rem 1.05rem;
+  overflow-x: auto;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.markdown pre code {
+  padding: 0;
+  background: none;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.markdown blockquote {
+  margin: 0 0 1rem;
+  padding-left: 0.9rem;
+  border-left: 3px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.markdown hr {
+  margin: 1.75rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.markdown__table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.markdown th,
+.markdown td {
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.markdown th {
+  background: var(--bg-alt);
+  font-weight: 700;
+}
+
+/* ---------- Reflection ---------- */
+
+.reflection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.reflection__label {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Kept at the end of the file, after the rules they override: these set the
+   same properties at the same specificity, so source order is what decides. */
+@media (max-width: 860px) {
+  /* Parks below the drawer button's strip instead of sliding under it. */
+  .section-nav {
+    top: var(--mobile-bar-h);
+  }
+  .section {
+    scroll-margin-top: calc(var(--mobile-bar-h) + var(--section-nav-h));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -34,6 +34,10 @@ export const PROJECTS = [
     slug: 'echochallengers',
     group: 'team',
     title: 'EchoChallengers',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Self-Healing Kubernetes Infrastructure with Automated Incident Recovery',
     accent: 'emerald',
     // placeholder
     period: 'Period TBD',
@@ -81,6 +85,10 @@ export const PROJECTS = [
     slug: 'lock-n-lock',
     group: 'team',
     title: 'Lock-N-Lock',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'DevSecOps Delivery Pipeline with Automated Security Gates',
     accent: 'coral',
     // placeholder
     period: 'Period TBD',
@@ -128,6 +136,10 @@ export const PROJECTS = [
     slug: 'hailcast',
     group: 'team',
     title: 'hailcast',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Predictive Autoscaling for Cost-Optimized EKS Workloads',
     accent: 'orange',
     // placeholder
     period: 'Period TBD',
@@ -178,6 +190,10 @@ export const PROJECTS = [
     // placeholder — this project is still in progress and unnamed. The
     // title below is a working label, not the real project name.
     title: 'KT Cloud TECH UP Fellowship Project',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'KT Cloud TECH UP Enterprise Fellowship Project',
     accent: 'steel',
     // placeholder
     period: 'Period TBD',
@@ -228,6 +244,10 @@ export const PROJECTS = [
     // No `team` key: this is solo work, so the Members section and the Notion
     // link never render. That is the whole opt-out — nothing else to switch off.
     title: 'Individual project one',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Individual project one — full descriptive title TBD',
     accent: 'forest',
     // placeholder
     period: 'Period TBD',
@@ -270,6 +290,10 @@ export const PROJECTS = [
     group: 'individual',
     // placeholder
     title: 'Individual project two',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Individual project two — full descriptive title TBD',
     accent: 'indigo',
     // placeholder
     period: 'Period TBD',
@@ -311,6 +335,10 @@ export const PROJECTS = [
     slug: 'cloud-resume-challenge',
     group: 'individual',
     title: 'Cloud Resume Challenge',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Serverless Resume Site on AWS, Provisioned End to End with Terraform',
     accent: 'indigo',
     // placeholder
     period: 'Period TBD',
@@ -352,6 +380,10 @@ export const PROJECTS = [
     slug: 'kubernetes-challenge',
     group: 'individual',
     title: 'Kubernetes Challenge',
+    // placeholder — the descriptive page heading. `title` above stays the
+    // short name the sidebar shows and the eyebrow repeats.
+    fullTitle:
+      'Containerized E-Commerce Workload on EKS with GitOps Delivery',
     accent: 'forest',
     // placeholder
     period: 'Period TBD',

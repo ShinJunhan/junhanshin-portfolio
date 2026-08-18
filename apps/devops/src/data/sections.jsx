@@ -40,7 +40,7 @@ export const SECTIONS = [
   },
   {
     id: 'role',
-    label: 'Role',
+    label: 'My Role',
     has: (project) => Boolean(project.role),
     Body: RoleSection,
   },

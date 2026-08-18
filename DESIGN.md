@@ -86,16 +86,17 @@ Keep fonts in their lanes: never use Archivo for body paragraphs (too heavy at l
 Implemented in `apps/devops/`. A page type not previously covered here, so the
 decisions behind it are recorded below rather than left in the code.
 
-- **Shell:** fixed left sidebar (272px) plus one content column. The sidebar
+- **Shell:** left sidebar (272px at full width) plus one content column. The sidebar
   holds the name — which is the way back to the default state, and is set
   clearly larger than anything under it — over three numbered project lists:
   "Team Projects", "KT Cloud TECH UP Enterprise Fellowship Project" (a
   category of its own, holding the one fellowship build), and "Individual
   Projects". The lists, their order, and their numbering all come from data,
   so the categories and counts are free to change.
-- **Default state:** nothing selected shows one centred line, "Welcome to
-  Junhan's Workspace," and nothing else. Deliberately empty: the sidebar is
-  the entry point, so the content area should not compete with it.
+- **Default state:** nothing selected shows a large centred "Welcome to
+  Junhan's Workspace." over one quiet line — "Select a project from the left
+  to explore it in full detail." Still deliberately sparse: the sidebar is the
+  entry point, and the second line only says so.
 - **Routing:** on the URL hash (`#/projects/<slug>`), so a deep link survives a
   hard refresh on a static host without rewrite rules.
 - **Project pages:** one shared template for all of them, parameterized by the
@@ -104,8 +105,8 @@ decisions behind it are recorded below rather than left in the code.
   not render at all: a solo project has no Members section and no Notion link,
   rather than empty slots where they would be.
 - **Accent placement on these pages** follows the themed-page rule above:
-  metric numbers, the active menu underline, and the left edge of a decision
-  card. Everything else stays base indigo. The tech-stack row is a deliberate
+  metric numbers, the page eyebrow, the active menu underline, and the left
+  edge of a decision card. Everything else stays base indigo. The tech-stack row is a deliberate
   exception with no accent at all — see below.
 - **Corners are sharp here (2px), not the 10–14px used on the root page.** A
   considered divergence from the card pattern above, for a harder, more
@@ -118,9 +119,22 @@ decisions behind it are recorded below rather than left in the code.
   worth looking at. The logos carry their own brand colors, which is why
   the project accent stays off this row: two color systems in one strip reads
   as noise. A label with no logo file yet falls back to a monogram tile.
-- **Section headings are large and unbulleted** — a real heading a clear step
-  under the project title, with the rule between sections doing the separating.
-  The earlier small-label-with-a-square treatment read as a list, not a page.
+- **Section headings are large, unbulleted, and left-aligned** — a real
+  heading a clear step under the project title, with the rule between sections
+  doing the separating. The earlier small-label-with-a-square treatment read as
+  a list, not a page. Centred headings were tried and rejected: everything on
+  the page hangs off the same left edge instead. The sticky menu is the one
+  centred element.
+- **Body copy is justified and runs the column's full width.** No measure cap
+  on prose, and the page title is uncapped too — it uses the width it has and
+  only breaks when it genuinely runs out. No `text-wrap: balance` on headings
+  either: left-aligned, each line should run to the edge before breaking, and
+  balancing would leave the first line short of the width it has. Every
+  justified block also sets `hyphens: auto`; the two go together, since
+  justification without hyphenation opens rivers around long technical terms.
+  Trade-off worth knowing: at the 1180px measure this puts roughly 130
+  characters on a line, well past the 60–80 that reads most comfortably.
+  Chosen deliberately for the full-width look.
 - **Members is its own section**, not a row of initials beside the date:
   circular initial avatars with each name beneath. The page header carries the
   title and the period only.
@@ -132,7 +146,25 @@ decisions behind it are recorded below rather than left in the code.
 - **Sections fade in on scroll**, using the same `Reveal` component as the
   landing page — including its reduced-motion path, which renders the content
   plainly with no animation at all.
-- **Sticky menu:** sits *above* the project title, spanning the full content
+- **Page heading:** the long descriptive project title is the H1, with the
+  short name — the team's, for team projects — above it as a small
+  accent-coloured eyebrow. The eyebrow is what ties the page back to the
+  sidebar entry the reader clicked; the sidebar itself keeps the short names.
+  Long titles are meant to wrap to two lines.
+- **Dark mode** is the root app's system, reused rather than rebuilt: the same
+  `ThemeToggle` component, the same pre-paint script in `index.html`, the same
+  `theme` key in localStorage, and tokens redefined under `[data-theme]`. The
+  toggle is parked top-right at every width.
+- **Responsive:** the sidebar is a real column above 1100px, narrows to 224px
+  through the tablet range, and becomes a drawer behind a hamburger at 860px
+  and below. A fixed full-height rail is not a layout a phone can carry, so it
+  is a different pattern rather than a smaller one.
+- **Sticky menu:** collapses the sections into five category entries —
+  Overview, Tech & Architecture, Demo, Resources, Reflection — rather than
+  listing every heading, centred in the content column. The page itself is unchanged: all sections still
+  render in the same order, they simply share a menu entry. Groups are
+  contiguous in page order so the highlight only moves forward while scrolling.
+  It sits *above* the project title, spanning the full content
   column rather than the narrower reading measure, and stays pinned for the
   whole page. Entries are small caps with an accent underline on the active
   one — a navigation menu, not a row of chips. It is rendered from the same

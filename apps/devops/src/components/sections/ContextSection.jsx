@@ -1,3 +1,5 @@
+import RichText from '../../lib/richText.jsx'
+
 // What was being built and why. Accepts either one string or an array of
 // paragraphs, so a project can grow past a single block without a schema
 // change.
@@ -7,7 +9,9 @@ export default function ContextSection({ project }) {
   return (
     <div className="prose">
       {paragraphs.map((paragraph) => (
-        <p key={paragraph}>{paragraph}</p>
+        <p key={paragraph}>
+          <RichText>{paragraph}</RichText>
+        </p>
       ))}
     </div>
   )

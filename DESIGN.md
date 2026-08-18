@@ -94,9 +94,12 @@ decisions behind it are recorded below rather than left in the code.
   Projects". The lists, their order, and their numbering all come from data,
   so the categories and counts are free to change.
 - **Default state:** nothing selected shows a large centred "Welcome to
-  Junhan's Workspace." over one quiet line — "Select a project from the left
-  to explore it in full detail." Still deliberately sparse: the sidebar is the
-  entry point, and the second line only says so.
+  Junhan's Workspace." — one indigo gradient painted across the whole phrase
+  and clipped to the glyphs, with the name interrupting it in the Hero's flat
+  `INDIGO_POP` rather than splitting it into two sweeps — over one quiet line,
+  "Select a project from the left to explore it in full detail." Still
+  deliberately sparse: the sidebar is the entry point, and the second line only
+  says so.
 - **Routing:** on the URL hash (`#/projects/<slug>`), so a deep link survives a
   hard refresh on a static host without rewrite rules.
 - **Project pages:** one shared template for all of them, parameterized by the
@@ -113,6 +116,30 @@ decisions behind it are recorded below rather than left in the code.
   instrument-like read. Everything on these pages holds that one value so the
   page stays internally consistent; circular team avatars are the sole
   exception. If the root page is ever brought in line, change both.
+- **Tech stack is a radial wheel above 860px**, one shared component across
+  every project — categories, icon counts, and optional per-category colours
+  all come from that project's data, so the number of segments follows the
+  project rather than being fixed. Logos on a ring, the centre
+  divided into one pie slice per category, slice and icons sharing a colour so
+  the grouping reads without a legend, and each category's icons sitting
+  directly outside its own wedge. Wedges are sized by how many icons the
+  category holds, not split evenly — an even split gave a one-icon category the
+  same wedge as a four-icon one and left a visible empty arc. Narrow wedges are
+  why the labels run along the radius rather than across it. One category is
+  live at a time — cycling on a timer like a roulette, previewed on hover,
+  pinned on click, and released back to cycling after a few seconds of no
+  interaction so it never stays frozen. Hovering a single icon names that tool
+  in its own tooltip, which is a different question from which category is
+  selected. The auto-cycle
+  respects `prefers-reduced-motion` via the same `useReducedMotion` the Hero
+  uses; hover and click still work under it. Below 860px the wheel is not
+  rendered at all and the grouped card list takes over: a ring of twenty icons
+  is not something you shrink to phone width.
+- **Junhan's colour is reserved.** `--name-pop` — the Hero's flat indigo — is
+  his alone, site-wide: the welcome line, his avatar on every project, and the
+  sidebar wordmark. No teammate tint, category tint, or project accent may use
+  it, and the avatar palette holds no blue at all so no one else's circle can
+  be mistaken for his.
 - **Tech stack shows real vendor logos**, not tinted word-pills — the mark is
   what a reader recognises when scanning. Laid out as a plain grid with no
   chip, fill, or border behind each entry: the logo and its name, at a size
@@ -135,14 +162,74 @@ decisions behind it are recorded below rather than left in the code.
   Trade-off worth knowing: at the 1180px measure this puts roughly 130
   characters on a line, well past the 60–80 that reads most comfortably.
   Chosen deliberately for the full-width look.
+- **The README opens collapsed** — a 460px bordered frame that scrolls on its
+  own, faded at the bottom edge, with a "Show full README" toggle beneath it.
+  A 30,000-character document should not push every other section off the page
+  by default. The EN/KO toggle works collapsed or expanded.
+- **A section heading can be named per project** where the generic label is
+  weaker than a specific one — the links row reads "Link to EchoChallenger's
+  Workspace" on that project and "Links" everywhere else.
+- **Key impact metrics are a bento grid**, not a repeated card shape: tile
+  size carries meaning, so the project's headline number takes the room its
+  importance earns and the supporting stats sit around it. Four columns, with
+  one big (2x2) tile, wide (2x1) tiles for numbers that need a qualifying
+  phrase, and squares for the rest. One big plus two squares plus one wide
+  tiles the grid exactly. Which stat is the big one is a per-project decision
+  and lives in the data, never in the template. No comparisons, benchmarks, or
+  citations in this section — the numbers stand on their own.
+- **Links are bare marks with a name beneath**, no pill or border — the same
+  treatment as the tech-stack grid, so the two read as one family. They split
+  across two sections: the repo itself ("<Team> Workspace") at the top of the
+  page, and everything a reader might open alongside the write-up (README,
+  live dashboard, Terraform, the deck) under "Resources" further down.
+- **The workspace links are the first section on a project page**, directly under the
+  title and period line and grouped under Overview in the menu. Where the work
+  actually lives — the repo, the dashboard — is what a reader wants first, not
+  something to find at the bottom.
+- **Reflection stacks its two parts** rather than setting them side by side.
+  Two columns held each to half the width, which made the justified paragraphs
+  gappy and let the second part — the harder one to write — go unread. It is
+  also the one place that justifies *without* hyphenation: no word breaks
+  mid-line, and the spacing does the work, the way a word processor sets
+  justified text. Everywhere else on the site keeps `hyphens: auto`.
 - **Members is its own section**, not a row of initials beside the date:
   circular initial avatars with each name beneath. The page header carries the
   title and the period only.
-- **Three slots always render even when empty** — Architecture Diagram,
-  Screenshots + Demo Video, README.md. They show a dashed "not added yet"
+- **Source code is shown inline through one shared viewer** — capped,
+  self-scrolling, expandable, on the terminal surface, with a browser-style tab
+  strip naming each file: its own band above the viewer, tabs rounded on top
+  only, and the active one raised off the band with an accent bar on its top
+  edge. The band is deliberately a different colour from the code — matching it
+  made the tab read as the first line of the file rather than as a control. The bottom fade hints at more content
+  without covering the last line — the body is padded so the gradient lands on
+  empty space at the end of a file. Terraform Code (under Resources) shows the main.tf
+  and links out for the supporting files; Recovery Policy sits with the
+  diagram and the folder tree, because the alert-to-script mapping is a
+  decision worth reading, not a Terraform file. Both are deliberately narrow:
+  a portfolio page shows the files that carry a decision, not the repo.
+- **Folder structure** is its own section, between the architecture diagram
+  and the screenshots: the repo layout as a plain monospace tree on the
+  terminal surface (`--terminal-*`, the same tokens the root page's popup
+  uses). It stays dark in both themes — this is literal shell output, and it
+  should read as such rather than following the page.
+- **Four slots always render even when empty** — Architecture Diagram, Folder
+  Structure, Screenshots + Demo Video, README.md. They show a dashed "not added yet"
   panel rather than disappearing, because they are the easiest sections to
   overlook while filling a project out. Sections whose absence is meaningful
   rather than pending (Members on a solo project) still disappear.
+- **Two inline marks in narrative prose.** Backticks render as inline code on
+  a bordered code surface — identical to what a backtick gets inside the
+  rendered README, so the treatment is the same wherever it appears.
+  `**text**` renders bold in the *project accent* rather than default black
+  bold, so a number, a technology, or an outcome lifts out of the sentence
+  without a second black weight competing with the headings. Deliberately just
+  those two: this is prose with emphasis, not a second markdown surface.
+- **Members carry an optional title** under the name — a team lead, say — in
+  small monospace accent type. Blank for everyone else.
+- **Screenshots sit two across**, so a before/after pair lands on one row and
+  reads as a pair. Rows are separated by a rule rather than a gap, and the
+  captions are heavier and darker than a diagram's — they say which half of
+  the pair you are looking at, so they have to read at a glance.
 - **Sections fade in on scroll**, using the same `Reveal` component as the
   landing page — including its reduced-motion path, which renders the content
   plainly with no animation at all.
@@ -160,10 +247,17 @@ decisions behind it are recorded below rather than left in the code.
   and below. A fixed full-height rail is not a layout a phone can carry, so it
   is a different pattern rather than a smaller one.
 - **Sticky menu:** collapses the sections into five category entries —
-  Overview, Tech & Architecture, Demo, Resources, Reflection — rather than
-  listing every heading, centred in the content column. The page itself is unchanged: all sections still
-  render in the same order, they simply share a menu entry. Groups are
-  contiguous in page order so the highlight only moves forward while scrolling.
+  Workspace, Overview, Tech & Architecture, Demo, Resources, Reflection —
+  rather than listing every heading, centred in the content column. Workspace
+  is first and lands on the page header itself, since Overview deliberately
+  skips past the title and repo links to My Role and there was otherwise no way
+  back up. Tech & Architecture
+  covers the stack, both diagram sections, and the technical decisions.
+  Grouping is by meaning, not position, so that group is not contiguous:
+  Technical Decisions sits after the screenshots on the page, which means
+  scrolling past them lights Demo and then returns to Tech & Architecture.
+  Accepted deliberately — the alternative is reordering the page. The page itself is unchanged: all sections still
+  render in the same order, they simply share a menu entry.
   It sits *above* the project title, spanning the full content
   column rather than the narrower reading measure, and stays pinned for the
   whole page. Entries are small caps with an accent underline on the active

@@ -21,6 +21,9 @@
   --c-emerald: #4FA88F;
   --c-steel: #5C6670;
   --c-forest: #3D6B52;
+  /* A seventh hue, so a six-person team never repeats and the tech wheel has
+     one colour per category. Deliberately not a blue. */
+  --c-violet: #5B4A66;
 
   /* Fallback for anything rendered outside a project page. */
   --accent: var(--accent-base);
@@ -41,6 +44,10 @@
      bubbles. Avatars stay circular; they are the one exception. */
   --radius: 2px;
   --radius-sm: 2px;
+  /* The one deliberate exception to the sharp corners: raised cards read as
+     objects rather than cut panels, so they take the root page's About Me
+     card radius. Same 5px, same border, same shadow. */
+  --radius-card: 5px;
 
   /* Layout */
   --sidebar-w: 272px;
@@ -52,6 +59,26 @@
   /* Read back by SectionNav to place the scroll-spy boundary, so this value
      is the single source of truth for the sticky bar's height. */
   --section-nav-h: 52px;
+
+  /* Terminal surface — the folder tree. Same values the root app's popup
+     uses, and dark in both themes: this is literal terminal output, so it
+     keeps a terminal's ground rather than following the page. */
+  --terminal-bg: #1E2530;
+  --terminal-border: #38445A;
+  --terminal-ink: #C7D3E3;
+
+  /* The exact indigo the landing page's Hero settles "Junhan" into —
+     INDIGO_POP in apps/root/src/components/Hero.jsx. Copied rather than
+     approximated so the name reads identically on both sites. It is a flat
+     colour there, not a gradient, and it does not change with the theme. */
+  --name-pop: rgb(58, 125, 214);
+  /* The welcome line's sweep, built from the indigo palette above. */
+  --welcome-gradient: linear-gradient(
+    100deg,
+    #1F2E44 0%,
+    #3E5C89 45%,
+    #6B86B4 100%
+  );
 
   --shadow-card: 0 4px 16px rgba(31, 46, 68, 0.07);
   --scrim: rgba(15, 21, 31, 0.42);
@@ -76,6 +103,17 @@
   --c-emerald: #6FCFB3;
   --c-steel: #9AA6B2;
   --c-forest: #6BAA88;
+  --c-violet: #A997BC;
+
+  --welcome-gradient: linear-gradient(
+    100deg,
+    #F1F5FC 0%,
+    #9FBBE4 45%,
+    #6B86B4 100%
+  );
+
+  --terminal-bg: #222C3B;
+  --terminal-border: #465569;
 
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3);
   --scrim: rgba(0, 0, 0, 0.55);
@@ -183,12 +221,14 @@ button:focus-visible {
   font-size: 1.65rem;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  color: var(--ink);
+  /* His name, so his colour — the same one the welcome line and his avatar
+     use, and that nothing else on the site is allowed to take. */
+  color: var(--name-pop);
   text-decoration: none;
 }
 
 .sidebar__brand:hover {
-  color: var(--accent-base);
+  opacity: 0.8;
 }
 
 .sidebar__close {
@@ -355,14 +395,32 @@ button:focus-visible {
   text-align: center;
 }
 
+/* One gradient painted across the whole phrase and clipped to the glyphs, so
+   it runs continuously from "Welcome to" through "'s Workspace" — the name in
+   the middle opts out of it rather than splitting it into two sweeps.
+   `inline-block` so the painted box hugs the text instead of spanning the
+   whole column, which would leave most of the ramp off the letters. */
 .welcome__message {
+  display: inline-block;
   margin: 0;
   font-family: var(--font-header);
   font-weight: 800;
   font-size: clamp(1.9rem, 1.2rem + 3.2vw, 3.4rem);
   letter-spacing: -0.03em;
   line-height: 1.1;
-  color: var(--ink);
+  background-image: var(--welcome-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* The name interrupts the sweep: `text-fill-color` overrides the clipped
+   background for this span only, so it lands as the Hero's flat indigo while
+   the gradient carries on either side of it. */
+.welcome__name {
+  color: var(--name-pop);
+  -webkit-text-fill-color: var(--name-pop);
 }
 
 .welcome__hint {
@@ -401,6 +459,7 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  scroll-margin-top: var(--section-nav-h);
   gap: 0.9rem;
   padding: clamp(2.25rem, 4.5vw, 3.5rem) 0 1.75rem;
 }
@@ -479,6 +538,17 @@ button:focus-visible {
   text-align: center;
   color: var(--text-primary);
   overflow-wrap: anywhere;
+}
+
+/* Only the members who carry one — a lead, say — get this second line. */
+.avatars__role {
+  margin-top: -0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--accent);
 }
 
 /* ---------- Empty section slot ---------- */
@@ -594,8 +664,18 @@ button:focus-visible {
   border-bottom: 0;
 }
 
-.section__title {
+/* Title on the left, a section's optional control on the right. Wraps rather
+   than crushing the title when the two can't share a line. */
+.section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
   margin-bottom: 1.35rem;
+}
+
+.section__title {
   font-weight: 800;
   /* A real heading rather than a labelled list item — a clear step under the
      project title, and a clear step over body copy. No bullet: the rule
@@ -609,7 +689,9 @@ button:focus-visible {
 /* Explanatory copy runs the full width of the column and is justified, so
    the block reads as one clean rectangle. `hyphens: auto` is doing real work
    here rather than being decoration: justification without it opens large
-   gaps between words on any line holding a long technical term. */
+   gaps between words on any line holding a long technical term.
+   `.prose p` is shared — Problem & Context and Reflection both use it — and
+   Reflection deliberately opts out of the hyphenation further down. */
 .prose p {
   margin: 0 0 1rem;
   font-size: 1rem;
@@ -635,63 +717,220 @@ button:focus-visible {
   color: var(--ink);
 }
 
-/* ---------- Metrics ---------- */
+/* ---------- Key impact metrics ---------- */
 
-.metrics {
+/* A bento grid: tile size carries meaning, so the headline number takes the
+   room its importance earns instead of every stat repeating one shape. Five
+   columns is the base: a big (2x2) plus three squares fills the first row, and
+   the second takes the big tile's continuation plus a wide (2x1) and one more
+   square — six tiles, ten cells, no gaps.
+   Which stat gets which size comes from the project data; nothing here knows
+   or cares which number is the important one. */
+.bento {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-rows: minmax(clamp(7rem, 10vw, 8.5rem), auto);
+  gap: clamp(0.7rem, 1.4vw, 1rem);
 }
 
-.metric {
+.bento__tile {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0.3rem;
-  padding: 1rem 1.1rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
 }
 
-.metric__label {
-  font-family: var(--font-mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
+.bento__tile--big {
+  grid-column: span 2;
+  grid-row: span 2;
+  /* The extra room is the point, so the padding grows with it rather than
+     leaving the number floating in white space. */
+  gap: 0.6rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
 }
 
-.metric__value {
+.bento__tile--wide {
+  grid-column: span 2;
+}
+
+.bento__value {
   font-family: var(--font-header);
   font-weight: 800;
-  font-size: clamp(1.6rem, 1.2rem + 1.2vw, 2.1rem);
+  font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.4rem);
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1;
   color: var(--accent);
 }
 
-.metric__note {
-  font-size: 0.8rem;
-  line-height: 1.45;
+/* The headline number, at the size the big tile was made for. */
+.bento__tile--big .bento__value {
+  font-size: clamp(2.9rem, 1.9rem + 4vw, 4.75rem);
+}
+
+.bento__label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.bento__tile--big .bento__label {
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.3rem);
+}
+
+.bento__abbr {
+  position: relative;
+  border-bottom: 1px dotted var(--text-secondary);
+  cursor: help;
+}
+
+/* Appears immediately on hover or focus, unlike the browser's own tooltip.
+   Centred over the label and allowed to run wider than its tile — the grid
+   does not clip, and the hovered tile is lifted above its neighbours. */
+.bento__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.45rem);
+  transform: translateX(-50%);
+  z-index: 3;
+  width: max-content;
+  max-width: 15rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.bento__abbr:hover .bento__tip,
+.bento__abbr:focus-visible .bento__tip {
+  opacity: 1;
+}
+
+/* Without this the tooltip would slide under the tile to its right. */
+.bento__tile:has(.bento__abbr:hover),
+.bento__tile:has(.bento__abbr:focus-visible) {
+  z-index: 2;
+}
+
+.bento__tile {
+  position: relative;
+}
+
+/* The qualifying phrase a wide tile exists to make room for. */
+.bento__detail {
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: var(--text-secondary);
+}
+
+/* Two columns once the sidebar is a drawer: the big tile still reads as the
+   largest thing in the section, and a wide tile still spans the row. */
+/* Three across through the tablet range, two once the sidebar is a drawer. */
+@media (max-width: 1100px) {
+  .bento {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* One column on a phone. Nothing spans, and the big tile keeps its weight
+   through type size and padding rather than through area. */
+@media (max-width: 480px) {
+  .bento {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+  }
+  .bento__tile--big,
+  .bento__tile--wide {
+    grid-column: auto;
+  }
+  .bento__tile--big {
+    grid-row: auto;
+  }
 }
 
 /* ---------- Tech stack ---------- */
 
+/* Each category is its own raised card — same treatment as the About Me
+   cards on the landing page: white ground, 1px border, 5px corners, a soft
+   lift. The card edges do the partitioning, which is why there are no divider
+   rules here and no background tile behind each mark: three levels of box
+   inside one section would be two too many.
+   Two cards per row on a wide screen, one below the sidebar breakpoint. An
+   odd count simply leaves the last card alone on its row at the same width as
+   every other card, rather than stretching it across both columns.
+   Grid items stretch by default, which is wanted here: the two cards in a row
+   settle on a shared height the way the landing page's About Me cards do,
+   rather than leaving a ragged bottom edge when one category has more marks
+   than its neighbour. */
+.stack-groups {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1rem, 1.8vw, 1.5rem);
+}
+
+.stack-group {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.4rem);
+  padding: clamp(1.15rem, 2.2vw, 1.7rem);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+@media (min-width: 861px) {
+  .stack-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Same treatment as a metric's label: quiet, monospace, out of the way of
+   the marks it introduces. */
+.stack-group__label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 /* A grid of logos with their names, not a run of chips: no pill, no fill, no
-   border. Equal-width columns via auto-fit + 1fr, so the marks sit on an even
-   rhythm across the row instead of bunching at the left. The narrow floor
-   lets a full stack fit one or two rows on a desktop and still collapse
-   sensibly on a phone. */
+   border. `auto-fill` rather than `auto-fit`: auto-fit collapses the unused
+   tracks and stretches the rest, so a three-item category would spread itself
+   across the whole column while a seven-item one sat tight. Keeping the empty
+   tracks holds every category on the same column rhythm, so the groups line
+   up with each other down the page. */
 .stack {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
   gap: clamp(1.5rem, 2.6vw, 2.25rem) 0.75rem;
 }
 
@@ -718,18 +957,17 @@ button:focus-visible {
   object-fit: contain;
 }
 
-/* Stand-in for a logo that hasn't been added to src/assets/icons yet. This
-   one keeps a surface, because a bare letter would not read as a mark. */
+/* Stand-in for a logo that hasn't been added to src/assets/icons yet. No
+   surface of its own — the card behind it is the surface now — so it reads as
+   a quiet monogram in place of the missing mark. */
 .tech__initial {
   display: grid;
   place-items: center;
   width: 100%;
   height: 100%;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 500;
 }
 
@@ -742,6 +980,422 @@ button:focus-visible {
   overflow-wrap: anywhere;
 }
 
+/* ---------- Tech stack: radial wheel ---------- */
+
+/* Icons ride a ring around the outside; the middle is a pie divided one slice
+   per category, each slice and its icons sharing a colour so the association
+   reads without a legend. One category highlights at a time, cycling on a
+   timer unless the reader takes hold of it — see StackWheel.jsx, which also
+   drops the cycle entirely under prefers-reduced-motion.
+   Below 861px this is not rendered at all; the grouped card list takes over. */
+.wheel {
+  display: flex;
+  justify-content: center;
+}
+
+.wheel__stage {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  aspect-ratio: 1;
+}
+
+.wheel__pie {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wheel__slice {
+  fill: var(--slice-tint);
+  stroke: var(--card-bg);
+  stroke-width: 0.6;
+  cursor: pointer;
+  /* Everything but the live category sits back, so the highlight reads as
+     brightness rather than as a colour change. */
+  opacity: 0.28;
+  transition: opacity 0.35s ease;
+}
+
+.wheel__slice--on {
+  opacity: 1;
+}
+
+/* Centred on its own point, so the percentage position is the label's middle
+   rather than its top-left corner. The rotation that runs it along its wedge's
+   radius is applied inline, since it differs per slice — which is also why the
+   active state cannot re-declare `transform` here without losing it. */
+.wheel__label {
+  position: absolute;
+  width: 8rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-body);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+  /* Ink on the pale, backed-off slices; the page ground on the live one,
+     which is at full saturation. Either way the label stays legible against
+     whatever is behind it. */
+  color: var(--ink);
+  opacity: 0.7;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.wheel__label--on {
+  color: var(--card-bg);
+  opacity: 1;
+}
+
+.wheel__ring {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wheel__node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.35s ease;
+}
+
+/* Names the individual tool on hover. Sits above its icon, and lifts the whole
+   node above its neighbours so a tooltip is never painted under the next
+   circle along the ring. */
+.wheel__node-name {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35rem);
+  transform: translateX(-50%);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.wheel__node:hover {
+  z-index: 2;
+}
+
+.wheel__node:hover .wheel__node-name {
+  opacity: 1;
+}
+
+.wheel__node--on {
+  transform: translate(-50%, -50%) scale(1.15);
+  z-index: 1;
+}
+
+/* The circular border is the category's colour; it fills in when that
+   category is the live one. */
+.wheel__node-mark {
+  display: grid;
+  place-items: center;
+  width: clamp(2.3rem, 5.5vw, 2.9rem);
+  height: clamp(2.3rem, 5.5vw, 2.9rem);
+  border-radius: 50%;
+  border: 2px solid var(--node-tint);
+  background: var(--card-bg);
+  opacity: 0.45;
+  transition: opacity 0.35s ease, box-shadow 0.35s ease;
+}
+
+.wheel__node--on .wheel__node-mark {
+  opacity: 1;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--node-tint) 22%, transparent);
+}
+
+.wheel__node-mark img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+}
+
+.wheel__node-initial {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--node-tint);
+}
+
+/* ---------- Code viewer ---------- */
+
+/* Same frame behaviour as the README — capped, self-scrolling, faded, with a
+   control that lifts the cap — on the terminal surface rather than the card
+   one. This is literal source, and it reads the way the folder tree does. */
+.code {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* A tab bar, read as chrome rather than as content: its own light band above
+   the viewer, holding tabs rounded on top only and sitting shoulder to
+   shoulder. The band is deliberately NOT the code's colour — when the active
+   tab matched the dark frame the two merged and the tab looked like the first
+   line of the file. Three distinct surfaces now: the band, the raised active
+   tab on it, and the dark code below. */
+.code__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  align-self: stretch;
+  padding: 0.35rem 0.35rem 0;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+
+.code__tab {
+  padding: 0.45rem 0.9rem;
+  /* Every tab reserves the same border box — transparent until it is the
+     active one — so nothing shifts when the selection moves. */
+  border: 1px solid transparent;
+  border-top-width: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.73rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.code__tab:hover {
+  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  color: var(--ink);
+}
+
+/* Raised off the band, and marked at the top edge in the project accent —
+   two signals, so "selected" reads at a glance rather than by comparison. */
+/* An outlined edge as well as a lighter fill: in dark mode the card surface
+   sits only a shade off the band, and the border is what keeps the active tab
+   legible as a separate object there. */
+.code__tab--on,
+.code__tab--on:hover {
+  background: var(--card-bg);
+  border-color: var(--border);
+  border-top-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The single-file tab is a label, not a control. */
+.code__tab--static {
+  cursor: default;
+}
+
+.code__frame {
+  position: relative;
+  align-self: stretch;
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  /* Square across the top, where it meets the tab band; the rounding lives on
+     the band above and the bottom of the frame, so the two read as one panel
+     with a lid. */
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+
+/* `overscroll-behavior` is deliberately left to chain on the vertical axis.
+   With `contain` the box swallowed the wheel: reaching either end of the code
+   stopped the gesture dead instead of handing it back to the page, which read
+   as "scrolling only works when the pointer is outside the code". The
+   horizontal axis stays contained so a sideways gesture cannot trigger the
+   browser's back-navigation. */
+.code__viewport {
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior-x: contain;
+}
+
+.code__frame--capped .code__viewport {
+  max-height: 460px;
+}
+
+.code__frame--capped::after {
+  content: '';
+  position: absolute;
+  inset: auto 1px 1px 1px;
+  height: 3rem;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  /* Stays transparent for most of its height and only reaches the ground
+     right at the edge — a hint that there is more below, not a curtain over
+     the line that is still supposed to be legible. */
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--terminal-bg) 55%, transparent) 55%,
+    var(--terminal-bg) 100%
+  );
+  pointer-events: none;
+}
+
+.code__body {
+  margin: 0;
+  padding: clamp(0.9rem, 2vw, 1.35rem) clamp(1rem, 2vw, 1.5rem);
+  /* Room under the last line so that, scrolled to the end, the fade sits on
+     empty space rather than over code the reader is meant to read. */
+  padding-bottom: 3.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: var(--terminal-ink);
+  /* Source is read as written; the viewport scrolls sideways rather than
+     rewrapping lines and breaking their indentation. */
+  white-space: pre;
+  tab-size: 2;
+}
+
+.code__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 0.9rem;
+}
+
+.code__expand {
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.code__expand:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.code__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.code__link:hover {
+  text-decoration: underline;
+}
+
+/* Prism tokens, themed from the site's own palette rather than importing one
+   of Prism's stylesheets — those bring their own background and type colours
+   and would fight the terminal surface. */
+.code__body .token.comment {
+  color: #6B7C93;
+  font-style: italic;
+}
+
+.code__body .token.string,
+.code__body .token.attr-value {
+  color: #9CD1A4;
+}
+
+.code__body .token.number,
+.code__body .token.boolean {
+  color: #E0A860;
+}
+
+.code__body .token.keyword,
+.code__body .token.atrule {
+  color: #C9A0DC;
+}
+
+.code__body .token.function,
+.code__body .token.class-name {
+  color: #7EC8E3;
+}
+
+.code__body .token.property,
+.code__body .token.key,
+.code__body .token.attr-name {
+  color: #8FB8E8;
+}
+
+.code__body .token.punctuation,
+.code__body .token.operator {
+  color: #8A97AB;
+}
+
+.code__body .token.interpolation {
+  color: #F0A860;
+}
+
+/* ---------- Inline marks in narrative text ---------- */
+
+/* One treatment for every backtick on the page, whether it came from a
+   hand-written string in the data file or from the rendered README. */
+.inline-code,
+.markdown code {
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-alt);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  /* Inside justified prose a long command should break rather than stretch
+     the line it sits on. */
+  overflow-wrap: anywhere;
+}
+
+/* **text** in the content source. Accent rather than the default black bold,
+   so the numbers and technologies worth catching lift off the sentence
+   without a second weight competing with the headings. */
+.mark {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---------- Folder structure ---------- */
+
+/* A terminal surface, dark in both themes — the content is literal shell
+   output, and it reads as such against a dark ground rather than one that
+   flips with the page. Scrolls sideways on its own so a deep path can never
+   widen the page. */
+.tree {
+  background: var(--terminal-bg);
+  border: 1px solid var(--terminal-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tree__body {
+  margin: 0;
+  padding: clamp(1rem, 2vw, 1.4rem) clamp(1rem, 2vw, 1.5rem);
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--terminal-ink);
+  /* Box-drawing characters only line up if nothing rewraps them. */
+  white-space: pre;
+  tab-size: 2;
+}
+
 /* ---------- Figures: diagram, screenshots, video ---------- */
 
 .figure {
@@ -750,6 +1404,12 @@ button:focus-visible {
 
 .figure + .figure {
   margin-top: 1.25rem;
+}
+
+.diagrams {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 2.4vw, 2rem);
 }
 
 .figure__frame {
@@ -804,13 +1464,39 @@ button:focus-visible {
   text-decoration: underline;
 }
 
+/* Two across on a wide screen, so a before/after pair lands on one row and
+   reads as a pair. The floor is high enough that three never fit — these are
+   dashboard captures, and a third column would make them unreadable.
+   No row gap: the rows are separated by a rule instead, so each pair reads as
+   its own band rather than as one long run of images. */
 .shots {
   list-style: none;
   margin: 0 0 1.25rem;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  column-gap: clamp(1rem, 2vw, 1.5rem);
+  row-gap: 0;
+}
+
+/* A rule above every row after the first — which is every pair after the
+   first, at two columns. It breaks at the column gap, which is what makes it
+   read as a divider between pairs rather than a box around them. */
+.shots > li:nth-child(n + 3) {
+  padding-top: clamp(1.25rem, 2.4vw, 1.75rem);
+  border-top: 1px solid var(--border);
+}
+
+.shots > li:not(:nth-last-child(-n + 2)) {
+  padding-bottom: clamp(1.25rem, 2.4vw, 1.75rem);
+}
+
+/* Heavier and darker than a diagram's caption: these label which half of a
+   before/after pair you are looking at, so they have to be readable at a
+   glance rather than sitting quietly under the image. */
+.shots .figure__caption {
+  font-weight: 600;
+  color: var(--ink);
 }
 
 /* ---------- Decisions ---------- */
@@ -873,52 +1559,73 @@ button:focus-visible {
   color: var(--text-primary);
 }
 
-/* ---------- Link row ---------- */
+/* ---------- Link rows ---------- */
 
+/* Bare marks with their names beneath — no pill, no border, no fill. Same
+   treatment as the tech-stack grid, so the two read as one family. */
 .links {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
 }
 
-.link-chip {
-  display: inline-flex;
+.link-tile {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--card-bg);
+  gap: 0.55rem;
+  min-width: 4.5rem;
   color: var(--ink);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.link-tile__mark {
+  display: grid;
+  place-items: center;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--ink);
+  transition: color 0.18s ease;
+}
+
+.link-tile__label {
   font-size: 0.85rem;
   font-weight: 600;
-  text-decoration: none;
-  transition: border-color 0.18s ease, color 0.18s ease;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
 }
 
-a.link-chip:hover {
-  border-color: var(--accent);
+a.link-tile:hover,
+a.link-tile:hover .link-tile__mark {
   color: var(--accent);
 }
 
-/* Placeholder for a link the project is expected to have but doesn't yet —
-   present so the gap is visible, inert so it can't be clicked. */
-.link-chip--pending {
+/* A link the project is expected to have but doesn't yet: same shape, greyed
+   back, inert. */
+.link-tile--pending,
+.link-tile--pending .link-tile__mark {
   color: var(--text-secondary);
-  border-style: dashed;
+  opacity: 0.65;
   cursor: default;
 }
 
 /* ---------- README ---------- */
 
+.readme {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .readme__toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  margin-bottom: 1rem;
   padding: 0.2rem 0.3rem 0.2rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -957,6 +1664,62 @@ a.link-chip:hover {
   font-weight: 600;
 }
 
+/* The README opens capped and scrolling in its own frame, the same bordered
+   box treatment the code blocks and the empty slots use. The ground is
+   --card-bg rather than the --bg-alt a code block uses, because the inline
+   code inside the README is itself --bg-alt and would vanish against it. */
+.readme__frame {
+  position: relative;
+  /* The section wrapper is a left-aligned column for the sake of the toggle
+     and the expand button; the frame itself still takes the full width. */
+  align-self: stretch;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.readme__viewport {
+  padding: clamp(1rem, 2vw, 1.6rem);
+}
+
+.readme__frame--capped .readme__viewport {
+  max-height: 460px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Fades the last few lines out so it reads as "more below" rather than as a
+   hard crop. Inset by the border width so it never paints over the frame. */
+.readme__frame--capped::after {
+  content: '';
+  position: absolute;
+  inset: auto 1px 1px 1px;
+  height: 5rem;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  background: linear-gradient(to bottom, transparent, var(--card-bg));
+  pointer-events: none;
+}
+
+.readme__expand {
+  align-self: flex-start;
+  margin-top: 0.9rem;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.readme__expand:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* Rendered markdown, on the same full-width justified footing as the page's
    own prose so the README doesn't read as a different document pasted in. */
 .markdown {
@@ -980,6 +1743,16 @@ a.link-chip:hover {
   margin: 1.75rem 0 0.6rem;
   font-weight: 700;
   color: var(--ink);
+  /* A README's own table-of-contents links jump to these, so they need the
+     same clearance under the sticky menu that the page's own sections get. */
+  scroll-margin-top: var(--section-nav-h);
+}
+
+@media (max-width: 860px) {
+  .markdown h4,
+  .markdown h5 {
+    scroll-margin-top: calc(var(--mobile-bar-h) + var(--section-nav-h));
+  }
 }
 
 .markdown h4 {
@@ -1009,14 +1782,6 @@ a.link-chip:hover {
   color: var(--accent);
 }
 
-.markdown code {
-  padding: 0.1rem 0.35rem;
-  border-radius: var(--radius-sm);
-  background: var(--bg-alt);
-  font-family: var(--font-mono);
-  font-size: 0.85em;
-}
-
 .markdown pre {
   margin: 0 0 1rem;
   padding: 0.9rem 1.05rem;
@@ -1028,6 +1793,7 @@ a.link-chip:hover {
 
 .markdown pre code {
   padding: 0;
+  border: 0;
   background: none;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -1070,10 +1836,34 @@ a.link-chip:hover {
 
 /* ---------- Reflection ---------- */
 
+/* Reflection keeps the justification but not the hyphenation: no word is
+   broken mid-line, and the justification is achieved through word spacing
+   alone — the way a word processor sets justified text by default.
+   Scoped to this section on purpose. `.prose p` also styles Problem &
+   Context, and `.lede`, `.decision__why`, and the rendered README each carry
+   their own `hyphens: auto`; none of those change. */
+.reflection .prose p {
+  -webkit-hyphens: none;
+  hyphens: none;
+}
+
+/* Stacked, not side by side. Two columns held each part to about half the
+   width, which made the justified paragraphs gappy and the second part easy
+   to miss; full width lets each read as its own section. */
 .reflection {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.75rem, 3.5vw, 2.75rem);
+}
+
+.reflection__part {
+  display: flex;
+  flex-direction: column;
+}
+
+.reflection__part + .reflection__part {
+  padding-top: clamp(1.75rem, 3.5vw, 2.75rem);
+  border-top: 1px solid var(--border);
 }
 
 .reflection__label {
@@ -1152,9 +1942,6 @@ a.link-chip:hover {
      row would leave the section mostly empty space. */
   .stack {
     grid-template-columns: repeat(2, 1fr);
-  }
-  .reflection {
-    grid-template-columns: 1fr;
   }
 }
 

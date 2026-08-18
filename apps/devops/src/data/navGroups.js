@@ -6,26 +6,49 @@
 //   id        React key
 //   label     what the menu shows
 //   sections  every section id this group covers, so the scroll-spy can light
-//             the right entry no matter which section is on screen. Kept in
-//             page order and contiguous, so the highlight only ever moves
-//             forward as the reader scrolls down.
+//             the right entry no matter which section is on screen.
+//
+//             These are grouped by meaning rather than by position, and Tech
+//             & Architecture is not contiguous: `decisions` belongs with the
+//             stack and the diagrams, but sits after `media` on the page. The
+//             cost is that scrolling past the screenshots lights Demo and then
+//             returns to Tech & Architecture. Moving the Technical Decisions
+//             section up to sit under Folder Structure would remove that, at
+//             the price of changing the page's reading order.
 //   target    where clicking scrolls to. Listed as an ordered preference: the
 //             first one that this project actually rendered wins, so a group
 //             stays useful when its headline section is missing.
+//   anchor    an element id outside the section list to scroll to instead —
+//             used by Workspace, which lands on the page header above the
+//             first section rather than on a section of its own.
 //
 // A group whose sections are all absent from a project drops out of the menu.
 export const NAV_GROUPS = [
   {
+    // The top of the page: title, period, and the repo links. Overview
+    // deliberately skips past all of that to My Role, which left no way back
+    // up once the reader had scrolled.
+    id: 'workspace',
+    label: 'Workspace',
+    sections: ['links'],
+    anchor: 'project-top',
+  },
+  {
     id: 'overview',
     label: 'Overview',
     sections: ['members', 'role', 'context', 'impact'],
+    // Lands on My Role: the member row sits above it but is a glance rather
+    // than a read.
     target: ['role', 'context', 'members', 'impact'],
   },
   {
+    // Groups the technical body of the page: the stack, both diagram sections,
+    // and the trade-offs. `decisions` sits after `media` in page order, so
+    // this group is the one that is not contiguous — see the note below.
     id: 'tech',
     label: 'Tech & Architecture',
-    sections: ['stack', 'architecture'],
-    target: ['stack', 'architecture'],
+    sections: ['stack', 'architecture', 'folders', 'recovery', 'decisions'],
+    target: ['stack', 'architecture', 'folders', 'recovery', 'decisions'],
   },
   {
     id: 'demo',
@@ -34,13 +57,10 @@ export const NAV_GROUPS = [
     target: ['media'],
   },
   {
-    // `decisions` sits between the demo and the links in page order, so it
-    // rides along here to keep the groups contiguous — the entry still points
-    // at the links, per the menu's stated purpose.
     id: 'resources',
     label: 'Resources',
-    sections: ['decisions', 'links', 'readme'],
-    target: ['links', 'readme', 'decisions'],
+    sections: ['resources', 'terraform', 'readme'],
+    target: ['resources', 'terraform', 'readme'],
   },
   {
     id: 'reflection',
@@ -55,9 +75,11 @@ export const NAV_GROUPS = [
 export function navGroupsFor(sections) {
   const present = new Set(sections.map((section) => section.id))
 
-  return NAV_GROUPS.filter((group) => group.sections.some((id) => present.has(id))).map((group) => ({
+  return NAV_GROUPS.filter(
+    (group) => group.anchor || group.sections.some((id) => present.has(id))
+  ).map((group) => ({
     ...group,
-    targetId: group.target.find((id) => present.has(id)),
+    targetId: group.anchor ?? group.target?.find((id) => present.has(id)),
   }))
 }
 

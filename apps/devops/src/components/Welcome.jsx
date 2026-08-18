@@ -4,7 +4,11 @@ export default function Welcome() {
   return (
     <div className="welcome">
       <div>
-        <p className="welcome__message">Welcome to Junhan&rsquo;s Workspace.</p>
+        {/* Only the name is tinted, in the same indigo the landing page's
+            Hero settles it into — see --name-pop. */}
+        <p className="welcome__message">
+          Welcome to <span className="welcome__name">Junhan</span>&rsquo;s Workspace.
+        </p>
         <p className="welcome__hint">
           Select a project from the left to explore it in full detail.
         </p>

@@ -48,7 +48,13 @@ export default function MediaSection({ project }) {
           ))}
         </ul>
       )}
-      {video && <Video video={video} />}
+      {video ? (
+        <Video video={video} />
+      ) : (
+        /* Screenshots without a video: say the video is still pending rather
+           than letting a half-filled section look finished. */
+        <EmptySlot>No demo video added yet.</EmptySlot>
+      )}
     </div>
   )
 }

@@ -51,6 +51,23 @@ export const ExternalIcon = () => (
   </svg>
 )
 
+// Document with a folded corner — the repo's README.
+export const DocIcon = () => (
+  <svg {...base}>
+    <path d="M14 3H7a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V7.5z" />
+    <path d="M14 3v4.5h4.5" />
+    <path d="M9 12.5h6M9 16h4" />
+  </svg>
+)
+
+// Projector screen — the slide deck.
+export const SlidesIcon = () => (
+  <svg {...base}>
+    <rect x="3" y="4" width="18" height="12" rx="1.5" />
+    <path d="M12 16v3M9 21l3-2 3 2" />
+  </svg>
+)
+
 // Globe — the EN/KO README toggle.
 export const LanguageIcon = () => (
   <svg {...base}>

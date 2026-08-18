@@ -1,52 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-
-// Icons form the shape themselves — no container drawn behind them. Two
-// icons sit side by side; three make a triangle; larger sets fill out
-// toward a hexagonal/circular blob. Plans are portrait-leaning so the
-// cluster fills a tall card rather than sitting as a wide, short band.
-const ROW_PLANS = {
-  1: [1],
-  2: [2],
-  3: [1, 2],
-  4: [1, 2, 1],
-  5: [2, 3],
-  6: [1, 2, 2, 1],
-  7: [2, 3, 2],
-  8: [1, 3, 3, 1],
-  9: [1, 2, 3, 2, 1],
-  10: [2, 3, 3, 2],
-  11: [1, 3, 3, 3, 1],
-  12: [3, 3, 3, 3],
-  13: [2, 3, 3, 3, 2],
-}
-const ROW_PITCH = 0.866 // sin(60deg) — honeycomb row spacing
-const ICON_FRAC = 0.78  // disc size as a share of the centre-to-centre step
-
-// Counts that read better as a named polygon than as honeycomb rows.
-// Points are unit offsets from the centre, in steps.
-const SQUARE = [
-  { x: -0.5, y: -0.5 }, { x: 0.5, y: -0.5 },
-  { x: -0.5, y: 0.5 }, { x: 0.5, y: 0.5 },
-]
-// Five points around a circle, apex up. The radius is derived so adjacent
-// points sit exactly one step apart — the same neighbour spacing the
-// honeycomb uses — otherwise the tiles would overlap:
-//   chord = 2 * r * sin(pi/5) = 1  =>  r = 1 / (2 * sin(36deg))
-const PENTAGON_R = 1 / (2 * Math.sin(Math.PI / 5))
-const PENTAGON = Array.from({ length: 5 }, (_, i) => {
-  const a = (-90 + i * 72) * (Math.PI / 180)
-  return { x: Math.cos(a) * PENTAGON_R, y: Math.sin(a) * PENTAGON_R }
-})
-const POLYGONS = { 4: SQUARE, 5: PENTAGON }
-
-// Very small sets would otherwise blow up to fill the whole card, ending up
-// larger than the icons on a busy card; these hold them near the same size.
-function widthCapFor(count) {
-  if (count <= 2) return 0.86
-  if (count <= 5) return 0.95
-  return 1
-}
+// Every skill icon's artwork. Categories with a real vendor logo set point
+// at one via `basePath`; the rest fall back to the inline glyph named by
+// the service's `glyph`.
+import { useState } from 'react'
 
 function Glyph({ type }) {
   const common = {
@@ -276,14 +231,65 @@ function Glyph({ type }) {
           <path d="M6.5 19h11" />
         </svg>
       )
+    case 'shield':
+      return (
+        <svg {...common}>
+          <path d="M12 3l7 3v5.5c0 4.3-2.9 7.7-7 9.5-4.1-1.8-7-5.2-7-9.5V6l7-3z" />
+        </svg>
+      )
+    case 'search':
+      return (
+        <svg {...common}>
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="M15.8 15.8L21 21" />
+        </svg>
+      )
+    case 'code':
+      return (
+        <svg {...common}>
+          <path d="M8.5 8L4 12l4.5 4M15.5 8l4.5 4-4.5 4M13.5 5l-3 14" />
+        </svg>
+      )
+    case 'braces':
+      return (
+        <svg {...common}>
+          <path d="M9 4c-2 0-2.5 1-2.5 3S6 10.5 4.5 10.5C6 10.5 6.5 12 6.5 14S7 20 9 20" />
+          <path d="M15 4c2 0 2.5 1 2.5 3s.5 3.5 2 3.5c-1.5 0-2 1.5-2 3.5s-.5 6-2.5 6" />
+        </svg>
+      )
+    case 'file-code':
+      return (
+        <svg {...common}>
+          <path d="M14 3H7a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7l-4-4z" />
+          <path d="M14 3v4h4" />
+          <path d="M10.5 12L9 14l1.5 2M13.5 12L15 14l-1.5 2" />
+        </svg>
+      )
+    case 'route':
+      return (
+        <svg {...common}>
+          <circle cx="6" cy="18" r="2.5" />
+          <circle cx="18" cy="6" r="2.5" />
+          <path d="M8.5 18h5a4 4 0 0 0 0-8h-3a4 4 0 0 1 0-8" />
+        </svg>
+      )
+    case 'check-list':
+      return (
+        <svg {...common}>
+          <path d="M3.5 7l2 2 3.5-3.5M3.5 17l2 2 3.5-3.5" />
+          <path d="M12 7h9M12 17h9" />
+        </svg>
+      )
     default:
       return null
   }
 }
 
+// Categories without a real vendor logo set pass no `basePath` — they draw
+// the inline glyph directly rather than requesting an SVG that isn't there.
 function ServiceIcon({ slug, glyph, basePath }) {
   const [imgFailed, setImgFailed] = useState(false)
-  if (imgFailed) return <Glyph type={glyph} />
+  if (!basePath || imgFailed) return <Glyph type={glyph} />
   return (
     <img
       src={`${basePath}/${slug}.svg`}
@@ -295,143 +301,4 @@ function ServiceIcon({ slug, glyph, basePath }) {
   )
 }
 
-// Positioning (the outer plain div) stays separate from the hover scale
-// (the nested motion.div): framer-motion synthesizes `transform` from
-// animated motion values and would otherwise overwrite the centering
-// translate set on the same element.
-function ClusterIcon({ service, basePath, left, top, size, active, onEnter, onLeave }) {
-  return (
-    <div style={{ position: 'absolute', left, top, width: size, height: size, zIndex: active ? 5 : 1 }}>
-      <motion.div
-        onHoverStart={onEnter}
-        onHoverEnd={onLeave}
-        onFocus={onEnter}
-        onBlur={onLeave}
-        animate={{ scale: active ? 1.16 : 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-        tabIndex={0}
-        role="img"
-        aria-label={service.label}
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          borderRadius: '50%',
-          background: 'var(--skill-disc-bg)',
-          border: `1px solid ${active ? 'var(--c-indigo)' : 'var(--skill-disc-border)'}`,
-          color: 'var(--c-indigo)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: 'var(--skill-disc-shadow)',
-        }}
-      >
-        <div style={{ width: '54%', height: '54%' }}>
-          <ServiceIcon slug={service.slug} glyph={service.glyph} basePath={basePath} />
-        </div>
-        <AnimatePresence>
-          {active && (
-            <motion.span
-              initial={{ opacity: 0, y: 4, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              style={{
-                position: 'absolute',
-                bottom: '112%',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                whiteSpace: 'nowrap',
-                background: 'var(--ink)',
-                color: 'var(--bg)',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.7rem',
-                fontWeight: 600,
-                padding: '3px 9px',
-                borderRadius: '999px',
-                pointerEvents: 'none',
-                zIndex: 6,
-              }}
-            >
-              {service.label}
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  )
-}
-
-// Sized from the measured box rather than a fixed viewBox: the step is
-// whichever of width or height binds first, so the cluster always grows to
-// fill the card without spilling out of it.
-// `autoIndex` is driven by the carousel, which spotlights exactly one icon
-// across all five cards at a time. A real hover on this card wins over it.
-export default function SkillCluster({ services, basePath, autoIndex = null }) {
-  const ref = useRef(null)
-  const [box, setBox] = useState({ w: 0, h: 0 })
-  const [hoverIndex, setHoverIndex] = useState(null)
-
-  useLayoutEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect
-      setBox({ w: width, h: height })
-    })
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [])
-
-  const count = services.length
-  const activeIndex = hoverIndex ?? autoIndex
-  // Named polygons win where one reads better than honeycomb rows;
-  // everything else falls back to the row plans. Both produce offsets in
-  // step-units from the centre, so the sizing below is shared.
-  const poly = POLYGONS[count]
-  let offsets
-  if (poly) {
-    offsets = poly
-  } else {
-    const plan = ROW_PLANS[count] || ROW_PLANS[10]
-    offsets = []
-    plan.forEach((n, row) => {
-      for (let i = 0; i < n; i++) {
-        offsets.push({
-          x: i - (n - 1) / 2,
-          y: (row - (plan.length - 1) / 2) * ROW_PITCH,
-        })
-      }
-    })
-  }
-
-  // +1 step so the tiles themselves fit inside the box, not just their centres.
-  const unitsWide = Math.max(...offsets.map((o) => Math.abs(o.x))) * 2 + 1
-  const unitsTall = Math.max(...offsets.map((o) => Math.abs(o.y))) * 2 + 1
-  const step = Math.min((box.w * widthCapFor(count)) / unitsWide, box.h / unitsTall)
-  const size = step * ICON_FRAC
-
-  const spots = offsets.map((o) => ({
-    cx: box.w / 2 + o.x * step,
-    cy: box.h / 2 + o.y * step,
-  }))
-
-  return (
-    <div ref={ref} className="cluster">
-      {step > 0 &&
-        services.map((s, i) => (
-          <ClusterIcon
-            key={s.slug}
-            service={s}
-            basePath={basePath}
-            left={spots[i].cx - size / 2}
-            top={spots[i].cy - size / 2}
-            size={size}
-            active={activeIndex === i}
-            onEnter={() => setHoverIndex(i)}
-            onLeave={() => setHoverIndex((cur) => (cur === i ? null : cur))}
-          />
-        ))}
-    </div>
-  )
-}
+export default ServiceIcon

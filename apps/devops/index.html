@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Junhan Shin — Cloud/DevOps Workspace</title>
+    <meta name="description" content="Cloud and DevOps project workspace — architecture, metrics, and write-ups for Junhan Shin's infrastructure work." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+    <script>
+      // Set the theme before first paint so there's no flash of the wrong
+      // palette. Same contract as the root app: an explicit stored choice
+      // wins, otherwise follow the OS. No toggle ships on this app yet, so
+      // in practice this tracks the OS setting — including when it changes
+      // while the page is open, which the attribute would otherwise freeze.
+      (function () {
+        var query = matchMedia('(prefers-color-scheme: dark)')
+        function stored() {
+          var value = localStorage.getItem('theme')
+          return value === 'light' || value === 'dark' ? value : null
+        }
+        function apply() {
+          document.documentElement.setAttribute(
+            'data-theme',
+            stored() || (query.matches ? 'dark' : 'light')
+          )
+        }
+        apply()
+        query.addEventListener('change', function () {
+          if (!stored()) apply()
+        })
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

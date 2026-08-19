@@ -27,16 +27,69 @@
 
   /* Fallback for anything rendered outside a project page. */
   --accent: var(--accent-base);
-  /* The tint behind tags and other accent-washed surfaces. Derived from
-     --accent at use sites via color-mix, so a project only ever sets one
-     colour and the wash follows it. */
-  --accent-wash: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
-  --accent-wash-strong: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
+  /* The tint behind tags and other accent-washed surfaces.
 
-  /* Fonts — same stack as the root app. */
-  --font-header: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'Fira Code', monospace;
+     These are NOT usable as `background: var(--accent-wash)` on a themed
+     page. A custom property declared here resolves its own var(--accent)
+     against :root — the base indigo — not against the project accent bound
+     lower down the tree, so the wash comes out indigo on every project. Mix
+     at the use site instead:
+
+         background: color-mix(in srgb, var(--accent) 14%, var(--card-bg));
+
+     Kept for the unthemed surfaces that genuinely want the base colour. */
+  /* The strip the tabs sit on. Deliberately darker than the tab surface so
+     the tab silhouette reads as a shape rather than a tint. */
+  --code-band: #D9E1EB;
+  --accent-wash: color-mix(in srgb, var(--accent-base) 12%, var(--card-bg));
+  --accent-wash-strong: color-mix(in srgb, var(--accent-base) 22%, var(--card-bg));
+
+  /* Fonts — same stack as the root app. Four jobs, three faces, at every
+     width. No face swaps by breakpoint: an earlier version swapped the
+     heading face at 1100px, which gave the site two identities depending on
+     the device it was opened on.
+
+     Headings and labels are both neutral grotesques, so they separate by
+     weight, size and case rather than by face. That is deliberate — the
+     previous label face was condensed and read cramped — but it does mean
+     the label role earns its distinction from --t-* and case, not from the
+     family. If a label ever needs to pull further away from a heading, move
+     it in weight, not in family.
+
+     Fallbacks match each face's proportions rather than bottoming out on
+     generic sans-serif/monospace, which shifted the body paragraph by a full
+     line on font swap. */
+  --font-heading: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-label: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-header: var(--font-heading);
+  --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Chivo Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* 700, not 800. Public Sans 800 at display size shouts, and with fifteen
+     section headings on a project page a shouting heading style turns the
+     whole column into noise. The hierarchy is carried by the size gap and by
+     how quiet everything else is. */
+  --display-weight: 700;
+  --display-lh: 1.08;
+  --display-track: -0.03em;
+  /* Not a face adjustment — a hierarchy one. Body copy is pinned at 17px at
+     every width while the heading clamps shrink, so without this a section
+     heading lands only 1.23x the body size on a phone, which does not read as
+     a hierarchy at all. The narrow end needs proportionally more. */
+  --display-scale: 1.14;
+
+  /* Type scale. Role names, not values — nothing outside this block states a
+     font-size in rem. The steps are deliberately coarse: the previous system
+     carried 33 distinct sizes, eight of them inside a 1.44px band, which is
+     below the threshold at which anyone perceives a difference. 11px is the
+     floor for any text with a job to do. */
+  --t-micro: 0.6875rem;  /* 11px — smallest functional label; hard floor */
+  --t-mini: 0.71875rem;  /* 11.5px — mono metadata, tabs, tooltips */
+  --t-tiny: 0.78125rem;  /* 12.5px — captions, code, secondary detail */
+  --t-small: 0.84375rem; /* 13.5px — UI labels, nav, buttons */
+  --t-base: 0.9375rem;   /* 15px — UI default */
+  --t-prose: 1.03125rem; /* 16.5px — reading size; Newsreader sets small */
+  --t-lead: 1.125rem;    /* 18px — lede, sub-headings */
+  --t-brand: 1.375rem;   /* 22px — the sidebar wordmark */
 
   /* Deliberately sharp. Not zero — a hairline of radius keeps a 1px border
      from looking ragged where it turns the corner — but far short of the
@@ -50,7 +103,7 @@
   --radius-card: 5px;
 
   /* Layout */
-  --sidebar-w: 272px;
+  --sidebar-w: 284px;
   /* Widened from 880px: these pages carry diagrams, screenshot grids, and
      metric rows, which all want more room than a pure reading measure. Prose
      inside them is still held to its own `ch` limits so lines stay readable. */
@@ -86,6 +139,14 @@
   color-scheme: light;
 }
 
+/* Headings hold one face at every width; only their size ratio moves. */
+@media (min-width: 1101px) {
+  :root {
+    --display-scale: 0.92;
+  }
+}
+
+
 [data-theme='dark'] {
   --bg: #10151F;
   --bg-alt: #161E2B;
@@ -119,6 +180,7 @@
   --scrim: rgba(0, 0, 0, 0.55);
 
   color-scheme: dark;
+  --code-band: #0D1420;
 }
 
 * {
@@ -152,6 +214,11 @@ img {
 
 /* Available to assistive tech, absent from the visual layout. */
 .sr-only {
+  /* Never inherits a label's decorative casing or tracking: some screen
+     readers spell an all-caps string out letter by letter, and the tracking
+     is a visual treatment that means nothing here. */
+  text-transform: none;
+  letter-spacing: normal;
   position: absolute;
   width: 1px;
   height: 1px;
@@ -206,19 +273,29 @@ button:focus-visible {
   border-right: 1px solid var(--border);
 }
 
+/* The wordmark centres in the rail — it is the site's name, not a list item,
+   and it is the one thing here that is not part of a left-aligned list. The
+   close button is taken out of flow so the name centres on the rail itself
+   rather than on the space left over beside the button. */
 .sidebar__head {
+  position: relative;
   display: flex;
+  justify-content: center;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 0.5rem;
 }
 
 .sidebar__brand {
-  font-family: var(--font-header);
-  font-weight: 800;
+  /* His name takes the heading face wherever it appears — the welcome line,
+     this wordmark, and his entry in Members — so the same name is never set
+     in two different faces. The label face keeps the functional labels: the
+     project list, the menu, icon and figure captions. */
+  font-family: var(--font-heading);
+  font-weight: 700;
+  text-align: center;
   /* Deliberately a large step above the 0.7rem category headers below —
      this is the site's name, they are labels for lists. */
-  font-size: 1.65rem;
+  font-size: calc(var(--t-brand) * var(--display-scale));
   letter-spacing: -0.03em;
   line-height: 1.15;
   /* His name, so his colour — the same one the welcome line and his avatar
@@ -241,7 +318,7 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   background: none;
   color: var(--text-secondary);
-  font-size: 1.15rem;
+  font-size: var(--t-lead);
   cursor: pointer;
 }
 
@@ -252,11 +329,12 @@ button:focus-visible {
 }
 
 .sidebar__group-title {
-  font-size: 0.7rem;
-  font-weight: 800;
+  font-size: var(--t-mini);
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-secondary);
+  font-family: var(--font-label);
 }
 
 /* Numbers come from the list itself, so the count is whatever the data says.
@@ -278,19 +356,21 @@ button:focus-visible {
   gap: 0.6rem;
   padding: 0.42rem 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: 0.9rem;
+  font-size: var(--t-small);
   font-weight: 500;
   line-height: 1.4;
   color: var(--text-primary);
   text-decoration: none;
   transition: background-color 0.15s ease, color 0.15s ease;
+  font-family: var(--font-label);
+  letter-spacing: 0;
 }
 
 .sidebar__link::before {
   content: counter(project) '.';
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: var(--t-mini);
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -337,7 +417,7 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--card-bg);
   color: var(--ink);
-  font-size: 1.2rem;
+  font-size: var(--t-lead);
   cursor: pointer;
 }
 
@@ -372,8 +452,13 @@ button:focus-visible {
   .drawer-toggle {
     display: grid;
   }
+  /* Out of flow so the wordmark stays centred on the rail rather than on the
+     space left over beside this button. */
   .sidebar__close {
     display: grid;
+    position: absolute;
+    top: 0;
+    right: 0;
   }
   .sidebar {
     width: min(300px, 84vw);
@@ -404,15 +489,16 @@ button:focus-visible {
   display: inline-block;
   margin: 0;
   font-family: var(--font-header);
-  font-weight: 800;
-  font-size: clamp(1.9rem, 1.2rem + 3.2vw, 3.4rem);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-weight: var(--display-weight);
+  font-size: calc(clamp(1.9rem, 1.2rem + 3.2vw, 3.4rem) * var(--display-scale));
+  letter-spacing: var(--display-track);
+  line-height: var(--display-lh);
   background-image: var(--welcome-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
+  overflow-wrap: anywhere;
 }
 
 /* The name interrupts the sweep: `text-fill-color` overrides the clipped
@@ -425,8 +511,13 @@ button:focus-visible {
 
 .welcome__hint {
   margin: 1.1rem auto 0;
-  max-width: 34ch;
-  font-size: clamp(0.95rem, 0.9rem + 0.3vw, 1.15rem);
+  /* One line. A 34ch cap broke it after "explore it in" and orphaned "full
+     detail." on a second line at every width the sidebar is a real column.
+     `nowrap` is lifted below 861px, where the sentence genuinely cannot fit
+     and holding it on one line would push the page sideways instead. */
+  max-width: none;
+  text-wrap: nowrap;
+  font-size: var(--t-prose);
   line-height: 1.6;
   color: var(--text-secondary);
 }
@@ -434,6 +525,9 @@ button:focus-visible {
 /* On a phone the welcome line should sit on the screen's centre, not below
    the space the drawer button reserves. */
 @media (max-width: 860px) {
+  .welcome__hint {
+    text-wrap: pretty;
+  }
   .welcome {
     min-height: calc(100dvh - 3.5rem);
   }
@@ -458,10 +552,11 @@ button:focus-visible {
 .project__head {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   scroll-margin-top: var(--section-nav-h);
   gap: 0.9rem;
   padding: clamp(2.25rem, 4.5vw, 3.5rem) 0 1.75rem;
+  text-align: center;
 }
 
 /* Small, quiet, and above the title — identifies the project the way the
@@ -469,7 +564,7 @@ button:focus-visible {
 .project__eyebrow {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: var(--t-mini);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -477,21 +572,25 @@ button:focus-visible {
 }
 
 .project__title {
-  font-weight: 800;
-  font-size: clamp(1.75rem, 1.25rem + 2vw, 2.7rem);
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  /* No measure cap and no `text-wrap: balance`: left-aligned, each line
-     should run to the edge before it breaks. Balancing would even the lines
-     out and leave the first one short of the width it has — the wrapping
-     this was meant to stop. */
+  font-weight: var(--display-weight);
+  font-size: calc(clamp(1.7rem, 1.1rem + 3.2vw, 3.4rem) * var(--display-scale));
+  letter-spacing: var(--display-track);
+  /* Looser than the shared display leading: this is the one heading that
+     regularly wraps, and two stacked lines of 57px need air between them
+     that a single-line section heading does not. */
+  line-height: 1.16;
+  /* Balanced wrapping, because the title is centred. A centred block wants
+     even line lengths and no lone trailing word; the rule against balancing
+     still holds for the left-aligned section headings, where a line should
+     run to the edge before it breaks. */
+  text-wrap: balance;
   color: var(--ink);
 }
 
 .project__period {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: var(--t-tiny);
   letter-spacing: 0.02em;
   color: var(--text-secondary);
 }
@@ -504,9 +603,14 @@ button:focus-visible {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.5rem 2rem;
+  /* A track per member across the full column rather than a huddle of 84px
+     cells on the left. The floor is wide enough for a two-word name to stay
+     on one line — "Hwijeong Cho" was wrapping — and `1fr` then spreads the
+     leftover width evenly, so five members occupy the measure they are given
+     instead of a third of it. */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
+  gap: 2rem 1rem;
 }
 
 .avatars__item {
@@ -514,37 +618,48 @@ button:focus-visible {
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  width: 84px;
+  width: 100%;
 }
 
 .avatars__circle {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   background: var(--avatar-tint);
   color: #FFFFFF;
   font-family: var(--font-mono);
-  font-size: 1.05rem;
+  font-size: var(--t-small);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
 
+/* --name-pop is Junhan's colour site-wide, and his avatar already takes it.
+   His name takes it too: on a team page where someone else is the lead, the
+   owner of the workspace should be identifiable at a glance. */
+.avatars__item--owner .avatars__name {
+  color: var(--name-pop);
+  font-weight: 700;
+}
+
 .avatars__name {
-  font-size: 0.82rem;
+  font-size: var(--t-small);
   font-weight: 500;
   line-height: 1.35;
   text-align: center;
   color: var(--text-primary);
-  overflow-wrap: anywhere;
+  /* Only break a name when it genuinely cannot fit: the track is sized so a
+     normal two-word name never has to. */
+  overflow-wrap: normal;
+  font-family: var(--font-heading);
 }
 
 /* Only the members who carry one — a lead, say — get this second line. */
 .avatars__role {
   margin-top: -0.35rem;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: var(--t-micro);
   letter-spacing: 0.04em;
   line-height: 1.35;
   text-align: center;
@@ -562,7 +677,7 @@ button:focus-visible {
   border: 1px dashed var(--border);
   background: var(--card-bg);
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: var(--t-small);
   line-height: 1.6;
 }
 
@@ -611,9 +726,9 @@ button:focus-visible {
   white-space: nowrap;
   height: 100%;
   padding: 0 0.6rem;
-  font-family: var(--font-body);
-  font-size: 0.71rem;
-  font-weight: 600;
+  font-family: var(--font-label);
+  font-size: var(--t-mini);
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -676,28 +791,35 @@ button:focus-visible {
 }
 
 .section__title {
-  font-weight: 800;
+  font-weight: var(--display-weight);
   /* A real heading rather than a labelled list item — a clear step under the
      project title, and a clear step over body copy. No bullet: the rule
      between sections already separates them. */
-  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.7rem);
-  letter-spacing: -0.025em;
-  line-height: 1.2;
+  font-size: calc(clamp(1.3rem, 1.1rem + 0.9vw, 1.7rem) * var(--display-scale));
+  letter-spacing: var(--display-track);
+  line-height: var(--display-lh);
   color: var(--ink);
 }
 
-/* Explanatory copy runs the full width of the column and is justified, so
-   the block reads as one clean rectangle. `hyphens: auto` is doing real work
-   here rather than being decoration: justification without it opens large
-   gaps between words on any line holding a long technical term.
-   `.prose p` is shared — Problem & Context and Reflection both use it — and
-   Reflection deliberately opts out of the hyphenation further down. */
+/* Explanatory copy runs the full width of the column, ragged-right.
+
+   Full width is the design's own decision and it stands. What was removed is
+   the justification, not the width: justifying an ~125-character line needed
+   `hyphens: auto` to close the gaps it opened, and that broke words at points
+   English does not use — `inf-rastructure`, `ass-igned` in the My Role
+   paragraph. Ragged-right at the same width needs no hyphenation, so
+   Reflection no longer needs its own exception either.
+
+   Leading carries the width instead: 1.8 rather than the 1.7 a capped
+   measure would want, because a long line needs more room for the return
+   sweep back to the start of the next one. */
 .prose p {
   margin: 0 0 1rem;
-  font-size: 1rem;
-  line-height: 1.7;
-  text-align: justify;
-  hyphens: auto;
+  font-size: var(--t-prose);
+  /* Leading is tuned to the measure, not to a universal ratio. At the full
+     column width a line runs long, so the return sweep needs more room. */
+  line-height: 1.8;
+  text-align: left;
   color: var(--text-primary);
 }
 
@@ -709,11 +831,10 @@ button:focus-visible {
    justified block as the rest. */
 .lede {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 500;
-  line-height: 1.6;
-  text-align: justify;
-  hyphens: auto;
+  font-size: var(--t-lead);
+  font-weight: 400;
+  line-height: 1.7;
+  text-align: left;
   color: var(--ink);
 }
 
@@ -763,28 +884,31 @@ button:focus-visible {
 }
 
 .bento__value {
-  font-family: var(--font-header);
-  font-weight: 800;
+  font-family: var(--font-mono);
+  font-weight: 700;
   font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.4rem);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.05em;
   line-height: 1;
   color: var(--accent);
 }
 
 /* The headline number, at the size the big tile was made for. */
 .bento__tile--big .bento__value {
-  font-size: clamp(2.9rem, 1.9rem + 4vw, 4.75rem);
+  font-size: calc(clamp(2.9rem, 1.9rem + 4vw, 4.75rem) * var(--display-scale));
 }
 
 .bento__label {
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: var(--t-tiny);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   line-height: 1.35;
   color: var(--ink);
+  font-family: var(--font-mono);
 }
 
 .bento__tile--big .bento__label {
-  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.3rem);
+  font-size: var(--t-base);
 }
 
 .bento__abbr {
@@ -795,7 +919,11 @@ button:focus-visible {
 
 /* Appears immediately on hover or focus, unlike the browser's own tooltip.
    Centred over the label and allowed to run wider than its tile — the grid
-   does not clip, and the hovered tile is lifted above its neighbours. */
+   does not clip, and the hovered tile is lifted above its neighbours.
+   The cap is the tile's own width, never more. Centred on the tile, anything
+   wider overhangs by half the difference, and on the last column that
+   overhang becomes the document's scroll width. Two earlier fixed caps (15rem,
+   then 11rem) each held until the next layout change moved the column. */
 .bento__tip {
   position: absolute;
   left: 50%;
@@ -803,15 +931,21 @@ button:focus-visible {
   transform: translateX(-50%);
   z-index: 3;
   width: max-content;
-  max-width: 15rem;
+  max-width: min(11rem, 100%);
+  overflow-wrap: anywhere;
   padding: 0.3rem 0.55rem;
   border-radius: var(--radius-sm);
   background: var(--ink);
   color: var(--bg);
-  font-family: var(--font-body);
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
   font-weight: 500;
   line-height: 1.4;
+  /* The label above is uppercase; this is a sentence and must not inherit
+     it. Nor may the sr-only expansion — some screen readers spell all-caps
+     out letter by letter. */
+  text-transform: none;
+  letter-spacing: 0;
   text-align: center;
   opacity: 0;
   pointer-events: none;
@@ -835,7 +969,7 @@ button:focus-visible {
 
 /* The qualifying phrase a wide tile exists to make room for. */
 .bento__detail {
-  font-size: 0.82rem;
+  font-size: var(--t-tiny);
   line-height: 1.4;
   color: var(--text-secondary);
 }
@@ -912,7 +1046,7 @@ button:focus-visible {
    the marks it introduces. */
 .stack-group__label {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--t-micro);
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -967,17 +1101,18 @@ button:focus-visible {
   height: 100%;
   color: var(--text-secondary);
   font-family: var(--font-mono);
-  font-size: 1.15rem;
+  font-size: var(--t-lead);
   font-weight: 500;
 }
 
 .tech__label {
-  font-size: 0.92rem;
-  font-weight: 600;
+  font-size: var(--t-small);
+  font-weight: 500;
   line-height: 1.3;
   text-align: center;
   color: var(--ink);
   overflow-wrap: anywhere;
+  font-family: var(--font-label);
 }
 
 /* ---------- Tech stack: radial wheel ---------- */
@@ -1034,9 +1169,9 @@ button:focus-visible {
   background: none;
   cursor: pointer;
   white-space: nowrap;
-  font-family: var(--font-body);
-  font-size: 0.66rem;
-  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
   text-align: center;
@@ -1078,13 +1213,14 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--ink);
   color: var(--bg);
-  font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
   line-height: 1.4;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
+  font-weight: 600;
 }
 
 .wheel__node:hover {
@@ -1127,7 +1263,7 @@ button:focus-visible {
 
 .wheel__node-initial {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--t-tiny);
   font-weight: 500;
   color: var(--node-tint);
 }
@@ -1149,31 +1285,59 @@ button:focus-visible {
    tab matched the dark frame the two merged and the tab looked like the first
    line of the file. Three distinct surfaces now: the band, the raised active
    tab on it, and the dark code below. */
+/* The whole viewer is dressed as a browser window: tab strip, address bar,
+   then the page. One radius token for the window, larger than the site's
+   sharp 2px — a browser chrome that is not rounded does not read as one.
+   --code-surface is the shared fill of the selected tab, its shoulders, and
+   the address bar, so those three read as a single continuous surface the
+   way a real browser's toolbar does. */
+.code__browser {
+  --code-radius: 0.8rem;
+  --code-surface: color-mix(in srgb, var(--accent) 18%, var(--card-bg));
+  align-self: stretch;
+  background: var(--code-band);
+  border: 1px solid var(--border);
+  border-radius: var(--code-radius);
+  /* Clips the dark frame into the window's bottom corners. */
+  overflow: hidden;
+  box-shadow: 0 6px 20px -8px rgba(31, 46, 68, 0.28);
+}
+
 .code__tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
+  /* No gap: browser tabs sit shoulder to shoulder, and the concave corners
+     below need a neighbour to curve into. */
+  gap: 0;
   align-self: stretch;
-  padding: 0.35rem 0.35rem 0;
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-bottom: 0;
-  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  padding: 0.5rem 0.6rem 0;
+  background: transparent;
 }
 
 .code__tab {
-  padding: 0.45rem 0.9rem;
-  /* Every tab reserves the same border box — transparent until it is the
-     active one — so nothing shifts when the selection moves. */
-  border: 1px solid transparent;
-  border-top-width: 2px;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  position: relative;
+  padding: 0.5rem 1.05rem;
+  border: 0;
+  /* Browser-tab silhouette: rounded across the top, and the outer bottom
+     corners curve *outward* into the band via the pseudo-elements below.
+     Nothing shifts when the selection moves because every tab reserves the
+     same box whether or not it is filled. */
+  border-radius: 0.6rem 0.6rem 0 0;
   background: transparent;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 0.73rem;
+  font-size: var(--t-small);
   line-height: 1.4;
   color: var(--text-secondary);
+  /* A full repo path is one unbreakable token. Left to itself it measured
+     353px inside a 324px card at phone width and pushed the whole document
+     3px sideways, with the tail unreachable because the page would not
+     scroll to it. The tab keeps its head and loses its tail instead. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
@@ -1182,16 +1346,86 @@ button:focus-visible {
   color: var(--ink);
 }
 
-/* Raised off the band, and marked at the top edge in the project accent —
-   two signals, so "selected" reads at a glance rather than by comparison. */
-/* An outlined edge as well as a lighter fill: in dark mode the card surface
-   sits only a shade off the band, and the border is what keeps the active tab
-   legible as a separate object there. */
+/* The whole tab carries the accent as a faint wash. It used to be a white
+   fill with a 2px accent rule along the top edge; the rule read as a stray
+   line rather than as selection, and the wash says the same thing over the
+   entire shape. */
 .code__tab--on,
 .code__tab--on:hover {
-  background: var(--card-bg);
-  border-color: var(--border);
-  border-top-color: var(--accent);
+  background: var(--code-surface);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* The two shoulders: a square of tab colour with a rounded corner punched out
+   of it, so the tab appears to flow into the band instead of stopping at a
+   hard edge. Only the selected tab has a shape to blend. */
+.code__tab--on::before,
+.code__tab--on::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  background: var(--code-surface);
+  pointer-events: none;
+}
+
+.code__tab--on::before {
+  left: -0.6rem;
+  mask-image: radial-gradient(
+    circle 0.6rem at 0 0,
+    transparent 0 0.6rem,
+    #000 calc(0.6rem + 0.5px)
+  );
+}
+
+.code__tab--on::after {
+  right: -0.6rem;
+  mask-image: radial-gradient(
+    circle 0.6rem at 100% 0,
+    transparent 0 0.6rem,
+    #000 calc(0.6rem + 0.5px)
+  );
+}
+
+/* A tab at either end still needs its shoulder — the window's padding gives
+   it somewhere to sit — so the earlier rule hiding them is gone. */
+
+/* The address bar. Same fill as the selected tab, so the two read as one
+   surface and the tab appears to hang off it, exactly as a browser does. */
+.code__omnibox {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 0.85rem;
+  background: var(--code-surface);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  line-height: 1.5;
+}
+
+.code__omnibox-mark {
+  flex: none;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.code__omnibox-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quiet directory, file name in ink — the split a browser makes between a
+   domain and the rest of a URL, inverted so the specific part is the loud one. */
+.code__omnibox-dir {
+  color: var(--text-secondary);
+}
+
+.code__omnibox-file {
   color: var(--ink);
   font-weight: 600;
 }
@@ -1201,15 +1435,21 @@ button:focus-visible {
   cursor: default;
 }
 
+/* The inset every panel body shares. Code, a tree, a diagram and a screenshot
+   pair all sit this far from the chrome, and each keeps its own border — the
+   code frame used to run edge to edge with no outline, which made it read as a
+   different component from the screenshot panel beside it. */
+.code__pane {
+  padding: clamp(0.85rem, 1.8vw, 1.15rem);
+}
+
 .code__frame {
   position: relative;
   align-self: stretch;
   background: var(--terminal-bg);
   border: 1px solid var(--terminal-border);
-  /* Square across the top, where it meets the tab band; the rounding lives on
-     the band above and the bottom of the frame, so the two read as one panel
-     with a lid. */
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 /* `overscroll-behavior` is deliberately left to chain on the vertical axis.
@@ -1224,8 +1464,13 @@ button:focus-visible {
   overscroll-behavior-x: contain;
 }
 
+/* Scales with the screen instead of sitting at a fixed 460px, which gave a
+   large monitor exactly as much reading room as a small laptop and made these
+   two panels the most scrolled-in things on the page. The floor keeps it no
+   smaller than it was; the ceiling keeps it a framed excerpt rather than
+   something that swallows the page. */
 .code__frame--capped .code__viewport {
-  max-height: 460px;
+  max-height: clamp(460px, 72vh, 900px);
 }
 
 .code__frame--capped::after {
@@ -1253,7 +1498,7 @@ button:focus-visible {
      empty space rather than over code the reader is meant to read. */
   padding-bottom: 3.5rem;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: var(--t-tiny);
   line-height: 1.65;
   color: var(--terminal-ink);
   /* Source is read as written; the viewport scrolls sideways rather than
@@ -1276,8 +1521,8 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   background: var(--card-bg);
   color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-family: var(--font-label);
+  font-size: var(--t-small);
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.18s ease, color 0.18s ease;
@@ -1292,10 +1537,11 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: var(--t-small);
   font-weight: 600;
   color: var(--accent);
   text-decoration: none;
+  font-family: var(--font-label);
 }
 
 .code__link:hover {
@@ -1388,7 +1634,7 @@ button:focus-visible {
   padding: clamp(1rem, 2vw, 1.4rem) clamp(1rem, 2vw, 1.5rem);
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: var(--t-tiny);
   line-height: 1.7;
   color: var(--terminal-ink);
   /* Box-drawing characters only line up if nothing rewraps them. */
@@ -1446,10 +1692,12 @@ button:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.9rem;
-  margin-top: 0.55rem;
-  font-size: 0.82rem;
+  margin-top: 0.65rem;
+  font-size: var(--t-tiny);
   line-height: 1.5;
   color: var(--text-secondary);
+  font-family: var(--font-label);
+  font-weight: 500;
 }
 
 .figure__link {
@@ -1469,75 +1717,506 @@ button:focus-visible {
    dashboard captures, and a third column would make them unreadable.
    No row gap: the rows are separated by a rule instead, so each pair reads as
    its own band rather than as one long run of images. */
-.shots {
-  list-style: none;
-  margin: 0 0 1.25rem;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
-  column-gap: clamp(1rem, 2vw, 1.5rem);
-  row-gap: 0;
+/* The screenshot panel and whatever follows it — the video, or the note
+   saying there is not one yet — had nothing between them. */
+.media {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 2.5vw, 2rem);
 }
 
-/* A rule above every row after the first — which is every pair after the
-   first, at two columns. It breaks at the column gap, which is what makes it
-   read as a divider between pairs rather than a box around them. */
-.shots > li:nth-child(n + 3) {
-  padding-top: clamp(1.25rem, 2.4vw, 1.75rem);
+/* One scenario at a time, its before above its after. Side by side at half
+   the column each shot was too small to see what had changed, which is the
+   whole reason both are there; stacked, they are the same width as everything
+   else on the page and the difference reads. */
+.shots {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.shots .shot + .shot {
+  margin-top: clamp(0.9rem, 2vw, 1.35rem);
+  padding-top: clamp(0.9rem, 2vw, 1.35rem);
   border-top: 1px solid var(--border);
 }
 
-.shots > li:not(:nth-last-child(-n + 2)) {
-  padding-bottom: clamp(1.25rem, 2.4vw, 1.75rem);
+/* The state label sits *above* its image, not under it: reading "After" only
+   once you have already looked at the picture is the wrong order. */
+.shot__state {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
-/* Heavier and darker than a diagram's caption: these label which half of a
-   before/after pair you are looking at, so they have to be readable at a
-   glance rather than sitting quietly under the image. */
-.shots .figure__caption {
-  font-weight: 600;
-  color: var(--ink);
-}
-
-/* ---------- Decisions ---------- */
-
-.decisions {
-  list-style: none;
-  counter-reset: decision;
+/* A figure inside a browser panel already sits in a bordered frame, so it
+   drops its own outer spacing and lets the panel provide it. */
+.figure--panel {
   margin: 0;
+}
+
+/* The README's language toggle, riding at the right end of its tab's address
+   bar rather than on a heading shared with the Terraform tab. */
+.code__omnibox-aside {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* ---------- Decisions: crescent selector + card ---------- */
+
+/* Not a modal. The card is part of the page — no overlay, no backdrop, no
+   close button, no focus trap — so the reader can scroll straight past it.
+   The crescent picks; the card shows one decision at a time. Four dense
+   trade-offs as four bordered panels competed with each other and with
+   everything below them. */
+.decisions {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: clamp(1rem, 3vw, 2.5rem);
+  align-items: stretch;
+}
+
+/* The circles hang over the section's left boundary at the ends of the arc
+   and lean in at its middle, so the run reads as scalloped tabs rather than
+   as a ring. The negative margin is what lets them sit outside. */
+.arc {
+  position: relative;
+  margin-left: -1.9rem;
+  /* The numbers' step is a percentage of this height, so this is what decides
+     whether they clear each other: NUM_STEP of it has to exceed a selected
+     circle's radius plus its neighbour's. Kept as tight as that allows — the
+     section was carrying far more height than its content was worth. Sized so
+     the arc and the card come out about level: below this the numbers start
+     to crowd, above it the arc, not the content, is what makes the section
+     tall. */
+  min-height: 28.5rem;
+}
+
+.arc__pip {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin: -1.5rem 0 0 -1.5rem;
   padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  transform: scale(var(--pip-scale, 1));
+  /* The easing lives here; the position is written as inline style, so the
+     resting layout is correct even on a frame that never composites. */
+  transition: top 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+    left 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.3s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arc__pip {
+    transition: none;
+  }
+}
+
+/* Spacing made visible. Without them the numbers bunch, and a bare four-dot
+   arc reads as an accident rather than as an instrument. */
+.arc__pip--blank {
+  width: 1.9rem;
+  height: 1.9rem;
+  margin: -0.95rem 0 0 -0.95rem;
+  border-color: color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--bg-alt) 50%, transparent);
+}
+
+.arc__pip--live {
+  cursor: pointer;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 1px 6px -2px rgba(31, 46, 68, 0.18);
+}
+
+.arc__pip--live:hover {
+  border-color: var(--accent);
+}
+
+.arc__pip--on {
+  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
+  border-color: var(--accent);
+}
+
+.arc__digit {
+  font-family: var(--font-mono);
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.arc__pip--on .arc__digit {
+  color: var(--accent);
+}
+
+/* Trading-card proportions, stated rather than left to the content — the
+   shape is the point. The face is absolutely placed so an outgoing card and
+   an incoming one can travel at the same time instead of queueing. */
+/* The card's place in the layout. It does NOT clip — the fanned deck behind
+   needs to show past the live card's edges — so the clipping lives one level
+   in, on .dcard__window. */
+.dcard {
+  position: relative;
+  justify-self: center;
+  /* Not stretched to the row. The arc is taller than the card, and stretching
+     left the ghost layers — which are `inset: 0` on this box — standing a
+     head taller than the card they sit behind. */
+  align-self: center;
+  /* Centred on the *section*, not on its own column. `justify-self: center`
+     alone centres it in the space left after the arc's column, which sits it
+     noticeably right of the page's axis; pulling back half the arc column and
+     half the gap puts it on the section's centre line. There is still clear
+     air between it and the widest point of the crescent. */
+  margin-left: calc(-3.5rem - clamp(0.5rem, 1.5vw, 1.25rem));
+  width: min(24rem, 100%);
+  /* No min-height of its own: the live card sets the box, and the fanned
+     ghosts are `inset: 0` on it. Give this a floor taller than the card and
+     the deck hangs below it like spilled paper. */
+}
+
+/* The rest of the deck, fanned behind. Each layer steps back and rotates a
+   little further, so the section reads as a hand of cards with one turned
+   face-up rather than a single card adrift in white space. */
+.dcard__stack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Grey filler cards, the same idea as the arc's grey filler circles: they say
+   how many decisions there are without being read. A white ghost at low
+   opacity on a white page was invisible — the fill has to be the grey, not
+   the transparency. */
+.dcard__ghost {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--bg-alt);
+  /* Fanned from the middle, alternating side to side and stepping further out
+     each layer, so the deck reads as spread rather than as one card's shadow. */
+  transform-origin: 50% 100%;
+  transform: rotate(calc(var(--depth) * var(--fan, 1) * 3.2deg))
+    translate(calc(var(--depth) * var(--fan, 1) * 0.55rem), calc(var(--depth) * -0.3rem));
+  opacity: calc(1 - var(--depth) * 0.16);
+}
+
+.dcard__ghost:nth-child(even) {
+  --fan: -1;
+}
+
+/* The clipping viewport for the travelling cards. A one-cell grid: the hidden
+   sizer and the live card share that cell, so the window is as tall as the
+   tallest decision and every card is that height. */
+.dcard__window {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+
+.dcard__window > * {
+  grid-area: 1 / 1;
+}
+
+/* Hidden, but still laid out — `visibility` rather than `display`, because a
+   `display: none` child contributes no height and the whole point of this is
+   its height. */
+.dcard__sizer {
+  display: grid;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.dcard__sizer > * {
+  grid-area: 1 / 1;
+}
+
+/* The card itself. Depth comes from the border, not a drop shadow — the
+   window above clips, and a shadow would be sheared off at its edge. */
+.dcard__face {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-}
-
-.decision {
-  counter-increment: decision;
-  padding: 1.1rem 1.25rem;
+  gap: 0.6rem;
+  min-height: 22rem;
+  padding: 1.65rem 1.6rem 1.5rem;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  /* The accent edge is what marks these as the page's argument rather than
-     more prose. */
-  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-card);
 }
 
-.decision__title {
-  font-weight: 700;
-  font-size: 0.98rem;
+/* The trading-card frame: a second rule inset from the border, with the
+   corners opened up in the project accent. The proportions alone stopped
+   reading as a card once the height was allowed to follow the text, so the
+   edge is what carries the idea now. Drawn with a conic gradient rather than
+   four elements — one box, no extra nodes in the markup. */
+.dcard__face::before {
+  content: '';
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: calc(var(--radius-card) - 1px);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  pointer-events: none;
+}
+
+/* The corner ticks. A single element masked to four short right-angles at the
+   inset frame's corners. */
+.dcard__face::after {
+  content: '';
+  position: absolute;
+  inset: 0.3rem;
+  border-radius: var(--radius-card);
+  pointer-events: none;
+  background:
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 1px 1.15rem,
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 1.15rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 0 / 1px 1.15rem,
+    linear-gradient(var(--accent), var(--accent)) 100% 0 / 1.15rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 1px 1.15rem,
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 1.15rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 1px 1.15rem,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 1.15rem 1px;
+  background-repeat: no-repeat;
+  opacity: 0.75;
+}
+
+/* Both live faces fill the cell the sizer sized, so a short decision and a
+   long one occupy exactly the same card. */
+.dcard__face--arriving,
+.dcard__face--leaving {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+}
+
+/* Both directions travel upward: the card being read leaves through the top
+   while the next rises into its place, so a run through the decisions reads
+   as one continuous movement rather than as a shuffle.
+
+   No `backwards` fill on the arriving card, deliberately. Its resting state
+   is its normal style, so a frame that never composites shows it in the right
+   place rather than stranded at the start of a keyframe — which is exactly
+   how the previous framer-driven version left three faces stacked. */
+/* A shuffle, not a slide. The arriving card is dealt off the deck — it starts
+   offset and turned, the way a card sits in a spread hand, and settles square;
+   the leaving one is flicked away in the other direction. Rotation is what
+   makes it read as cards rather than as a panel changing its contents.
+
+   No `backwards` fill on the arriving card, deliberately. Its resting state is
+   its normal style, so a frame that never composites shows it square and in
+   place rather than stranded at the start of a keyframe. */
+@keyframes dcard-deal {
+  from {
+    transform: translate(16%, 9%) rotate(6deg) scale(0.95);
+    opacity: 0.3;
+  }
+
+  60% {
+    opacity: 1;
+  }
+}
+
+@keyframes dcard-toss {
+  to {
+    transform: translate(-15%, -7%) rotate(-7deg) scale(0.95);
+    opacity: 0;
+  }
+}
+
+.dcard__face--arriving {
+  animation: dcard-deal 0.5s cubic-bezier(0.25, 0.8, 0.3, 1);
+}
+
+/* Inert and on top of nothing: the leaving card is decoration, and it is
+   removed on a timer rather than on an animation event so it cannot outlive
+   its animation. */
+.dcard__face--leaving {
+  animation: dcard-toss 0.5s cubic-bezier(0.4, 0, 0.7, 0.5) forwards;
+  pointer-events: none;
+}
+
+/* The deck riffles as the card is dealt: a short wobble, replayed by keying
+   the stack on the selection so it remounts. Empty spans, so remounting them
+   costs nothing. */
+@keyframes deck-riffle {
+  40% {
+    transform: rotate(calc(var(--depth) * var(--fan, 1) * 5.4deg))
+      translate(calc(var(--depth) * var(--fan, 1) * 0.85rem), calc(var(--depth) * -0.42rem));
+  }
+}
+
+.dcard__stack--riffling .dcard__ghost {
+  animation: deck-riffle 0.55s cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcard__face--arriving,
+  .dcard__stack--riffling .dcard__ghost {
+    animation: none;
+  }
+
+  .dcard__face--leaving {
+    display: none;
+  }
+}
+
+.dcard__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.dcard__index {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--t-lead);
+  font-weight: 600;
+  line-height: 1;
+  color: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* The title outranks the explanation. It was set a step *below* the body
+   text, which read as a caption on top of a paragraph rather than as the
+   name of the decision. */
+.dcard__title {
+  margin: 0;
+  font-family: var(--font-header);
+  font-weight: var(--display-weight);
+  font-size: var(--t-lead);
+  line-height: 1.25;
   color: var(--ink);
 }
 
-.decision__title::before {
-  content: counter(decision) '. ';
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--text-secondary);
+/* Card copy is a step down from page prose: this is a compact object, and the
+   title has to lead it. Scoped to the card so the shared decision classes are
+   not disturbed anywhere else they are used. */
+.dcard .decision__choice {
+  font-size: var(--t-small);
+  line-height: 1.45;
+}
+
+.dcard .decision__why {
+  font-size: var(--t-small);
+  line-height: 1.6;
+}
+
+.dcard__index {
+  font-size: var(--t-lead);
+}
+
+/* The concept mark, between the title and the reasoning. Sized to the space
+   it is given rather than to a fixed px, so it holds the middle of the card
+   at every width. */
+/* The mark's band. `1fr` rather than a fixed floor, so on the cards whose
+   text is shorter than the tallest one's the extra height goes here — the
+   figure breathes instead of the card growing a pocket of dead space at the
+   bottom. */
+.dcard__figure {
+  display: grid;
+  place-items: center;
+  flex: 1 1 auto;
+  min-height: 4.5rem;
+  padding: 0.55rem 0;
+  border-block: 1px solid var(--border);
+  color: var(--accent);
+}
+
+/* The mark's cap is what actually sets the band's height — not the band's
+   own min-height — so this is the number that decides how much of the card
+   the glyph takes. At 10.5rem it was eating 189px of every card whatever the
+   text needed. */
+.dcard__figure svg {
+  width: auto;
+  height: 100%;
+  max-height: 6rem;
+  max-width: 100%;
+}
+
+/* No scroller and no cap: the card is sized by this text, so clipping it
+   would defeat the point. */
+.dcard__body {
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  /* The crescent goes above the card and flattens into a row: a 20rem-tall
+     arc beside a card is a desktop shape, and there is no left edge to hang
+     off once the content column runs the full width. */
+  .decisions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .arc {
+    position: static;
+    margin-left: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .arc__pip {
+    position: static;
+    margin: 0;
+    /* Framer writes the arc's top/left into inline styles; on this layout
+       they mean nothing and must not apply. */
+    inset: auto;
+    /* Position is neutralised for the flat row; scale is not, so the selected
+       circle still reads as chosen here. */
+    top: auto !important;
+    left: auto !important;
+    opacity: 1 !important;
+  }
+
+  .arc__pip--blank {
+    display: none;
+  }
+
+  .dcard {
+    justify-self: stretch;
+    margin-left: 0;
+    width: 100%;
+    max-width: 24rem;
+    min-height: 0;
+  }
+
+  .dcard__face {
+    min-height: 0;
+  }
+
+  /* A tighter fan: at phone width the card already fills the column, and the
+     full rotation pushed the deck past the section's edge and gave the page a
+     horizontal scroll. Rotating about the centre rather than the bottom edge
+     halves how far the corners swing for the same angle. */
+  .dcard__ghost {
+    transform-origin: 50% 50%;
+    transform: rotate(calc(var(--depth) * var(--fan, 1) * 0.9deg))
+      translateY(calc(var(--depth) * -0.25rem));
+  }
+
+  .dcard__figure {
+    min-height: 7rem;
+  }
 }
 
 .decision__choice {
   margin: 0.5rem 0 0.6rem;
-  font-size: 0.92rem;
+  font-size: var(--t-base);
   line-height: 1.5;
 }
 
@@ -1552,10 +2231,9 @@ button:focus-visible {
 
 .decision__why {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--t-prose);
   line-height: 1.65;
-  text-align: justify;
-  hyphens: auto;
+  text-align: left;
   color: var(--text-primary);
 }
 
@@ -1576,8 +2254,8 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
-  min-width: 4.5rem;
+  gap: 0.5rem;
+  min-width: 5rem;
   color: var(--ink);
   text-decoration: none;
   transition: color 0.18s ease;
@@ -1586,6 +2264,8 @@ button:focus-visible {
 .link-tile__mark {
   display: grid;
   place-items: center;
+  /* A glyph, not text — sized to the tile rather than to the scale. The
+     icons are 1em, so this is what actually scales them. */
   font-size: 1.75rem;
   line-height: 1;
   color: var(--ink);
@@ -1593,11 +2273,12 @@ button:focus-visible {
 }
 
 .link-tile__label {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--t-tiny);
+  font-weight: 500;
   line-height: 1.3;
   text-align: center;
   white-space: nowrap;
+  font-family: var(--font-label);
 }
 
 a.link-tile:hover,
@@ -1635,7 +2316,7 @@ a.link-tile:hover .link-tile__mark {
 .readme__toggle-icon {
   display: inline-flex;
   margin-right: 0.25rem;
-  font-size: 0.95rem;
+  font-size: var(--t-small);
   color: var(--text-secondary);
 }
 
@@ -1647,7 +2328,7 @@ a.link-tile:hover .link-tile__mark {
   padding: 0.25rem 0.6rem;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--t-mini);
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
@@ -1659,7 +2340,7 @@ a.link-tile:hover .link-tile__mark {
 }
 
 .readme__lang--on {
-  background: var(--accent-wash);
+  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
   color: var(--accent);
   font-weight: 600;
 }
@@ -1683,7 +2364,7 @@ a.link-tile:hover .link-tile__mark {
 }
 
 .readme__frame--capped .readme__viewport {
-  max-height: 460px;
+  max-height: clamp(460px, 72vh, 900px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -1708,8 +2389,8 @@ a.link-tile:hover .link-tile__mark {
   border-radius: var(--radius-sm);
   background: var(--card-bg);
   color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-family: var(--font-label);
+  font-size: var(--t-small);
   font-weight: 600;
   cursor: pointer;
   transition: border-color 0.18s ease, color 0.18s ease;
@@ -1723,15 +2404,14 @@ a.link-tile:hover .link-tile__mark {
 /* Rendered markdown, on the same full-width justified footing as the page's
    own prose so the README doesn't read as a different document pasted in. */
 .markdown {
-  font-size: 0.96rem;
+  font-size: var(--t-prose);
   line-height: 1.7;
   color: var(--text-primary);
 }
 
 .markdown p,
 .markdown li {
-  text-align: justify;
-  hyphens: auto;
+  text-align: left;
 }
 
 .markdown > *:first-child {
@@ -1741,7 +2421,7 @@ a.link-tile:hover .link-tile__mark {
 .markdown h4,
 .markdown h5 {
   margin: 1.75rem 0 0.6rem;
-  font-weight: 700;
+  font-weight: var(--display-weight);
   color: var(--ink);
   /* A README's own table-of-contents links jump to these, so they need the
      same clearance under the sticky menu that the page's own sections get. */
@@ -1756,11 +2436,11 @@ a.link-tile:hover .link-tile__mark {
 }
 
 .markdown h4 {
-  font-size: 1rem;
+  font-size: var(--t-lead);
 }
 
 .markdown h5 {
-  font-size: 0.92rem;
+  font-size: var(--t-base);
 }
 
 .markdown p,
@@ -1795,7 +2475,7 @@ a.link-tile:hover .link-tile__mark {
   padding: 0;
   border: 0;
   background: none;
-  font-size: 0.82rem;
+  font-size: var(--t-tiny);
   line-height: 1.6;
 }
 
@@ -1819,7 +2499,7 @@ a.link-tile:hover .link-tile__mark {
 
 .markdown table {
   border-collapse: collapse;
-  font-size: 0.88rem;
+  font-size: var(--t-small);
 }
 
 .markdown th,
@@ -1836,16 +2516,6 @@ a.link-tile:hover .link-tile__mark {
 
 /* ---------- Reflection ---------- */
 
-/* Reflection keeps the justification but not the hyphenation: no word is
-   broken mid-line, and the justification is achieved through word spacing
-   alone — the way a word processor sets justified text by default.
-   Scoped to this section on purpose. `.prose p` also styles Problem &
-   Context, and `.lede`, `.decision__why`, and the rendered README each carry
-   their own `hyphens: auto`; none of those change. */
-.reflection .prose p {
-  -webkit-hyphens: none;
-  hyphens: none;
-}
 
 /* Stacked, not side by side. Two columns held each part to about half the
    width, which made the justified paragraphs gappy and the second part easy
@@ -1869,7 +2539,7 @@ a.link-tile:hover .link-tile__mark {
 .reflection__label {
   margin-bottom: 0.5rem;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--t-micro);
   font-weight: 500;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -1881,16 +2551,16 @@ a.link-tile:hover .link-tile__mark {
    breakpoint takes over entirely. */
 @media (min-width: 861px) and (max-width: 1100px) {
   :root {
-    --sidebar-w: 224px;
+    --sidebar-w: 248px;
   }
   .sidebar {
     padding: 1.5rem 1.1rem 2rem;
   }
   .sidebar__brand {
-    font-size: 1.4rem;
+    font-size: calc(var(--t-brand) * 0.9);
   }
   .sidebar__link {
-    font-size: 0.85rem;
+    font-size: var(--t-small);
   }
 }
 
@@ -1916,20 +2586,26 @@ a.link-tile:hover .link-tile__mark {
   /* Members: smaller circles and tighter columns so a four-person team still
      fits across a phone rather than wrapping to one per row. */
   .avatars {
-    gap: 1.1rem 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
+    gap: 1.4rem 1rem;
   }
+  /* The item fills its grid track at every width now; the track is what
+     narrows on a phone, not the item. A fixed 68px here re-created the
+     huddle the grid was introduced to fix. */
   .avatars__item {
-    width: 68px;
+    width: 100%;
   }
   .avatars__circle {
     width: 46px;
     height: 46px;
-    font-size: 0.9rem;
+    font-size: var(--t-small);
   }
   /* Metric numbers are the loudest thing on the page; at phone width they do
-     not need to be. */
-  .metric {
-    padding: 0.85rem 0.95rem;
+     not need to be. This targeted `.metric` for a long time — a class no
+     component renders — so the headline number stayed at its desktop size on
+     a phone. The bento tile is what actually ships. */
+  .bento__tile--big .bento__value {
+    font-size: 2.6rem;
   }
   .decision,
   .empty-slot {

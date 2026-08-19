@@ -8,13 +8,14 @@
 //   sections  every section id this group covers, so the scroll-spy can light
 //             the right entry no matter which section is on screen.
 //
-//             These are grouped by meaning rather than by position, and Tech
-//             & Architecture is not contiguous: `decisions` belongs with the
-//             stack and the diagrams, but sits after `media` on the page. The
-//             cost is that scrolling past the screenshots lights Demo and then
-//             returns to Tech & Architecture. Moving the Technical Decisions
-//             section up to sit under Folder Structure would remove that, at
-//             the price of changing the page's reading order.
+//             Every group is now contiguous in page order. It was not:
+//             `decisions` belonged with the stack and the diagrams but sat
+//             after `media`, so scrolling forward lit Demo and then jumped
+//             *back* to Tech & Architecture. Technical Decisions moved above
+//             the screenshots, which fixes the scroll-spy and reads better
+//             anyway — the trade-offs belong with the architecture, not after
+//             the demo. Keep it that way: a group that is not contiguous makes
+//             the only wayfinding device on a long page misreport position.
 //   target    where clicking scrolls to. Listed as an ordered preference: the
 //             first one that this project actually rendered wins, so a group
 //             stays useful when its headline section is missing.
@@ -42,13 +43,12 @@ export const NAV_GROUPS = [
     target: ['role', 'context', 'members', 'impact'],
   },
   {
-    // Groups the technical body of the page: the stack, both diagram sections,
-    // and the trade-offs. `decisions` sits after `media` in page order, so
-    // this group is the one that is not contiguous — see the note below.
+    // The technical body of the page, contiguous: the stack, the architecture
+    // panel, the recovery config, and the trade-offs.
     id: 'tech',
     label: 'Tech & Architecture',
-    sections: ['stack', 'architecture', 'folders', 'recovery', 'decisions'],
-    target: ['stack', 'architecture', 'folders', 'recovery', 'decisions'],
+    sections: ['stack', 'architecture', 'recovery', 'decisions'],
+    target: ['stack', 'architecture', 'recovery', 'decisions'],
   },
   {
     id: 'demo',
@@ -59,8 +59,8 @@ export const NAV_GROUPS = [
   {
     id: 'resources',
     label: 'Resources',
-    sections: ['resources', 'terraform', 'readme'],
-    target: ['resources', 'terraform', 'readme'],
+    sections: ['resources', 'source'],
+    target: ['resources', 'source'],
   },
   {
     id: 'reflection',

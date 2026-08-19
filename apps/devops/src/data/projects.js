@@ -49,10 +49,20 @@ export const PROJECTS = [
     // the Korean given name, so HJ rather than the HC the surname would give.
     team: [
       { name: 'Hwijeong Cho', initials: 'HJ', role: 'Team Lead' },
-      { name: 'Junhan Shin', initials: 'JS' },
-      { name: 'Jiyoon Lee', initials: 'JY' },
-      { name: 'Mingyu Kim', initials: 'MK' },
-      { name: 'Jiwoo Han', initials: 'JW' },
+      {
+        name: 'Junhan Shin',
+        initials: 'JS',
+        // Short form of the role stated in full under My Role — the avatar
+        // column is ~90px wide and a longer string wraps to three lines.
+        title: 'Infra Build Lead',
+      },
+      // `title` here is a neutral placeholder, not a real role: the actual
+      // responsibilities of these three are not recorded anywhere in this
+      // repo. Replace each with what the person actually owned — do not
+      // invent one. See PRODUCT.md: teammate details are never fabricated.
+      { name: 'Jiyoon Lee', initials: 'JY', title: 'Team Member' },
+      { name: 'Mingyu Kim', initials: 'MK', title: 'Team Member' },
+      { name: 'Jiwoo Han', initials: 'JW', title: 'Team Member' },
     ],
     role:
       'I was **Infrastructure Build Lead and PR Owner**. I owned the Terraform infrastructure code (**41 AWS resources**), the Ansible `common` and `chaos` roles, and the Tailscale hybrid-networking bootstrap script. I reviewed and merged all **27 pull requests** into the development branch \u2014 including **3 merge conflicts** I resolved safely and **2 security issues** I caught and fixed before merge. I took the initiative to build the on-premises foundation early in the timeline after the assigned team lead was largely unavailable during the first week and a half, getting the team unblocked and the codebase moving.',
@@ -125,61 +135,74 @@ export const PROJECTS = [
       {
         src: '/projects/project1_echochallengers/architecture-01-hybrid-infra.jpg',
         alt: 'Hybrid infrastructure: the on-premises VMware environment and the AWS VPC joined over a Tailscale VPN',
+        tab: 'Hybrid infrastructure',
         caption: 'Hybrid infrastructure \u2014 VMware \u2194 AWS over Tailscale',
       },
       {
         src: '/projects/project1_echochallengers/architecture-02-self-healing-flow.jpg',
         alt: 'Self-healing flow from failure detection through alerting to automated recovery',
+        tab: 'Self-healing flow',
         caption: 'Self-healing flow \u2014 detection through automated recovery',
       },
     ],
     media: {
-      // One before/after pair per chaos scenario: the Grafana dashboard and
-      // Slack alerts going from failure to recovered.
-      screenshots: [
+      // One tab per chaos scenario, each holding that scenario's before and
+      // after. They used to be a flat list of eight screenshots laid out two
+      // across, which made the pair small and the section long.
+      scenarios: [
         {
-          src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-before.jpg',
-          alt: 'Scenario 1, Nginx down: dashboard and alerts in the failed state',
-          caption: 'Scenario 1 \u2014 Nginx down (before)',
+          id: 'scenario-1',
+          tab: 'Nginx down',
+          label: 'Scenario 1 \u2014 Nginx down',
+          before: {
+            src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-before.jpg',
+            alt: 'Scenario 1, Nginx down: dashboard and alerts in the failed state',
+          },
+          after: {
+            src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-after.jpg',
+            alt: 'Scenario 1, Nginx down: dashboard and alerts after automated recovery',
+          },
         },
         {
-          src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-after.jpg',
-          alt: 'Scenario 1, Nginx down: dashboard and alerts after automated recovery',
-          caption: 'Scenario 1 \u2014 Nginx down (after)',
+          id: 'scenario-2',
+          tab: 'Exporter down',
+          label: 'Scenario 2 \u2014 Exporter down',
+          before: {
+            src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-before.jpg',
+            alt: 'Scenario 2, exporter down: dashboard and alerts in the failed state',
+          },
+          after: {
+            src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-after.jpg',
+            alt: 'Scenario 2, exporter down: dashboard and alerts after automated recovery',
+          },
         },
         {
-          src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-before.jpg',
-          alt: 'Scenario 2, exporter down: dashboard and alerts in the failed state',
-          caption: 'Scenario 2 \u2014 Exporter down (before)',
+          id: 'scenario-3',
+          tab: 'High CPU',
+          label: 'Scenario 3 \u2014 High CPU',
+          before: {
+            src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-before.jpg',
+            alt: 'Scenario 3, high CPU: dashboard and alerts in the failed state',
+          },
+          after: {
+            src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-after.jpg',
+            alt: 'Scenario 3, high CPU: dashboard and alerts after automated recovery',
+          },
         },
         {
-          src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-after.jpg',
-          alt: 'Scenario 2, exporter down: dashboard and alerts after automated recovery',
-          caption: 'Scenario 2 \u2014 Exporter down (after)',
-        },
-        {
-          src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-before.jpg',
-          alt: 'Scenario 3, high CPU: dashboard and alerts in the failed state',
-          caption: 'Scenario 3 \u2014 High CPU (before)',
-        },
-        {
-          src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-after.jpg',
-          alt: 'Scenario 3, high CPU: dashboard and alerts after automated recovery',
-          caption: 'Scenario 3 \u2014 High CPU (after)',
-        },
-        {
-          src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-before.jpg',
-          alt: 'Scenario 4, high memory: dashboard and alerts in the failed state',
-          caption: 'Scenario 4 \u2014 High memory (before)',
-        },
-        {
-          src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-after.jpg',
-          alt: 'Scenario 4, high memory: dashboard and alerts after automated recovery',
-          caption: 'Scenario 4 \u2014 High memory (after)',
+          id: 'scenario-4',
+          tab: 'High memory',
+          label: 'Scenario 4 \u2014 High memory',
+          before: {
+            src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-before.jpg',
+            alt: 'Scenario 4, high memory: dashboard and alerts in the failed state',
+          },
+          after: {
+            src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-after.jpg',
+            alt: 'Scenario 4, high memory: dashboard and alerts after automated recovery',
+          },
         },
       ],
-      // TODO: awaiting the unlisted YouTube upload — then
-      // { kind: 'embed', src: 'https://www.youtube.com/embed/<id>', title: '...' }
       video: null,
     },
     folderStructure: `
@@ -227,15 +250,20 @@ project1-aws/
 \u251c\u2500\u2500 bootstrap_tailscale.sh
 \u2514\u2500\u2500 check.sh
 `,
+    // `glyph` names a mark from components/sections/decisionGlyphs.jsx. It is
+    // a presentation hint, not a claim — omit it and the card shows the
+    // neutral default rather than pretending to illustrate the decision.
     decisions: [
       {
         title: 'NAT Instance over NAT Gateway',
+        glyph: 'route',
         chose: 'A **NAT instance** for outbound routing',
         over: "AWS's managed NAT Gateway",
         why: '**Lower cost** and **better response time** for this scale of workload.',
       },
       {
         title: '`pkill -x` over `pkill -f` in recovery scripts',
+        glyph: 'process',
         chose: '`pkill -x`, exact process-name matching only',
         over: '`pkill -f`',
         why:
@@ -243,12 +271,14 @@ project1-aws/
       },
       {
         title: 'Slack channel separation (`#monitoring` vs. `#recovery`)',
+        glyph: 'channels',
         chose: 'Two channels, splitting detection alerts from recovery-result alerts',
         over: 'one combined feed',
         why: "So on-call readability doesn't degrade as alert volume grows.",
       },
       {
         title: 'Three-tier Git branch strategy with a dedicated PR Owner role',
+        glyph: 'branch',
         chose: '`main \u2190 dev \u2190 feature/*`, with a named **PR Owner**',
         // No competing option to name: this was a way of working, not a fork.
         over: null,

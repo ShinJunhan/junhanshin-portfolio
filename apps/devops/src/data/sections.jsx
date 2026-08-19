@@ -4,19 +4,14 @@ import ContextSection from '../components/sections/ContextSection.jsx'
 import MetricsSection from '../components/sections/MetricsSection.jsx'
 import StackSection from '../components/sections/StackSection.jsx'
 import ArchitectureSection from '../components/sections/ArchitectureSection.jsx'
-import FolderStructureSection from '../components/sections/FolderStructureSection.jsx'
 import RecoveryPolicySection from '../components/sections/RecoveryPolicySection.jsx'
-import TerraformSection from '../components/sections/TerraformSection.jsx'
+import SourceSection from '../components/sections/SourceSection.jsx'
 import MediaSection from '../components/sections/MediaSection.jsx'
 import DecisionsSection from '../components/sections/DecisionsSection.jsx'
 import LinksSection, {
   ResourcesSection,
   visibleLinkKinds,
 } from '../components/sections/LinksSection.jsx'
-import ReadmeSection, {
-  ReadmeProvider,
-  ReadmeLangToggle,
-} from '../components/sections/ReadmeSection.jsx'
 import ReflectionSection from '../components/sections/ReflectionSection.jsx'
 
 // THE source of truth for a project page. The page renders this list in
@@ -86,18 +81,16 @@ export const SECTIONS = [
     Body: StackSection,
   },
   {
+    // The diagrams and the folder tree, one panel with a tab each. They were
+    // two stacked sections; they answer the same question, so switching
+    // between them beats scrolling between them.
     id: 'architecture',
-    label: 'Architecture Diagram',
-    has: (project) => [].concat(project.architecture ?? []).some((d) => d?.src),
+    label: 'Architecture & Folder Structure',
+    has: (project) =>
+      [].concat(project.architecture ?? []).some((d) => d?.src) ||
+      Boolean(project.folderStructure),
     always: true,
     Body: ArchitectureSection,
-  },
-  {
-    id: 'folders',
-    label: 'Folder Structure',
-    has: (project) => Boolean(project.folderStructure),
-    always: true,
-    Body: FolderStructureSection,
   },
   {
     // Config, not Terraform — kept next to the diagram and the folder tree
@@ -109,17 +102,21 @@ export const SECTIONS = [
     Body: RecoveryPolicySection,
   },
   {
-    id: 'media',
-    label: 'Screenshots + Demo Video',
-    has: (project) => Boolean(project.media?.screenshots?.length || project.media?.video),
-    always: true,
-    Body: MediaSection,
-  },
-  {
+    // Above the screenshots, not below them. Technical Decisions belongs with
+    // the stack and the diagrams both by meaning and by reading order, and
+    // sitting after the demo made the sticky menu light Demo and then jump
+    // back to Tech & Architecture as the reader scrolled forward.
     id: 'decisions',
     label: 'Technical Decisions',
     has: (project) => project.decisions?.length > 0,
     Body: DecisionsSection,
+  },
+  {
+    id: 'media',
+    label: 'Screenshots + Demo Video',
+    has: (project) => Boolean(project.media?.scenarios?.length || project.media?.video),
+    always: true,
+    Body: MediaSection,
   },
   {
     // The things a reader might open alongside the write-up, as opposed to the
@@ -130,20 +127,14 @@ export const SECTIONS = [
     Body: ResourcesSection,
   },
   {
-    id: 'terraform',
-    label: 'Terraform Code',
+    // Terraform and the README in one panel, a tab each — both are "show me
+    // the actual source", and the README's language toggle rides in its own
+    // tab's address bar rather than on a heading shared with Terraform.
+    id: 'source',
+    label: 'README & Terraform Code',
     has: (project) => project.terraform?.length > 0,
     always: true,
-    Body: TerraformSection,
-  },
-  {
-    id: 'readme',
-    label: 'README.md',
-    has: () => true,
-    always: true,
-    Wrapper: ReadmeProvider,
-    Aside: ReadmeLangToggle,
-    Body: ReadmeSection,
+    Body: SourceSection,
   },
   {
     id: 'reflection',

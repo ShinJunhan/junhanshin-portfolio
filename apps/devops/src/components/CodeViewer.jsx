@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Prism from 'prismjs'
+import BrowserPanel, { splitPath } from './BrowserPanel.jsx'
 import 'prismjs/components/prism-hcl'
 import 'prismjs/components/prism-yaml'
 
@@ -55,50 +56,34 @@ export default function CodeViewer({ files = [], footer }) {
   const marked = highlight(active.content, active.path)
 
   return (
-    <div className="code">
-      {/* Browser-style tabs sitting directly on the frame. A single file still
-          gets the tab, so the path is always labelled the same way — it just
-          isn't a control, since there is nothing to switch to. */}
-      <div
-        className="code__tabs"
-        role={files.length > 1 ? 'tablist' : undefined}
-        aria-label={files.length > 1 ? 'Files' : undefined}
-      >
-        {files.map((file) =>
-          files.length > 1 ? (
-            <button
-              key={file.path}
-              type="button"
-              role="tab"
-              aria-selected={file.path === active.path}
-              className={`code__tab${file.path === active.path ? ' code__tab--on' : ''}`}
-              onClick={() => setActivePath(file.path)}
-            >
-              {file.path}
-            </button>
-          ) : (
-            <span key={file.path} className="code__tab code__tab--on code__tab--static">
-              {file.path}
-            </span>
-          )
-        )}
-      </div>
-
-      <div className={`code__frame${expanded ? '' : ' code__frame--capped'}`}>
-        <div className="code__viewport" ref={viewportRef}>
-          <pre className="code__body">
-            {marked ? (
-              // Prism escapes the source before wrapping it in token spans,
-              // and this content is first-party — it comes from files in this
-              // repo, never from anything a visitor supplies.
-              <code dangerouslySetInnerHTML={{ __html: marked }} />
-            ) : (
-              <code>{active.content}</code>
-            )}
-          </pre>
-        </div>
-      </div>
-
+    <BrowserPanel
+      label="Files"
+      tabs={files.map((file) => ({
+        id: file.path,
+        // The tab carries the file name alone; the address bar under it has
+        // the directory, so the path is never duplicated across the two.
+        label: splitPath(file.path).base,
+        address: file.path,
+        render: () => (
+          <div className={`code__frame${expanded ? '' : ' code__frame--capped'}`}>
+            <div className="code__viewport" ref={viewportRef}>
+              <pre className="code__body">
+                {marked ? (
+                  // Prism escapes the source before wrapping it in token
+                  // spans, and this content is first-party — it comes from
+                  // files in this repo, never from anything a visitor
+                  // supplies.
+                  <code dangerouslySetInnerHTML={{ __html: marked }} />
+                ) : (
+                  <code>{active.content}</code>
+                )}
+              </pre>
+            </div>
+          </div>
+        ),
+      }))}
+      onTabChange={setActivePath}
+    >
       <div className="code__foot">
         <button
           type="button"
@@ -110,6 +95,6 @@ export default function CodeViewer({ files = [], footer }) {
         </button>
         {footer}
       </div>
-    </div>
+    </BrowserPanel>
   )
 }

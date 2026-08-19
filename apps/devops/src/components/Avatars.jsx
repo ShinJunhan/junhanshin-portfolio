@@ -54,7 +54,9 @@ export default function Avatars({ team }) {
       {tinted.map(({ member, tint }) => (
         <li
           key={member.name}
-          className="avatars__item"
+          className={
+            'avatars__item' + (isOwner(member) ? ' avatars__item--owner' : '')
+          }
           style={{ '--avatar-tint': tint }}
         >
           <span className="avatars__circle" aria-hidden="true">

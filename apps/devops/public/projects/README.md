@@ -33,8 +33,16 @@ does not render.
 
 ```js
 media: {
-  screenshots: [
-    { src: '/projects/hailcast/dashboard.png', alt: '…', caption: '…' },
+  // One tab per scenario; each holds that scenario's before and after,
+  // stacked. `tab` is the short label, `label` the address-bar line.
+  scenarios: [
+    {
+      id: 'scenario-1',
+      tab: 'Nginx down',
+      label: 'Scenario 1 — Nginx down',
+      before: { src: '/projects/hailcast/s1-before.png', alt: '…' },
+      after: { src: '/projects/hailcast/s1-after.png', alt: '…' },
+    },
   ],
   // Either a file served from public/ …
   video: { kind: 'file', src: '/projects/hailcast/demo.mp4', poster: '…', caption: '…' },
@@ -43,4 +51,4 @@ media: {
 },
 ```
 
-`media: null`, or an entry with no screenshots and no video, omits the section.
+`media: null`, or an entry with no scenarios and no video, omits the section.

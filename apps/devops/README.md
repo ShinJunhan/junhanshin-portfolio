@@ -58,8 +58,9 @@ A few keys accept more than one shape:
 
 | Key | Shape |
 |---|---|
-| `architecture` | one `{src, alt, caption}` figure, or an array of them |
-| `folderStructure` | a single string, rendered verbatim in a monospace tree |
+| `architecture` | one `{src, alt, caption, tab?}` figure, or an array of them — `tab` is the short label, falling back to the caption's first clause |
+| `folderStructure` | a single string, rendered verbatim in a monospace tree, as the last tab of the architecture panel |
+| `media.scenarios` | `[{id, tab, label, before, after}]` — one tab per scenario, `before`/`after` each `{src, alt}` |
 | `stack` | `['AWS', …]` for one unlabelled group, or `[{category, items, tint?}]` for labelled groups |
 | `team[].initials` | overrides the initials derived from the name |
 | `team[].title` | optional subtitle under a member's name, e.g. `Team Lead` (`role` also accepted) |
@@ -231,8 +232,13 @@ list, never a single file:
 terraform: [{ path: 'terraform/main.tf', content: mainTf }],
 ```
 
-Files are labelled by a browser-style tab strip: its own light band above the
-viewer, tabs rounded on top only and sitting shoulder to shoulder.
+The viewer is dressed as a browser window: a bordered, rounded frame holding a
+tab strip, an address bar, then the file. Tabs carry the **file name only**
+(`splitPath()` splits the path; the full path stays as the tab's `title`), and
+the **address bar** below them carries the directory — quiet — plus the file
+name in ink. The selected tab and the address bar share one fill, so the tab
+reads as hanging off the bar, and the strip behind the tabs is deliberately
+darker than both so the tab silhouette is visible at all.
 
 **The band is deliberately not the code's colour.** An earlier version gave the
 active tab the same dark background as the frame so the two merged seamlessly —
@@ -247,7 +253,8 @@ nothing shifts when the selection moves.
 A single file still gets a tab, rendered as a `<span>` rather than a button
 since there is nothing to switch to. Switching tabs swaps the content and
 resets the scroll.
-The frame behaves like the README's — capped at 460px, self-scrolling, faded at
+The frame behaves like the README's — capped at `clamp(460px, 72vh, 900px)` so
+it grows with the screen, self-scrolling, faded at
 the bottom, with a **Show full file** toggle — on the terminal surface rather
 than the card one, since this is literal source.
 
@@ -280,6 +287,148 @@ Recovery Policy shows `recovery_map.yml` and `alert.rules.yml` only. Role task
 files, `site.yml`, and `group_vars` are setup mechanics, not decisions worth
 reading inline.
 
+## Browser panels
+
+`components/BrowserPanel.jsx` is the tab strip + address bar + body shell.
+Four sections use it — Architecture & Structure, Recovery Policy, Screenshots,
+Code & README — and `CodeViewer` renders through it too, so there is one
+chrome implementation rather than several that drift.
+
+```js
+<BrowserPanel label="Files" tabs={[{ id, label, address, aside?, render() }]} />
+```
+
+`label` is the tab and should be short; `address` is the long form and is
+split at the last slash so a path reads quiet-directory + ink-filename, while
+a phrase with no slash renders whole. `aside` rides at the right end of the
+address bar — the README's language toggle is the one user of it. `footer` is
+a control belonging to that tab and is rendered **below** the window: inside
+it, the browser's rounded corner clipped it.
+
+The shell wraps every body in `.code__pane`, so a diagram, a code frame, a
+tree and a screenshot pair all sit the same distance from the chrome. Bodies
+should not add their own outer padding, and each should keep its own border —
+that pairing is what makes four different kinds of content read as one
+component.
+
+## Section order and the sticky menu
+
+**Every nav group must stay contiguous in page order.** `decisions` used to
+sit after `media` while belonging to the `tech` group, which made the
+scroll-spy light Demo and then jump back to Tech & Architecture. If you move a
+section, check `navGroups.js` still maps to a monotonic sequence.
+
+Three sections were merged and their ids are gone: `folders` folded into
+`architecture`, and `terraform` + `readme` became `source`. Any bookmark or
+deep link to those anchors no longer resolves.
+
+## Technical Decisions: the crescent
+
+`components/sections/DecisionsSection.jsx` renders the decisions as a crescent
+of numbered circles down the left edge plus one card on the right. Slots
+alternate numbered and blank (`NUMBERED_EVERY`), with `CENTRE_SLOT_PAD` blanks
+beyond each end so the arc stays full whichever number is selected. Every slot
+is positioned *relative to the selected one*, which is what carries the whole
+crescent when a number is picked.
+
+`reach` spans the entire numbered run. Shorten it and the far numbers fade to
+`opacity: 0` and become unreachable — that was a real bug, not a tuning knob.
+
+`SPAN_Y` is a **bounded percentage** of the panel, not a pixel step. A fixed
+step let the far end of the run travel past the container and cover the next
+section's text. Everything now lands within `±SPAN_Y` of the centre whatever
+is selected.
+
+Numbers and blanks are spaced by **different rules**, which is what lets the
+tail be long without the numbers bunching:
+
+- `NUM_STEP` is a constant step between numbers, and depends only on
+  `decisions.length`. Adding blanks cannot squeeze it. It must stay clear of a
+  selected circle's radius plus its neighbour's — `.arc`'s `min-height` is
+  what guarantees that, since the step is a percentage of it.
+- `TAIL_STEP` × `TAIL_DECAY^k` carries the blanks past the numbers on a
+  decaying step, and `BLANK_DECAY^k` shrinks them as they go. The series
+  converges, so the tail can never reach the container's edge however many
+  blanks `CENTRE_SLOT_PAD` adds. `TAIL_STEP` is deliberately *larger* than the
+  steps after it: the first gap has to clear a full-size number against a
+  blank, which is a bigger jump than the gaps further out.
+
+The horizontal sweep is a half-ellipse (`sqrt(1 - t²)`), not a parabola, so
+the run reads as one oval edge.
+
+A single step for both cannot work: wide enough for the numbers and the tail
+escapes the section and covers the next section's text; tight enough for the
+tail and the numbers collide. Both shipped once.
+
+The selected circle's size comes from `--pip-scale`, set inline and applied by
+CSS. Do not fold it back into a `transform` string: the ≤860px rule has to
+neutralise `top`/`left` for the flat row, and a blanket `transform: none`
+there removes the size boost with them.
+
+### Auto-cycle
+
+Same shape as `TechStackWheel`: an ambient `cycle`, a `pinned` index set by a
+click, and an idle timer that clears the pin (`RESUME_MS`) so the section goes
+back to cycling. Hover over the whole block also pauses — the card is long-form
+text, unlike the wheel's one-word categories. `useReducedMotion` stops the
+cycle outright.
+
+**This is not a modal, and must not become one.** No overlay, no backdrop, no
+close button, no focus trap, and the arrow-key handler is bound to the
+selector rather than to the document. The reader keeps the page.
+
+### Why there is no framer here
+
+An earlier build drove the circle positions with framer's `animate` and the
+card swap with `AnimatePresence`. Both depend on `requestAnimationFrame`, and
+in a frame that never composites the circles stranded at the previous
+selection while card faces stacked up three deep, each frozen part-way through
+its exit.
+
+Now:
+
+- **Circle positions are inline style, eased by a CSS transition.** The style
+  is what is true; the transition only animates the change. A dropped frame
+  still leaves the resting layout correct.
+- **The arriving card animates with a keyframe that has no `backwards` fill**,
+  so its resting state is its ordinary style.
+- **The ghosts' fill must be `--bg-alt`, not white at low opacity.** A white
+  card at 40% on a white page is invisible; the first version of the deck could
+  not be seen at all.
+- **On narrow widths the ghosts pivot on their centre**, not their bottom edge.
+  Rotating about the bottom swings the top corners twice as far and gave the
+  page a horizontal scroll at 375px.
+- **`Face` has three variants and only `sizer` stays in flow.** The hidden
+  sizer — one copy of every decision, stacked in a single grid cell — is what
+  gives the window its height, so all four cards come out the size of the
+  longest. It must be `visibility: hidden`, never `display: none`: a
+  display-none child contributes no height, and height is the entire reason it
+  exists. Render the sizer's faces with the live variant by mistake and they
+  turn absolute, contribute nothing, and the card collapses to zero.
+- **`.dcard__figure svg`'s `max-height` is the card's height dial**, not the
+  band's `min-height`. The glyph renders at its cap and the band wraps it, so
+  raising the cap makes every card taller whatever its text says.
+- **`.dcard` must not stretch to the grid row** (`align-self: center`). The
+  ghost layers behind the card are `inset: 0` on it, so a stretched box leaves
+  them taller than the card they back and the deck hangs below it.
+- **The frame is on `.dcard__face`, not on `.dcard`.** `.dcard` is a clipping
+  viewport with no border of its own; the card's border, radius and ground
+  travel with the content. Move the frame back up to the container and the
+  animation degrades into text sliding inside a card that never moves.
+- **The leaving card is removed on a `setTimeout`, not on `animationend`**, so
+  it cannot outlive its animation. It is `aria-hidden` and `inert` while it
+  exists.
+
+Both animations disappear under `prefers-reduced-motion`.
+
+### Concept marks
+
+`decisionGlyphs.jsx` is a vocabulary of drawn SVGs — `route`, `process`,
+`channels`, `branch`, and a neutral `note` fallback. A decision names one with
+`glyph` in `projects.js`, so no component knows anything about a particular
+project. Omit it and the card shows `note` rather than a diagram pretending to
+illustrate a decision it knows nothing about.
+
 ## Links
 
 Two sections, fed by one `LINK_KINDS` list in `components/sections/LinksSection.jsx`.
@@ -298,7 +447,9 @@ empty content slots use.
 ## The README section
 
 READMEs run to tens of thousands of characters, so the section opens capped at
-460px in a bordered frame that scrolls on its own, with a fade at the bottom
+`clamp(460px, 72vh, 900px)` in a bordered frame that scrolls on its own — a
+flat 460px gave a large monitor no more reading room than a laptop — with a
+fade at the bottom
 edge and a **Show full README** control beneath it that lifts the cap and lets
 the rest run inline. The control is a toggle — it collapses again.
 

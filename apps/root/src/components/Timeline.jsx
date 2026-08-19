@@ -457,8 +457,8 @@ export default function Timeline() {
         <div className="projects-row">
           <Stagger>
             <p style={{
-              fontFamily: 'var(--font-header)',
-              fontWeight: 800,
+              fontFamily: 'var(--font-mono)',
+              fontWeight: 700,
               fontSize: 'clamp(5rem, 3rem + 9vw, 11rem)',
               letterSpacing: '-0.04em',
               color: 'var(--c-orange)',

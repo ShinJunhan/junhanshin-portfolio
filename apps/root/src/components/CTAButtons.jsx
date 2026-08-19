@@ -13,7 +13,7 @@ export default function CTAButtons() {
     background: 'var(--accent-base)',
     color: 'white',
     fontWeight: 700,
-    fontFamily: 'var(--font-body)',
+    fontFamily: 'var(--font-label)',
     fontSize: 'clamp(1rem, 0.9rem + 0.3vw, 1.15rem)',
     textDecoration: 'none',
     marginBottom: '14px',

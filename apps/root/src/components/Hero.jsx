@@ -14,7 +14,7 @@ const NAME_COLOR_DELAY = 0.5      // seconds after the greeting mounts, before "
 const NAME_COLOR_DURATION = 0.7
 const POST_GREETING_HOLD = 500    // ms after the name color settles, before the hero reports "done"
 
-const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 500 }
+const PLAIN_TEXT_STYLE = { color: 'var(--ink)', fontWeight: 700 }
 // Safeguard behind the explicit break below: if the phrase still has to
 // wrap at some width, it wraps around this pair rather than through it.
 const NOWRAP = { whiteSpace: 'nowrap' }
@@ -33,7 +33,7 @@ const INDIGO_POP = 'rgb(58,125,214)'
 
 function Highlight({ children, color, show, glow }) {
   return (
-    <span style={{ position: 'relative', display: 'inline-block', fontWeight: 700 }}>
+    <span style={{ position: 'relative', display: 'inline-block', fontWeight: 800 }}>
       <span style={{ position: 'relative', zIndex: 1, color: 'var(--ink)' }}>
         {children}
       </span>
@@ -177,14 +177,14 @@ export default function Hero({ onComplete }) {
 
   const lines = [
     <>
-      <span style={{ ...PLAIN_TEXT_STYLE, color: TEACHER_HUE, fontWeight: 800 }}>10+</span>
+      <span style={{ ...PLAIN_TEXT_STYLE, fontFamily: 'var(--font-mono)', fontWeight: 700, color: TEACHER_HUE }}>10+</span>
       <span style={PLAIN_TEXT_STYLE}> years as a </span>
       <Highlight color="rgba(79,168,143,0.4)" show={revealedCount > 0}>Teacher</Highlight>
       <span style={PLAIN_TEXT_STYLE}>.</span>
     </>,
     <>
       <span style={PLAIN_TEXT_STYLE}>Then, </span>
-      <span style={{ ...PLAIN_TEXT_STYLE, color: OPERATOR_HUE, fontWeight: 800 }}>3</span>
+      <span style={{ ...PLAIN_TEXT_STYLE, fontFamily: 'var(--font-mono)', fontWeight: 700, color: OPERATOR_HUE }}>3</span>
       <span style={PLAIN_TEXT_STYLE}> years as a </span>
       <Highlight color="rgba(224,138,60,0.4)" show={revealedCount > 1}>Public-Private Operator</Highlight>
       <span style={PLAIN_TEXT_STYLE}>.</span>

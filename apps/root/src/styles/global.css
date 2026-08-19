@@ -82,10 +82,23 @@
   --skill-disc-border: rgba(31, 46, 68, 0.13);
   --skill-disc-shadow: 0 2px 7px rgba(31, 46, 68, 0.13);
 
-  /* Fonts */
-  --font-header: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-mono: 'Fira Code', monospace;
+  /* Fonts — the same four voices as the devops app, defined identically so
+     the two sites read as one system. No face swaps by width: one heading
+     face at every size. Public Sans is the heading voice and the voice a
+     person's name is always set in; Hanken Grotesk is the label voice (skill
+     and project names, nav, captions); Newsreader sets prose; Chivo Mono sets
+     anything measured — numbers, statuses, paths, terminal.
+
+     Only the weights index.html loads are usable, or the browser synthesizes
+     a face: Public Sans 700/800, Hanken Grotesk 600/700/800, Newsreader
+     400-700, Chivo Mono 400-700. Nothing below those floors. */
+  --font-heading: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-label: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-header: var(--font-heading);
+  --font-body: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-mono: 'Chivo Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --display-weight: 800;
+  --display-scale: 1.2;
 
   /* Spacing */
   --radius: 12px;
@@ -112,6 +125,13 @@
 
   color-scheme: light;
 }
+
+@media (min-width: 1101px) {
+  :root {
+    --display-scale: 1.05;
+  }
+}
+
 
 [data-theme='dark'] {
   --bg: #10151F;
@@ -183,6 +203,16 @@
   box-sizing: border-box;
 }
 
+/* The UA stylesheet gives form controls their own font rather than letting
+   them inherit, which drops any button that doesn't name a face into Arial.
+   Every control here either names one or should take its container's. */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -194,7 +224,7 @@ body {
 
 h1, h2, h3 {
   font-family: var(--font-header);
-  font-weight: 800;
+  font-weight: var(--display-weight);
   margin: 0;
 }
 
@@ -218,6 +248,12 @@ a {
   font-size: clamp(0.98rem, 0.92rem + 0.28vw, 1.14rem);
   line-height: 1.75;
   color: var(--text-primary);
+  /* Flush on both edges, so the paragraph reads as a set block under the
+     greeting rather than a ragged tail. Hyphenation comes with it: at this
+     measure, justifying without it opens rivers of white space between
+     words on the lines that hold one long word. */
+  text-align: justify;
+  hyphens: auto;
 }
 
 /* ---------- Top bar ---------- */
@@ -278,9 +314,9 @@ a {
   background: none;
   cursor: pointer;
   white-space: nowrap;
-  font-family: var(--font-body);
+  font-family: var(--font-label);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   padding: 0.45rem 0.7rem;
   border-radius: 999px;
@@ -293,7 +329,7 @@ a {
 
 .navbar__link--active {
   color: var(--ink);
-  font-weight: 600;
+  font-weight: 700;
   background: var(--card-bg);
 }
 
@@ -338,7 +374,7 @@ a {
   align-items: center;
   gap: 0.55rem;
   font-family: var(--font-header);
-  font-weight: 800;
+  font-weight: var(--display-weight);
   font-size: var(--h1-size);
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -434,6 +470,7 @@ a.info-card:hover {
 }
 
 .info-card__value {
+  font-family: var(--font-label);
   font-size: 1.02rem;
   font-weight: 600;
   color: var(--ink);
@@ -446,8 +483,9 @@ a.info-card:hover {
    out of room. */
 .info-card__meta {
   margin-top: -0.5rem;
+  font-family: var(--font-label);
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.45;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
@@ -482,7 +520,7 @@ a.info-card:hover {
 /* Sits a clear step below the band headings — same family, much quieter. */
 .cert-roadmap__title {
   font-family: var(--font-header);
-  font-weight: 600;
+  font-weight: var(--display-weight);
   font-size: clamp(1rem, 0.92rem + 0.35vw, 1.22rem);
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -534,8 +572,9 @@ a.info-card:hover {
 }
 
 .cert-step__label {
+  font-family: var(--font-label);
   font-size: 1.02rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
 }
@@ -625,9 +664,9 @@ a.info-card:hover {
   background: none;
   padding: 0.3rem 0 0;
   cursor: pointer;
-  font-family: var(--font-body);
+  font-family: var(--font-label);
   font-size: 0.86rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.3;
   color: var(--text-secondary);
   transition: color 0.18s ease;
@@ -727,7 +766,7 @@ a.info-card:hover {
   white-space: nowrap;
   background: var(--ink);
   color: var(--bg);
-  font-family: var(--font-mono);
+  font-family: var(--font-label);
   font-size: 0.7rem;
   font-weight: 600;
   padding: 3px 9px;
@@ -947,7 +986,7 @@ button:focus-visible {
   border: 0;
   background: none;
   color: var(--axis-color, var(--text-secondary));
-  font-family: var(--font-body);
+  font-family: var(--font-label);
   /* Body size, not caption size — these are the chart's five headings. */
   font-size: 1.15rem;
   font-weight: 700;
@@ -999,7 +1038,7 @@ button:focus-visible {
   color: var(--axis-color, var(--text-secondary));
   text-align: left;
   cursor: pointer;
-  font-family: var(--font-body);
+  font-family: var(--font-label);
   font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.3;
@@ -1096,10 +1135,12 @@ button:focus-visible {
 }
 
 .radar-modal__title {
-  /* Clears the close button so a long name never runs under it. */
+  /* Clears the close button so a long name never runs under it. The label
+     face, not the heading face: this is the same soft-skill name the chart
+     vertex carries, and a name should not change face with its container. */
   padding-right: 2rem;
-  font-family: var(--font-header);
-  font-weight: 700;
+  font-family: var(--font-label);
+  font-weight: 800;
   font-size: clamp(1.1rem, 1rem + 0.5vw, 1.4rem);
   letter-spacing: -0.01em;
   line-height: 1.3;
@@ -1248,8 +1289,8 @@ button:focus-visible {
 }
 
 .ticker__title {
-  font-family: var(--font-header);
-  font-weight: 600;
+  font-family: var(--font-label);
+  font-weight: 700;
   font-size: clamp(1rem, 0.85rem + 0.6vw, 1.4rem);
   letter-spacing: -0.01em;
   line-height: 1.3;

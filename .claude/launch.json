@@ -4,8 +4,24 @@
     {
       "name": "devops",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--prefix", "apps/devops"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "apps/devops"
+      ],
       "port": 5174
+    },
+    {
+      "name": "root",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "apps/root"
+      ],
+      "port": 5173
     }
   ]
 }

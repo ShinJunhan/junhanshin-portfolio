@@ -136,7 +136,7 @@ export default function TerminalPopup() {
             pointerEvents: 'none',
           }}
         >
-          Ask me about JunHan
+          Ask me about Junhan
         </span>
       </div>
 

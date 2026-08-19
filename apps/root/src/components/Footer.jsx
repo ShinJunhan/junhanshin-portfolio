@@ -12,9 +12,9 @@ function IconBadge({ children }) {
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
-        fontFamily: 'var(--font-header)',
+        fontFamily: 'var(--font-mono)',
         fontSize: '0.8rem',
-        fontWeight: 800,
+        fontWeight: 700,
       }}
     >
       {children}
@@ -83,6 +83,8 @@ export default function Footer() {
             alignItems: 'center',
             gap: '0.65rem',
             color: 'var(--text-secondary)',
+            fontFamily: 'var(--font-label)',
+            fontWeight: 600,
             fontSize: 'clamp(0.95rem, 0.9rem + 0.15vw, 1.05rem)',
             textDecoration: 'none',
           }}

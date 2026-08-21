@@ -11,6 +11,10 @@ const HEADING_DURATION = 1.45
 // Sits just past the heading's settle so the two never occupy the same
 // space — the heading has fully cleared the detail column before it fills.
 const DETAIL_DELAY = HEADING_DURATION + 0.08
+// The beat between one revealed child and the next. Named because a sibling
+// that has to land on the same beat as a particular child offsets by it,
+// and a bare 0.14 in two places would drift apart the first time it moved.
+const STAGGER_STEP = 0.14
 
 // Everything the About Me grid holds — contact details first, then the
 // standing facts (education, languages, credential) that used to live in
@@ -132,6 +136,18 @@ const SOFT_ICON = (
   </svg>
 )
 
+// The two views the Skills section holds. Each keeps the accent it carried
+// when it was a section of its own, so switching still reads as moving
+// between two distinct things rather than reskinning one.
+const SKILL_VIEWS = [
+  { id: 'technical', label: 'Technical Skills', accent: 'var(--c-emerald)', icon: SKILLS_ICON },
+  { id: 'soft', label: 'Soft Skills', accent: 'var(--c-indigo)', icon: SOFT_ICON },
+]
+
+// The switch lands first and the view it governs follows, rather than the
+// two arriving on top of each other.
+const SWITCH_LEAD = 0.18
+
 // Below this width the columns stack, so the heading has no left column to
 // slide back to — it just pops in place instead.
 function useIsNarrow() {
@@ -237,7 +253,7 @@ function Stagger({ children, delay = DETAIL_DELAY, className }) {
         visible: {
           transition: {
             delayChildren: reduceMotion ? 0 : delay,
-            staggerChildren: reduceMotion ? 0 : 0.14,
+            staggerChildren: reduceMotion ? 0 : STAGGER_STEP,
           },
         },
       }}
@@ -438,6 +454,114 @@ function CertRoadmap() {
   )
 }
 
+// A segmented pill, deliberately unlike the underlined category tabs inside
+// the technical view — the two controls sit within a screen of each other,
+// and matching them would read as one long row of tabs at one level.
+function SkillsSwitch({ value, onChange }) {
+  const reduceMotion = useReducedMotion()
+
+  // Roving tabindex: the strip is a single tab stop, and the arrows move
+  // between the views, which is how a tablist is expected to behave.
+  function onKeyDown(e) {
+    const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
+    if (!dir) return
+    e.preventDefault()
+    const i = SKILL_VIEWS.findIndex((v) => v.id === value)
+    const next = SKILL_VIEWS[(i + dir + SKILL_VIEWS.length) % SKILL_VIEWS.length]
+    onChange(next.id)
+    document.getElementById(`skills-tab-${next.id}`)?.focus()
+  }
+
+  return (
+    <div className="skills-switch" role="tablist" aria-label="Skills view" onKeyDown={onKeyDown}>
+      {SKILL_VIEWS.map((v) => {
+        const on = v.id === value
+        return (
+          <button
+            key={v.id}
+            id={`skills-tab-${v.id}`}
+            type="button"
+            role="tab"
+            aria-selected={on}
+            aria-controls="skills-panel"
+            tabIndex={on ? 0 : -1}
+            className={`skills-switch__tab${on ? ' skills-switch__tab--on' : ''}`}
+            style={{ '--switch-accent': v.accent }}
+            onClick={() => onChange(v.id)}
+          >
+            {/* One element shared between the two tabs, so it slides across
+                rather than fading out on one and in on the other. */}
+            {on && (
+              <motion.span
+                className="skills-switch__thumb"
+                layoutId="skills-switch-thumb"
+                aria-hidden="true"
+                transition={
+                  reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 460, damping: 38 }
+                }
+              />
+            )}
+            {/* The shape each view is actually drawn on — hexagon for the
+                honeycomb, pentagon for the radar. */}
+            <span className="skills-switch__glyph" aria-hidden="true">{v.icon}</span>
+            <span className="skills-switch__label">{v.label}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Holds the two skill views under one heading. Neither view is touched —
+// each is mounted exactly as it was when it owned a section of its own; all
+// this adds is which one is on show and when it starts.
+function SkillsSection() {
+  const reduceMotion = useReducedMotion()
+  const inView = useContext(BandReveal)
+  const [view, setView] = useState(SKILL_VIEWS[0].id)
+  // The first view rides the band's reveal, so it still waits for the
+  // heading to settle. Anything opened after that is a direct answer to a
+  // click, and replaying that wait would just read as a dead panel.
+  const [switched, setSwitched] = useState(false)
+  const viewDelay = switched ? 0 : DETAIL_DELAY + SWITCH_LEAD
+
+  function pick(id) {
+    setSwitched(true)
+    setView(id)
+  }
+
+  return (
+    <div className="skills-stack">
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{
+          duration: reduceMotion ? 0 : 0.4,
+          delay: reduceMotion ? 0 : DETAIL_DELAY,
+          ease: 'easeOut',
+        }}
+      >
+        <SkillsSwitch value={view} onChange={pick} />
+      </motion.div>
+
+      {/* Swapped rather than hidden: only the chosen view is ever mounted,
+          and it plays its own entrance on the way in. */}
+      <div
+        className="skills-view"
+        id="skills-panel"
+        role="tabpanel"
+        aria-labelledby={`skills-tab-${view}`}
+      >
+        {view === 'technical' ? (
+          <SkillsHoneycomb baseDelay={viewDelay} />
+        ) : (
+          <SoftSkills baseDelay={viewDelay} />
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Timeline() {
   return (
     <>
@@ -448,7 +572,7 @@ export default function Timeline() {
           ))}
         </Stagger>
         {/* Follows the cards in rather than sitting there while they land. */}
-        <Stagger delay={DETAIL_DELAY + ABOUT_ITEMS.length * 0.14}>
+        <Stagger delay={DETAIL_DELAY + ABOUT_ITEMS.length * STAGGER_STEP}>
           <CertRoadmap />
         </Stagger>
       </Band>
@@ -472,16 +596,18 @@ export default function Timeline() {
               <span style={{ display: 'block' }}>(3 individual + 4 team)</span>
             </p>
           </Stagger>
-          <ProjectsTicker />
+          {/* Same trigger and same enter as the sentence beside it, offset
+              by one beat to match that sentence's place in the stagger — so
+              the titles and the line they belong to land together, rather
+              than the list simply being there already. */}
+          <Stagger delay={DETAIL_DELAY + STAGGER_STEP}>
+            <ProjectsTicker />
+          </Stagger>
         </div>
       </Band>
 
-      <Band id="skills" heading="Technical Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt>
-        <SkillsHoneycomb baseDelay={DETAIL_DELAY} />
-      </Band>
-
-      <Band id="soft-skills" heading="Soft Skills" icon={SOFT_ICON} accent="var(--c-indigo)" alt={false}>
-        <SoftSkills baseDelay={DETAIL_DELAY} />
+      <Band id="skills" heading="Skills" icon={SKILLS_ICON} accent="var(--c-emerald)" alt>
+        <SkillsSection />
       </Band>
     </>
   )

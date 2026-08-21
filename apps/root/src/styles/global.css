@@ -249,11 +249,15 @@ a {
   line-height: 1.75;
   color: var(--text-primary);
   /* Flush on both edges, so the paragraph reads as a set block under the
-     greeting rather than a ragged tail. Hyphenation comes with it: at this
-     measure, justifying without it opens rivers of white space between
-     words on the lines that hold one long word. */
+     greeting rather than a ragged tail. The extra room goes between whole
+     words only — no word is ever broken across two lines, so hyphenation
+     and mid-word wrapping are both switched off rather than left to the
+     defaults. */
   text-align: justify;
-  hyphens: auto;
+  -webkit-hyphens: none;
+  hyphens: none;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 /* ---------- Top bar ---------- */
@@ -638,6 +642,129 @@ a.info-card:hover {
   .cert-step__note {
     grid-column: 2;
     justify-self: start;
+  }
+}
+
+/* ---------- Skills: the section's own view switch ---------- */
+
+/* The band body's gap already sets the heading off from its detail, so the
+   switch inherits that distance; the view it governs sits closer to it than
+   it does to the heading, which is the order the two should be read in. */
+.skills-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.4rem, 3vh, 2.3rem);
+}
+
+/* A recessed track with a raised pill riding in it, so the pair reads as
+   one control with two states rather than two buttons that happen to sit
+   side by side. The three tones are the band, the track sunk into it, and
+   the pill lifted above both — the same stepping the skill cards use.
+   Inline-flex: the track is only as wide as its two labels, not the whole
+   column. */
+.skills-switch {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.2rem;
+  padding: 0.28rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+}
+
+/* Positioned so the pill can sit behind the label rather than beside it. */
+.skills-switch__tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  white-space: nowrap;
+  padding: 0.5rem clamp(0.85rem, 1.6vw, 1.35rem);
+  border-radius: 999px;
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1;
+  /* Primary, not the muted secondary the nav links use: the unselected tab
+     is a control that has to be read before it can be chosen, and the muted
+     tone only clears 2.4:1 on this ground. Weight, the pill, and the glyph
+     carry the selected state instead. */
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+}
+
+.skills-switch__tab:hover {
+  color: var(--ink);
+}
+
+.skills-switch__tab:focus-visible {
+  outline: 2px solid var(--switch-accent);
+  outline-offset: 3px;
+}
+
+/* Selected: the label sits on the raised pill, so it takes the page's ink
+   rather than a color on a fill — a label reversed out of either accent
+   lands under AA at this size. The accent does the identifying from the
+   glyph instead, which is where the section headings already carry it. */
+.skills-switch__tab--on {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* Behind the label, not over it — the pill is the only thing that moves
+   between the two tabs. */
+.skills-switch__thumb {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: var(--skill-card-shadow);
+}
+
+.skills-switch__glyph,
+.skills-switch__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* The shape each view is drawn on, in that view's color — the one place
+   both accents are visible at once, so the switch says where each tab
+   leads. Muted until its tab is picked, so only one reads as live. */
+.skills-switch__glyph {
+  display: inline-flex;
+  font-size: 1.05em;
+  color: var(--switch-accent);
+  opacity: 0.45;
+  transition: opacity 0.2s ease;
+}
+
+.skills-switch__tab:hover .skills-switch__glyph,
+.skills-switch__tab--on .skills-switch__glyph {
+  opacity: 1;
+}
+
+/* The two views are very different heights and neither is padded here: each
+   is mounted exactly as it was when it owned a section of its own. */
+.skills-view {
+  width: 100%;
+}
+
+@media (max-width: 480px) {
+  /* Two full labels no longer fit on one line at this width, so the track
+     takes the column and each tab takes half of it. */
+  .skills-switch {
+    align-self: stretch;
+  }
+  .skills-switch__tab {
+    flex: 1 1 0;
+    justify-content: center;
+    padding-inline: 0.5rem;
+    font-size: 0.82rem;
   }
 }
 

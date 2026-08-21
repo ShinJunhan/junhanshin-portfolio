@@ -20,9 +20,9 @@ export default function App() {
         {/* Gated on the headline actually finishing, not a guessed timer —
             so these can never appear out of order relative to the headline. */}
         {heroDone && <Timeline />}
-        {/* Timeline's last band is the base tone, so this one alternates
+        {/* Timeline's last band is the alt tone, so this one alternates
             off it to keep the banding rhythm unbroken. */}
-        <section className="band" style={{ background: 'var(--bg-alt)' }}>
+        <section className="band" style={{ background: 'var(--bg)' }}>
           <div className="container">
             <Reveal delay={0.1}><CTAButtons /></Reveal>
             <Reveal delay={0.1}><Footer /></Reveal>

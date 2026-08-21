@@ -5,8 +5,7 @@ const SECTIONS = [
   { id: 'home', label: 'Home' },
   { id: 'about', label: 'About Me' },
   { id: 'projects', label: 'Projects' },
-  { id: 'skills', label: 'Technical Skills' },
-  { id: 'soft-skills', label: 'Soft Skills' },
+  { id: 'skills', label: 'Skills' },
 ]
 
 export default function NavBar() {

@@ -1,17 +1,17 @@
-import MembersSection from '../components/sections/MembersSection.jsx'
 import RoleSection from '../components/sections/RoleSection.jsx'
 import ContextSection from '../components/sections/ContextSection.jsx'
 import MetricsSection from '../components/sections/MetricsSection.jsx'
 import StackSection from '../components/sections/StackSection.jsx'
-import ArchitectureSection from '../components/sections/ArchitectureSection.jsx'
+import ArchitectureSection, {
+  hasArchitecture,
+} from '../components/sections/ArchitectureSection.jsx'
+import StepsSection from '../components/sections/StepsSection.jsx'
+import CostSection from '../components/sections/CostSection.jsx'
 import RecoveryPolicySection from '../components/sections/RecoveryPolicySection.jsx'
 import SourceSection from '../components/sections/SourceSection.jsx'
 import MediaSection from '../components/sections/MediaSection.jsx'
 import DecisionsSection from '../components/sections/DecisionsSection.jsx'
-import LinksSection, {
-  ResourcesSection,
-  visibleLinkKinds,
-} from '../components/sections/LinksSection.jsx'
+import LinksSection, { visibleLinkKinds } from '../components/sections/LinksSection.jsx'
 import ReflectionSection from '../components/sections/ReflectionSection.jsx'
 
 // THE source of truth for a project page. The page renders this list in
@@ -30,6 +30,11 @@ import ReflectionSection from '../components/sections/ReflectionSection.jsx'
 //             screenshots, the README — a standing empty heading is the point.
 //             Sections whose absence is meaningful rather than pending (a solo
 //             project has no Members) leave this off and disappear instead.
+//   bare      the body renders its own heading(s) rather than the page putting
+//             one above it. For a section whose columns mean different things
+//             and each need naming — one heading over both would claim to
+//             govern both. The body receives `headingId` and `label` so the
+//             heading it renders is still what the section is labelled by.
 //   Body      the component, given the whole project
 //   Aside     optional control rendered right-aligned on the heading line —
 //             for a section whose body needs a switch that belongs beside the
@@ -41,20 +46,23 @@ import ReflectionSection from '../components/sections/ReflectionSection.jsx'
 // always present and is not an anchor target.
 export const SECTIONS = [
   {
-    // First on the page, directly under the title and period line: where the
-    // work actually lives is the first thing a reader wants, not the last.
+    // Where the work lives, and what it was, side by side. The links took a
+    // full-width section to hold three small tiles and left most of the row
+    // empty; At a Glance fills it with the only three sentences a reader who
+    // is not going to scroll should still come away with.
     id: 'links',
     // "<Team> Workspace" everywhere, built from the project's short name —
     // the same name the sidebar shows — rather than spelled out per project.
     label: (project) => `${project.title} Workspace`,
-    has: (project) => visibleLinkKinds(project, 'workspace').length > 0,
+    // The body renders the headings, not the page: this section is two columns
+    // that mean different things, and one heading above both read as though it
+    // governed the summary as well as the links. The body gets the label and
+    // the heading id and puts them on the left column, then heads the right
+    // column itself.
+    bare: true,
+    has: (project) =>
+      visibleLinkKinds(project, 'workspace').length > 0 || Boolean(project.glance),
     Body: LinksSection,
-  },
-  {
-    id: 'members',
-    label: 'Members',
-    has: (project) => project.team?.length > 0,
-    Body: MembersSection,
   },
   {
     id: 'role',
@@ -69,12 +77,6 @@ export const SECTIONS = [
     Body: ContextSection,
   },
   {
-    id: 'impact',
-    label: 'Key Impact Metrics',
-    has: (project) => project.metrics?.length > 0,
-    Body: MetricsSection,
-  },
-  {
     id: 'stack',
     label: 'Tech Stack',
     has: (project) => project.stack?.length > 0,
@@ -86,17 +88,31 @@ export const SECTIONS = [
     // between them beats scrolling between them.
     id: 'architecture',
     label: 'Architecture & Folder Structure',
-    has: (project) =>
-      [].concat(project.architecture ?? []).some((d) => d?.src) ||
-      Boolean(project.folderStructure),
+    // Owned by the section component: a view counts whether it is an image
+    // file or a diagram described in the data, and only that component knows
+    // both shapes.
+    has: hasArchitecture,
     always: true,
     Body: ArchitectureSection,
   },
   {
+    // How the project was actually run, week by week — the calendar and the
+    // phase list together. It sits directly after the architecture panel: a
+    // reader who has just seen what was built is the one who wants to know
+    // over what span, and it lands before the trade-offs, which are easier to
+    // weigh once the timeline they were made under is on the page.
+    id: 'steps',
+    label: 'Implementation Steps',
+    has: (project) => project.implementation?.phases?.length > 0,
+    Body: StepsSection,
+  },
+  {
     // Config, not Terraform — kept next to the diagram and the folder tree
-    // rather than folded into the Terraform section.
+    // rather than folded into the Terraform section. The heading names both
+    // halves of what the panel actually holds: the alert-to-script mapping and
+    // the rules that decide when an alert fires at all.
     id: 'recovery',
-    label: 'Recovery Policy',
+    label: 'Recovery Logic & Alert Routing',
     has: (project) => project.recoveryPolicy?.length > 0,
     always: true,
     Body: RecoveryPolicySection,
@@ -107,9 +123,33 @@ export const SECTIONS = [
     // sitting after the demo made the sticky menu light Demo and then jump
     // back to Tech & Architecture as the reader scrolled forward.
     id: 'decisions',
-    label: 'Technical Decisions',
+    // Decisions and trade-offs are one section, not two. Every entry in the
+    // deck is both — something was chosen and something was given up — and
+    // splitting them would have meant deciding, per card, which half it was.
+    label: 'Technical Decisions & Design Trade-Offs',
     has: (project) => project.decisions?.length > 0,
     Body: DecisionsSection,
+  },
+  {
+    // The numbers, after the work rather than before it. Up in Overview they
+    // were six figures asking to be taken on trust from a reader who had not
+    // yet seen the architecture, the timeline, or the trade-offs. Here they
+    // are the result of all three, and the cost table reads as the second half
+    // of the same thought.
+    id: 'impact',
+    label: 'Key Impact Metrics',
+    has: (project) => project.metrics?.length > 0,
+    Body: MetricsSection,
+  },
+  {
+    // Directly under the metrics. These are estimates against free-tier usage
+    // rather than production billing, and a cost table is the wrong thing to
+    // lead with: it means something to a reader who already understands the
+    // architecture and almost nothing to one who does not.
+    id: 'cost',
+    label: 'Cost Analysis',
+    has: (project) => project.cost?.items?.length > 0,
+    Body: CostSection,
   },
   {
     id: 'media',
@@ -119,19 +159,19 @@ export const SECTIONS = [
     Body: MediaSection,
   },
   {
-    // The things a reader might open alongside the write-up, as opposed to the
-    // repo itself — that sits at the top under the team's name.
-    id: 'resources',
-    label: 'Resources',
-    has: (project) => visibleLinkKinds(project, 'resources').length > 0,
-    Body: ResourcesSection,
-  },
-  {
-    // Terraform and the README in one panel, a tab each — both are "show me
-    // the actual source", and the README's language toggle rides in its own
-    // tab's address bar rather than on a heading shared with Terraform.
+    // Resources: the README, the runbook and the Terraform in one panel, a tab
+    // each and in that order — what the system is, how it is operated, what it
+    // is made of. Each document's language toggle rides in its own tab's
+    // address bar rather than on a heading shared with the others.
+    //
+    // This *is* Resources now. There used to be a second section of the same
+    // name directly above it holding a README tile and a Presentation tile —
+    // two headings called the same thing, one of which linked out to the
+    // document the other one already showed inline. The panel is the real
+    // resource; the deck link moved up to the workspace row at the top of the
+    // page, where the repo links already live.
     id: 'source',
-    label: 'README & Terraform Code',
+    label: 'Resources',
     has: (project) => project.terraform?.length > 0,
     always: true,
     Body: SourceSection,

@@ -1,25 +1,40 @@
-# Project README sources
+# Project document sources
 
 One folder per project, named exactly as that project's `slug` in
 `src/data/projects.js`:
 
 ```
-src/content/<slug>/README.md      # English (required for the section to show)
+src/content/<slug>/README.md      # English
 src/content/<slug>/README.ko.md   # Korean (optional)
+src/content/<slug>/RUNBOOK.md     # English (optional)
+src/content/<slug>/RUNBOOK.ko.md  # Korean (optional)
 ```
 
-`src/data/readmes.js` discovers these with a glob — there is nothing to import
-or register. The rules that follow from that:
+`src/data/docs.js` discovers these with a glob — there is nothing to import or
+register. The rules that follow from that:
 
-- No `README.md` for a slug → the README section and its entry in the sticky
-  nav both disappear for that project.
-- `README.md` only → the section renders with no EN/KO toggle, because there
-  is nothing to toggle to.
-- Both files → the toggle appears.
+- No file for a slug → that document's tab simply doesn't appear.
+- One language only → the tab renders with no EN/KO toggle, because there is
+  nothing to toggle to.
+- Both files → the toggle appears, and it is **per document**: a project can
+  have a translated README and an English-only runbook.
 
-To add a third language, add an entry to `LANGUAGES` in
-`src/data/readmes.js` (`{ id: 'ja', label: 'JA', suffix: '.ja' }`) and drop
-`README.ja.md` in the project's folder.
+The tabs render in the order set by `DOCUMENTS` in
+`src/components/sections/SourceSection.jsx` — README, then RUNBOOK, then the
+Terraform files. That order is deliberate: what the system is, how it is
+operated, what it is made of.
+
+To add a third language, add an entry to `LANGUAGES` in `src/data/docs.js`
+(`{ id: 'ja', label: 'JA', suffix: '.ja' }`) and drop `README.ja.md` in the
+project's folder.
+
+## Writing a runbook
+
+Different job from the README, so a different voice. A runbook is read by
+someone who is already in trouble: direct, action-oriented, no analogies. Each
+section says what to check, what command to run, and what the correct output
+looks like — and, where it matters, what to do when the output is wrong.
+Prefer a table of the actual policy over a paragraph describing it.
 
 Links inside these files:
 

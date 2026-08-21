@@ -3,6 +3,7 @@ import SectionNav from './SectionNav.jsx'
 import Reveal from './Reveal.jsx'
 import { accentFor } from '../data/projects.js'
 import { sectionsFor, labelOf } from '../data/sections.jsx'
+import Avatars from './Avatars.jsx'
 
 // One template for every project. Nothing here knows which project it is
 // rendering: the content comes from src/data/projects.js, the section order
@@ -56,6 +57,11 @@ export default function ProjectPage({ project }) {
             {project.team?.length > 0 && `Team of ${project.team.length} \u00b7 `}
             Project Period: {project.period}
           </p>
+          {/* Part of the header, not a section of its own. Who built it belongs
+              with the title and the dates — it is one more fact about the
+              project, and giving it a heading, a divider and an anchor of its
+              own made a row of five circles look like something to read. */}
+          <Avatars team={project.team} />
         </header>
 
         <div className="project__sections">
@@ -77,13 +83,22 @@ export default function ProjectPage({ project }) {
                     id={section.id}
                     aria-labelledby={`${section.id}-heading`}
                   >
-                    <div className="section__head">
-                      <h2 className="section__title" id={`${section.id}-heading`}>
-                        {labelOf(section, project)}
-                      </h2>
-                      {section.Aside && <section.Aside project={project} />}
-                    </div>
-                    <section.Body project={project} />
+                    {/* A `bare` section heads itself: its body gets the label
+                        and the heading id and places them where its own layout
+                        needs them. */}
+                    {!section.bare && (
+                      <div className="section__head">
+                        <h2 className="section__title" id={`${section.id}-heading`}>
+                          {labelOf(section, project)}
+                        </h2>
+                        {section.Aside && <section.Aside project={project} />}
+                      </div>
+                    )}
+                    <section.Body
+                      project={project}
+                      label={labelOf(section, project)}
+                      headingId={`${section.id}-heading`}
+                    />
                   </section>
                 </Wrapper>
               </Reveal>

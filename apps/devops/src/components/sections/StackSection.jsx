@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import RichText from '../../lib/richText.jsx'
 import { techIcon, techInitial } from '../../data/tech.js'
 import useMediaQuery from '../../lib/useMediaQuery.js'
 import TechStackWheel from './TechStackWheel.jsx'
@@ -45,28 +47,184 @@ function Tech({ item }) {
   )
 }
 
+// Why the load-bearing tools were picked, at the level of the tool rather than
+// the line of code. Deliberately a different scope from Technical Decisions &
+// Design Trade-Offs further down the page: this answers "why Terraform at all",
+// that one answers "why a NAT instance over a NAT gateway". Four or five
+// entries at most — the wheel already lists everything, and a note against
+// every tool in it would be a second inventory rather than an argument.
+//
+// The same disclosure row Implementation Steps uses, for the same reason it
+// uses one: four answers shown at once is four paragraphs of prose stacked
+// beside a wheel, and a reader who wants none of them still has to scroll past
+// all of them. The headings are questions because that is what a collapsed row
+// should be — the thing you click is the question, and the panel is the answer.
+//
+// `stackNotes` in a project's data: [{ tool, icon, text }]. `icon` names the
+// tech whose mark to borrow, so the row shows the same graphic the wheel does
+// for that tool — including the monogram fallback, which is what the wheel
+// shows for anything with no logo file on disk.
+function ToolNote({ note, open, onToggle }) {
+  const icon = techIcon(note.icon ?? note.tool)
+
+  return (
+    <li className={`disclosure${open ? ' disclosure--open' : ''}`}>
+      <h3 className="disclosure__heading">
+        <button
+          type="button"
+          className="disclosure__toggle"
+          aria-expanded={open}
+          aria-controls={`tool-${note.tool}`}
+          onClick={onToggle}
+        >
+          <span className="tool-note__icon" aria-hidden="true">
+            {icon ? (
+              <img src={icon} alt="" loading="lazy" />
+            ) : (
+              <span className="tool-note__initial">{techInitial(note.icon ?? note.tool)}</span>
+            )}
+          </span>
+          <span className="tool-note__question">{note.tool}</span>
+          <svg
+            className="disclosure__chevron"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      </h3>
+
+      {/* Always mounted so it can animate, `inert` while shut so a zero-height
+          panel is not read out — the same contract the phase panel keeps. */}
+      <div
+        className="disclosure__panel"
+        id={`tool-${note.tool}`}
+        data-open={open ? 'true' : 'false'}
+        inert={open ? undefined : ''}
+      >
+        <div className="disclosure__panel-inner">
+          <p>
+            <RichText>{note.text}</RichText>
+          </p>
+        </div>
+      </div>
+    </li>
+  )
+}
+
+function StackNotes({ notes }) {
+  // Collapsed by default, and each one minds its own state — the same as the
+  // phase list, and for the same reason: these are four independent answers a
+  // reader may well want to compare, and an accordion is the one pattern that
+  // forbids that.
+  const [openIds, setOpenIds] = useState(() => new Set())
+
+  if (!notes?.length) return null
+
+  const toggle = (id) =>
+    setOpenIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  const allOpen = openIds.size === notes.length
+
+  return (
+    <div className="disclosures__wrap stack-notes">
+      {/* The same control the phase list carries, and always live for the same
+          reason: the first thing a reader does with four collapsed questions is
+          try to open them all. */}
+      <div className="disclosures__bar">
+        <button
+          type="button"
+          className="disclosures__all"
+          aria-expanded={allOpen}
+          onClick={() =>
+            setOpenIds(allOpen ? new Set() : new Set(notes.map((note) => note.tool)))
+          }
+        >
+          {allOpen ? 'Collapse all' : 'Expand all'}
+        </button>
+      </div>
+
+      {/* The list and a hidden copy of it with every row open, stacked in one
+          grid cell. The copy is what gives the cell its height, so the column
+          is always as tall as the fully-expanded list and the section's
+          boundary cannot move whatever the reader opens or closes.
+
+          Reserving it by measuring in JS would work too, and would go stale the
+          moment the copy changed. `visibility: hidden` rather than
+          `display: none` — a display-none child contributes no height, and
+          height is the entire point. */}
+      <div className="disclosures__stack">
+        <ol className="disclosures disclosures--reserve" aria-hidden="true" inert="">
+          {notes.map((note) => (
+            <ToolNote key={`reserve-${note.tool}`} note={note} open onToggle={() => {}} />
+          ))}
+        </ol>
+
+        <ol className="disclosures">
+          {notes.map((note) => (
+            <ToolNote
+              key={note.tool}
+              note={note}
+              open={openIds.has(note.tool)}
+              onToggle={() => toggle(note.tool)}
+            />
+          ))}
+        </ol>
+      </div>
+    </div>
+  )
+}
+
 export default function StackSection({ project }) {
   const groups = groupsOf(project.stack)
   const wheelFits = useMediaQuery(WHEEL_MIN_WIDTH)
+  const notes = project.stackNotes
 
   // The wheel needs categories to divide the centre into; an unlabelled flat
   // list has nothing to slice, so it stays a list at every width.
   if (wheelFits && groups.length > 1 && groups.every((group) => group.category)) {
-    return <TechStackWheel groups={groups} />
+    // Centred alone, the wheel left half the section empty and said nothing
+    // about *why* any of it was chosen. Off to the left with the reasoning
+    // beside it, the section answers both questions at once — and the wheel
+    // keeps every bit of its behaviour, since only the box around it moved.
+    return (
+      <div className={`stack-layout${notes?.length ? '' : ' stack-layout--wheel-only'}`}>
+        <TechStackWheel groups={groups} />
+        <StackNotes notes={notes} />
+      </div>
+    )
   }
 
+  // The wheel does not render below its breakpoint, and the notes are not the
+  // wheel's — they are the section's argument for why any of this was picked.
+  // Losing them with the wheel would have meant a phone reader getting the
+  // inventory and none of the reasoning.
   return (
-    <div className="stack-groups">
-      {groups.map((group) => (
-        <section className="stack-group" key={group.category ?? 'all'}>
-          {group.category && <h3 className="stack-group__label">{group.category}</h3>}
-          <ul className="stack">
-            {group.items.map((item) => (
-              <Tech item={item} key={item} />
-            ))}
-          </ul>
-        </section>
-      ))}
-    </div>
+    <>
+      <div className="stack-groups">
+        {groups.map((group) => (
+          <section className="stack-group" key={group.category ?? 'all'}>
+            {group.category && <h3 className="stack-group__label">{group.category}</h3>}
+            <ul className="stack">
+              {group.items.map((item) => (
+                <Tech item={item} key={item} />
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      <StackNotes notes={notes} />
+    </>
   )
 }

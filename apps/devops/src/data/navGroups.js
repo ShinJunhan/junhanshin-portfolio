@@ -26,41 +26,40 @@
 // A group whose sections are all absent from a project drops out of the menu.
 export const NAV_GROUPS = [
   {
-    // The top of the page: title, period, and the repo links. Overview
-    // deliberately skips past all of that to My Role, which left no way back
-    // up once the reader had scrolled.
-    id: 'workspace',
-    label: 'Workspace',
-    sections: ['links'],
+    // The top of the page and the person who built it. Its anchor is the page
+    // header rather than a section, so the first tab lands on the title, the
+    // member row and the workspace block above everything else — there is no
+    // separate Workspace entry any more, because "the top of the page" is not
+    // a destination a reader thinks of as distinct from "the overview".
+    id: 'overview',
+    label: 'Overview',
+    sections: ['links', 'role'],
     anchor: 'project-top',
   },
   {
-    id: 'overview',
-    label: 'Overview',
-    sections: ['members', 'role', 'context', 'impact'],
-    // Lands on My Role: the member row sits above it but is a glance rather
-    // than a read.
-    target: ['role', 'context', 'members', 'impact'],
+    // Everything about making the thing, opening with the problem it was made
+    // for. "Tech & Architecture" named the parts; "Build" names the act, which
+    // is what the six sections under it are actually about.
+    id: 'build',
+    label: 'Build',
+    sections: ['context', 'stack', 'architecture', 'steps', 'recovery', 'decisions'],
+    target: ['context', 'stack', 'architecture', 'steps', 'recovery', 'decisions'],
   },
   {
-    // The technical body of the page, contiguous: the stack, the architecture
-    // panel, the recovery config, and the trade-offs.
-    id: 'tech',
-    label: 'Tech & Architecture',
-    sections: ['stack', 'architecture', 'recovery', 'decisions'],
-    target: ['stack', 'architecture', 'recovery', 'decisions'],
-  },
-  {
-    id: 'demo',
-    label: 'Demo',
-    sections: ['media'],
-    target: ['media'],
+    // What came of it: the numbers, what they cost, and the recording that
+    // shows them happening. The metrics and the demo were two entries for one
+    // idea — evidence — and splitting them made the menu longer without making
+    // the page easier to navigate.
+    id: 'result',
+    label: 'Result',
+    sections: ['impact', 'cost', 'media'],
+    target: ['impact', 'cost', 'media'],
   },
   {
     id: 'resources',
     label: 'Resources',
-    sections: ['resources', 'source'],
-    target: ['resources', 'source'],
+    sections: ['source'],
+    target: ['source'],
   },
   {
     id: 'reflection',

@@ -1,8 +1,16 @@
 import { isOwner } from '../data/owner.js'
+import useSectionReached from '../lib/useSectionReached.js'
 
-// Circular initial avatars for the Members section. There is no photo
-// anywhere on this site (DESIGN.md), so initials on the accent palette stand
-// in for one.
+// Circular initial avatars for the Members section. There is no photo anywhere
+// on this site (DESIGN.md), so initials on the accent palette stand in for one.
+//
+// A tight row of initials, and nothing else. It used to spread each member
+// across a full grid track with the name beneath and a role line under that,
+// which was a section's worth of height for a fact — five people, these five —
+// that a reader takes in at a glance and does not come back to. The names live
+// in each circle's accessible name and its tooltip; the one role that a reader
+// actually needs is Junhan's, and that is stated in full in My Role directly
+// below.
 
 // Cycled per position so a team reads as several people rather than one
 // repeated swatch.
@@ -38,6 +46,11 @@ function initialsOf(member) {
 }
 
 export default function Avatars({ team }) {
+  // Junhan's circle lights up as My Role arrives on screen, tying the row of
+  // five to the section that explains which of them he was. Once per visit —
+  // see useSectionReached.
+  const lit = useSectionReached('role')
+
   if (!team?.length) return null
 
   // Tints are handed out before render so the owner can be skipped in the
@@ -54,21 +67,22 @@ export default function Avatars({ team }) {
       {tinted.map(({ member, tint }) => (
         <li
           key={member.name}
-          className={
-            'avatars__item' + (isOwner(member) ? ' avatars__item--owner' : '')
-          }
+          className={'avatars__item' + (isOwner(member) ? ' avatars__item--owner' : '')}
           style={{ '--avatar-tint': tint }}
         >
-          <span className="avatars__circle" aria-hidden="true">
-            {initialsOf(member)}
+          {/* `title` gives the pointer a name, the `sr-only` span gives
+              assistive tech one. With the printed name gone the initials are
+              the only visible label, and two letters are not a name — so the
+              full one has to be reachable both ways rather than either. */}
+          <span
+            className={
+              'avatars__circle' + (isOwner(member) && lit ? ' avatars__circle--lit' : '')
+            }
+            title={member.name}
+          >
+            <span aria-hidden="true">{initialsOf(member)}</span>
+            <span className="sr-only">{member.name}</span>
           </span>
-          <span className="avatars__name">{member.name}</span>
-          {/* Optional, and blank for most people — only whoever carries a
-              title on the team gets a second line. `role` is accepted as an
-              alias so either word works in the data file. */}
-          {(member.title ?? member.role) && (
-            <span className="avatars__role">{member.title ?? member.role}</span>
-          )}
         </li>
       ))}
     </ul>

@@ -40,22 +40,79 @@ const CENTRE_SLOT_PAD = 1 // blank slots kept beyond each end of the run
 // total can never reach the container's boundary however many blanks there
 // are. A single step for everything cannot do both: widen it and the tail
 // escapes, narrow it and the numbers collide.
-const NUM_STEP = 12.8 // % of panel height, between adjacent numbers
-// The first tail step has to clear a full-size number against the first
-// blank, which is a bigger jump than the gaps further out — hence a large
-// first step and a fast decay rather than a gentle ramp.
-const TAIL_STEP = 8.3 // % for the first blank past the numbers
+// The step between adjacent numbers, as a % of the panel's height. This is a
+// *ceiling*, not the value: it is what four decisions get, and it is already
+// the tightest spacing a full-size circle can take against a selected
+// neighbour without touching.
+const NUM_STEP_MAX = 12.8
+// How far from the centre the furthest slot may sit. Every position is
+// relative to the selected circle, so with the *first* decision selected the
+// last one sits a full run below centre — and the run has to end inside the
+// panel. It did not: at seven decisions the fixed step put the last two
+// numbers at 101% and 114%, hanging over the section below. The step now
+// divides this budget by however many numbers there are, so the arc fits any
+// number of decisions by getting tighter rather than by escaping.
+//
+// 46.7 is chosen so that four decisions still resolve to exactly NUM_STEP_MAX
+// and the pages that already existed are pixel-identical.
+const RUN_BUDGET = 46.7
+// The first blank sits further out than the gaps between numbers do: it has
+// to clear a full-size number against a smaller circle. Stated as a ratio of
+// the step rather than as a constant, because the step is no longer one — at
+// four decisions this reproduces the 8.3 it used to be.
+const TAIL_RATIO = 0.649
 const TAIL_DECAY = 0.6 // each further blank advances less than the last
 const BLANK_DECAY = 0.74 // …and is smaller than the last
 const BULGE_X = 54 // px, at the widest point of the oval
-// The furthest any slot can sit from the centre, used to normalise the
-// horizontal sweep. Numbers reach NUM_STEP * numberReach and the tail
-// converges just past that.
-const SPAN_MAX = 46
+// The circles shrink with the step, so a tight run never collides. Below the
+// ceiling the size is derived from the step in CSS — see `--pip-size`, which
+// is a fraction of the arc's own height rather than a measured pixel value,
+// so nothing here has to observe the layout to stay correct.
+const PIP_CEILING = '3rem'
+// Clearance between two adjacent circles, before the selected one grows.
+// Worked back from the worst pair — a selected circle at SELECTED_SCALE
+// against its full-size neighbour — which is what actually decides whether
+// the run reads as separate marks. At 6 it left 3.6px between them.
+const PIP_GAP = 7
+
+// The step for a given number of decisions, and the horizontal sweep that
+// goes with it. The sweep has to be normalised against the run's real extent
+// — a fixed figure would have flattened the ellipse as the step shrank.
+function geometry(count) {
+  const reach = Math.max(1, count - 1)
+  const step = Math.min(NUM_STEP_MAX, RUN_BUDGET / (reach + TAIL_RATIO))
+  const tailStep = step * TAIL_RATIO
+  return { reach, step, tailStep, spanMax: reach * step + tailStep }
+}
+
+// The panel grows for a long run rather than shrinking the circles to fit it,
+// because purely tightening the step got seven decisions into the arc at 27px
+// — small enough that the run read as a scrollbar rather than as the numbered
+// selector it is.
+//
+// But height is not free either. At 5.9rem an item the seven-decision arc ran
+// 661px against a 462px card, and the section was mostly the empty column
+// beside the deck. This is the settled trade: the arc lands near the card's
+// own height, and the circles stay half again the size that was too small.
+// Both goals cannot be fully met at once — a run that always centres its
+// selection needs vertical room in proportion to how long it is and how big
+// its marks are, and with seven decisions two of those three have to give.
+//
+// Four decisions land under the floor and keep the height and the 48px circles
+// they always had.
+const ARC_MIN_REM = 28.5
+const ARC_PER_ITEM_REM = 4.9
+
+function arcHeight(count) {
+  return `${Math.max(ARC_MIN_REM, count * ARC_PER_ITEM_REM).toFixed(2)}rem`
+}
 
 // The selected circle grows as well as centring itself: size is what marks it
 // as chosen while it is moving, before it has arrived anywhere meaningful.
-const SELECTED_SCALE = 1.18
+// 1.14 rather than 1.18: the growth is what sets the tightest clearance in the
+// whole run, and the four points it gives back buy real circle size at every
+// panel height. It still reads as chosen — nothing else in the arc grows.
+const SELECTED_SCALE = 1.14
 
 // Auto-cycle, matching the Tech Stack wheel on the same page so the two
 // sections behave alike.
@@ -70,18 +127,18 @@ const RESUME_MS = 9000
 // is true. `prefers-reduced-motion` drops the transition in CSS.
 // Distance from the selected circle, in % of the panel: a constant step while
 // we are still among the numbers, then a decaying one for the blank tail.
-function offsetToSpan(steps, numberReach) {
+function offsetToSpan(steps, numberReach, step, tailStep) {
   const within = Math.min(steps, numberReach)
-  let span = within * NUM_STEP
+  let span = within * step
   for (let k = 0; k < steps - numberReach; k += 1) {
-    span += TAIL_STEP * TAIL_DECAY ** k
+    span += tailStep * TAIL_DECAY ** k
   }
   return span
 }
 
-function slotStyle(offset, numberReach, selected, blank) {
+function slotStyle(offset, { reach: numberReach, step, tailStep, spanMax }, selected, blank) {
   const steps = Math.abs(offset)
-  const span = offsetToSpan(steps, numberReach)
+  const span = offsetToSpan(steps, numberReach, step, tailStep)
   const beyond = Math.max(0, steps - numberReach)
   // The tail shrinks as it recedes. That is what lets it be packed tightly
   // enough to close the gap at the arc's edge without the dots touching.
@@ -93,7 +150,7 @@ function slotStyle(offset, numberReach, selected, blank) {
   // A true half-ellipse rather than the parabola this used to trace: x is the
   // ellipse's width at this height, so the run reads as one oval edge instead
   // of a slack curve, and the ends tuck in sharply against the boundary.
-  const t = Math.min(1, span / SPAN_MAX)
+  const t = Math.min(1, span / spanMax)
   return {
     top: `${50 + Math.sign(offset) * span}%`,
     left: `${BULGE_X * Math.sqrt(Math.max(0, 1 - t * t))}px`,
@@ -188,7 +245,7 @@ export default function DecisionsSection({ project }) {
   const selectedSlot = CENTRE_SLOT_PAD + at * NUMBERED_EVERY
   // Spacing among the numbers depends only on how many numbers there are, so
   // adding blanks to the tail can never squeeze them.
-  const numberReach = decisions.length - 1
+  const geo = geometry(decisions.length)
 
   const decision = decisions[at]
 
@@ -204,9 +261,18 @@ export default function DecisionsSection({ project }) {
       <div
         className="arc"
         role="tablist"
-        aria-label="Technical decisions"
+        aria-label="Technical decisions and design trade-offs"
         aria-orientation="vertical"
         onKeyDown={onKeyDown}
+        // The circle size rides the step so a tighter run cannot collide.
+        // Expressed against the arc's own height rather than measured, so it
+        // is right on the first paint and stays right through a resize.
+        style={{
+          '--arc-h': arcHeight(decisions.length),
+          '--pip-size': `min(${PIP_CEILING}, calc(var(--arc-h) * ${(
+            geo.step / 100
+          ).toFixed(5)} - ${PIP_GAP}px))`,
+        }}
       >
         {Array.from({ length: totalSlots }, (_, slot) => {
           const numberedIndex =
@@ -221,7 +287,7 @@ export default function DecisionsSection({ project }) {
           // Every circle is placed relative to the selected one, so choosing
           // a number carries the whole crescent with it.
           const isOn = live && numberedIndex === at
-          const style = slotStyle(slot - selectedSlot, numberReach, isOn, !live)
+          const style = slotStyle(slot - selectedSlot, geo, isOn, !live)
           const className = `arc__pip${live ? ' arc__pip--live' : ' arc__pip--blank'}${
             isOn ? ' arc__pip--on' : ''
           }`

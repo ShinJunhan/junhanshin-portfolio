@@ -2,17 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Prism from 'prismjs'
 import BrowserPanel, { splitPath } from '../BrowserPanel.jsx'
 import Markdown from '../Markdown.jsx'
-import { readmesFor } from '../../data/readmes.js'
+import { docsFor } from '../../data/docs.js'
 import { ExternalIcon, LanguageIcon } from '../icons.jsx'
 import EmptySlot from './EmptySlot.jsx'
 import 'prismjs/components/prism-hcl'
 import 'prismjs/components/prism-yaml'
 
-// The Terraform and the README in one panel, a tab each. They were two
-// sections stacked down the page and they answer the same question — show me
-// the actual source — so switching between them beats scrolling between them.
+// The written documents and the source, one panel with a tab each, in the
+// order a reader needs them: README, Runbook, Terraform.
 //
-// The README's language toggle lives in the address bar of its own tab rather
+// That order is the argument the section makes. The README says what the
+// system is, the Runbook says how it is operated, and the Terraform is the
+// evidence underneath both. A project that is only ever deployed can stop at
+// the first and third; one that is meant to be *run* has a middle document,
+// and putting it between them is what makes the difference visible.
+//
+// A document's language toggle lives in the address bar of its own tab rather
 // than on the section heading: it belongs to that document, and on a shared
 // heading it would sit there while Terraform was showing and mean nothing.
 const GRAMMARS = { tf: 'hcl', hcl: 'hcl', tfvars: 'hcl', yml: 'yaml', yaml: 'yaml' }
@@ -52,7 +57,7 @@ function CodeTab({ file, expanded }) {
   )
 }
 
-function ReadmeTab({ active, expanded }) {
+function DocTab({ active, expanded }) {
   const viewportRef = useRef(null)
 
   useEffect(() => {
@@ -70,35 +75,60 @@ function ReadmeTab({ active, expanded }) {
   )
 }
 
+// The written documents this panel can show, in tab order. A project gets a
+// tab for each one it actually has a file for, so adding a runbook to a
+// project is dropping `src/content/<slug>/RUNBOOK.md` into the tree and
+// nothing else.
+//
+//   doc      the file's base name under src/content/<slug>/
+//   label    the tab
+//   expand   what the toggle beneath the panel says
+const DOCUMENTS = [
+  { doc: 'README', label: 'README.md', expand: 'README' },
+  { doc: 'RUNBOOK', label: 'RUNBOOK.md', expand: 'runbook' },
+]
+
 export default function SourceSection({ project }) {
   const files = project.terraform ?? []
-  const variants = useMemo(() => readmesFor(project.slug), [project.slug])
+  // Each document's available translations, resolved once per project.
+  const documents = useMemo(
+    () =>
+      DOCUMENTS.map((entry) => ({ ...entry, variants: docsFor(project.slug, entry.doc) })).filter(
+        (entry) => entry.variants.length > 0
+      ),
+    [project.slug]
+  )
 
-  const [langId, setLangId] = useState(variants[0]?.id)
+  // Language per document, not one shared setting: the README has a Korean
+  // translation and the runbook does not, and a single flag would have left
+  // the toggle claiming KO on a tab that only exists in English.
+  const [langIds, setLangIds] = useState({})
   // One expanded flag per tab id: opening the README should not also open the
   // Terraform, and coming back to a tab should find it as it was left.
   const [expandedIds, setExpandedIds] = useState({})
 
-  const activeVariant = variants.find((v) => v.id === langId) ?? variants[0]
   const toggle = (id) => setExpandedIds((open) => ({ ...open, [id]: !open[id] }))
 
-  if (files.length === 0 && variants.length === 0) {
-    return <EmptySlot>No Terraform code or README added yet.</EmptySlot>
+  if (files.length === 0 && documents.length === 0) {
+    return <EmptySlot>No README, runbook, or Terraform code added yet.</EmptySlot>
   }
 
   const tabs = []
 
-  if (variants.length > 0) {
+  for (const entry of documents) {
+    const { doc, variants } = entry
+    const active = variants.find((v) => v.id === langIds[doc]) ?? variants[0]
+
     tabs.push({
-      id: 'readme',
-      label: 'README.md',
+      id: doc.toLowerCase(),
+      label: entry.label,
       // The variants carry a suffix, not a path — `README.ko.md` is what the
       // Korean file is actually called on disk.
-      address: `README${activeVariant.suffix}.md`,
+      address: `${doc}${active.suffix}.md`,
       // Nothing to toggle between when only one translation exists on disk.
       aside:
         variants.length > 1 ? (
-          <span className="readme__toggle" role="group" aria-label="README language">
+          <span className="readme__toggle" role="group" aria-label={`${doc} language`}>
             <span className="readme__toggle-icon" aria-hidden="true">
               <LanguageIcon />
             </span>
@@ -106,9 +136,9 @@ export default function SourceSection({ project }) {
               <button
                 key={variant.id}
                 type="button"
-                className={`readme__lang${variant.id === activeVariant.id ? ' readme__lang--on' : ''}`}
-                aria-pressed={variant.id === activeVariant.id}
-                onClick={() => setLangId(variant.id)}
+                className={`readme__lang${variant.id === active.id ? ' readme__lang--on' : ''}`}
+                aria-pressed={variant.id === active.id}
+                onClick={() => setLangIds((current) => ({ ...current, [doc]: variant.id }))}
               >
                 {variant.label}
               </button>
@@ -119,20 +149,18 @@ export default function SourceSection({ project }) {
         <button
           type="button"
           className="readme__expand"
-          aria-expanded={!!expandedIds.readme}
-          onClick={() => toggle('readme')}
+          aria-expanded={!!expandedIds[doc]}
+          onClick={() => toggle(doc)}
         >
-          {expandedIds.readme ? 'Collapse README' : 'Show full README'}
+          {expandedIds[doc] ? `Collapse ${entry.expand}` : `Show full ${entry.expand}`}
         </button>
       ),
-      render: () => (
-        <ReadmeTab variants={variants} active={activeVariant} expanded={!!expandedIds.readme} />
-      ),
+      render: () => <DocTab active={active} expanded={!!expandedIds[doc]} />,
     })
   }
 
-  // Terraform after the README: the README is the way in, the source is the
-  // follow-up read.
+  // Terraform last: the documents are the way in, the source is the follow-up
+  // read for anyone who wants to check the claims they make.
   for (const file of files) {
     tabs.push({
       id: file.path,

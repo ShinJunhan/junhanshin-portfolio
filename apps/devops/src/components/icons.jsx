@@ -26,16 +26,6 @@ export const NotionIcon = () => (
   </svg>
 )
 
-// Gauge — "live dashboard".
-export const DashboardIcon = () => (
-  <svg {...base}>
-    <path d="M3.5 17a9 9 0 1 1 17 0" />
-    <path d="M12 17l4.2-4.6" />
-    <circle cx="12" cy="17" r="1.4" />
-  </svg>
-)
-
-// Angle brackets — "browse the code".
 export const CodeIcon = () => (
   <svg {...base}>
     <polyline points="8 7 3 12 8 17" />
@@ -51,12 +41,12 @@ export const ExternalIcon = () => (
   </svg>
 )
 
-// Document with a folded corner — the repo's README.
-export const DocIcon = () => (
+// A plain tick. Marks each line of the summary as something that was actually
+// done. Deliberately just the mark — a circled or boxed version was tried and
+// read as a form control rather than as a note beside a sentence.
+export const CheckIcon = () => (
   <svg {...base}>
-    <path d="M14 3H7a1.5 1.5 0 0 0-1.5 1.5v15A1.5 1.5 0 0 0 7 21h10a1.5 1.5 0 0 0 1.5-1.5V7.5z" />
-    <path d="M14 3v4.5h4.5" />
-    <path d="M9 12.5h6M9 16h4" />
+    <path d="m4.5 12.5 5 5 10-11" />
   </svg>
 )
 
@@ -73,6 +63,17 @@ export const LanguageIcon = () => (
   <svg {...base}>
     <circle cx="12" cy="12" r="9" />
     <path d="M3 12h18M12 3c2.8 2.7 2.8 15.3 0 18M12 3c-2.8 2.7-2.8 15.3 0 18" />
+  </svg>
+)
+
+// A panel beside a page, with an arrow through it — the sidebar itself, and
+// which way it is about to go. The arrow flips in CSS on the collapsed state
+// rather than being a second icon.
+export const PanelIcon = () => (
+  <svg {...base}>
+    <rect x="3" y="4.5" width="18" height="15" rx="1.8" />
+    <path d="M9.5 4.5v15" />
+    <path d="M16.5 9.5 14 12l2.5 2.5" />
   </svg>
 )
 

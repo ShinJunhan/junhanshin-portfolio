@@ -86,11 +86,58 @@ function Note(props) {
   )
 }
 
+// A build pipeline that was never wired up: the stages are drawn, the last
+// connector is not.
+function Pipeline(props) {
+  return (
+    <svg {...COMMON} {...props}>
+      <rect x="5" y="24" width="16" height="16" rx="2.5" />
+      <rect x="26" y="24" width="16" height="16" rx="2.5" />
+      <path d="M21 32h5" />
+      <path d="M42 32h4M50 32h4" />
+      <rect x="47" y="24" width="16" height="16" rx="2.5" strokeDasharray="3 3.4" />
+      <path d="M11 20V13h42v7" strokeDasharray="3 3.4" />
+    </svg>
+  )
+}
+
+// Depth chosen over breadth: four columns sunk to the bottom of the frame
+// rather than a dozen scratched across its top.
+function Depth(props) {
+  return (
+    <svg {...COMMON} {...props}>
+      <path d="M6 14h52" />
+      <path d="M13 14v36M25 14v36M37 14v36M49 14v36" />
+      <path d="M6 50h52" />
+      <path d="M9.5 44h7M21.5 44h7M33.5 44h7M45.5 44h7" />
+    </svg>
+  )
+}
+
+// A failure introduced on purpose: a syringe aimed at a running box.
+function Inject(props) {
+  return (
+    <svg {...COMMON} {...props}>
+      <rect x="6" y="20" width="26" height="24" rx="2.5" />
+      <path d="M6 28h26" />
+      <circle cx="11.5" cy="24" r="1.6" />
+      <path d="M32 32h9" />
+      <path d="m41 32 8-8" />
+      <path d="m45 20 8 8-4 4-8-8z" />
+      <path d="m49.5 15.5 5 5" />
+      <path d="M14 34.5h9M14 39h14" />
+    </svg>
+  )
+}
+
 const GLYPHS = {
   route: Route,
   process: Process,
   channels: Channels,
   branch: Branch,
+  pipeline: Pipeline,
+  depth: Depth,
+  inject: Inject,
   note: Note,
 }
 

@@ -1,33 +1,56 @@
 # Project assets
 
-Diagrams, screenshots, and demo videos, one folder per project slug:
+Screenshots and demo videos, one folder per project slug:
 
 ```
-public/projects/<slug>/architecture.svg
 public/projects/<slug>/screenshot-*.png
 public/projects/<slug>/demo.mp4
 ```
 
 Anything under `public/` is served from the site root, so the path in
-`src/data/projects.js` is `/projects/<slug>/architecture.svg` — no `public`
+`src/data/projects.js` is `/projects/<slug>/screenshot-1.png` — no `public`
 segment.
 
-## Architecture diagram
+Architecture diagrams are **not** files any more; see below.
 
-Export from draw.io as **SVG** where possible: it stays sharp at any zoom and
-is usually smaller than the PNG. Then in the project's entry:
+## Architecture diagrams do not live here
+
+**Draw a diagram in the data file instead of exporting one.** A project's
+`architecture` entry carries a `diagram` — zones, nodes and edges — which
+`src/components/sections/ArchDiagram.jsx` renders in the page's own type and
+palette and the project's accent:
 
 ```js
-architecture: {
-  src: '/projects/hailcast/architecture.svg',
-  alt: 'Describe what the diagram shows, not that it is a diagram',
-  caption: 'Optional line under the image',
-  sourceUrl: 'https://…/architecture.drawio', // optional, links the editable file
-},
+architecture: [
+  {
+    tab: 'Overall architecture',
+    caption: 'Line under the drawing',
+    alt: 'Describe what it shows, not that it is a diagram',
+    diagram: {
+      width: 1000,
+      height: 560,
+      zones: [{ id: 'vpc', label: 'VPC', x: 176, y: 120, w: 640, h: 390, tone: 'region' }],
+      nodes: [{ id: 'alb', label: 'ALB ingress', glyph: 'balancer', x: 490, y: 185 }],
+      edges: [{ from: 'igw', to: 'alb', label: 'HTTPS' }],
+    },
+  },
+]
 ```
 
-Leave `architecture: null` and the section — and its entry in the sticky nav —
-does not render.
+The draw.io exports this replaced were raster images inside an SVG wrapper: up
+to 1.7MB each, blurry at page width, permanently light-mode on a page that has
+a dark theme, invisible to search and to a screen reader, and impossible to
+edit without leaving the repo. Read the header of `ArchDiagram.jsx` for the
+full vocabulary and `archGlyphs.jsx` for the marks.
+
+An image is still supported for a view that genuinely is one — a photo of a
+whiteboard, say — and a project may mix the two:
+
+```js
+{ src: '/projects/<slug>/architecture-01.jpg', alt: '…', tab: '…', caption: '…' }
+```
+
+Leave `architecture: null` and the slot shows its "not added yet" state.
 
 ## Screenshots and demo video
 

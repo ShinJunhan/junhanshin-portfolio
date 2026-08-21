@@ -212,306 +212,99 @@ decisions behind it are recorded below rather than left in the code.
   uses; hover and click still work under it. Below 860px the wheel is not
   rendered at all and the grouped card list takes over: a ring of twenty icons
   is not something you shrink to phone width.
-- **Junhan's colour is reserved.** `--name-pop` — the Hero's flat indigo — is
-  his alone, site-wide: the welcome line, his avatar on every project, and the
-  sidebar wordmark. No teammate tint, category tint, or project accent may use
-  it, and the avatar palette holds no blue at all so no one else's circle can
-  be mistaken for his.
-- **Tech stack shows real vendor logos**, not tinted word-pills — the mark is
-  what a reader recognises when scanning. Laid out as a plain grid with no
-  chip, fill, or border behind each entry: the logo and its name, at a size
-  worth looking at. The logos carry their own brand colors, which is why
-  the project accent stays off this row: two color systems in one strip reads
-  as noise. A label with no logo file yet falls back to a monogram tile.
-- **The page header is centred; everything below it is left-aligned.** The
-  eyebrow, the project title, and the period line centre as one block, and the
-  title is the largest type on the page. This is a deliberate exception to the
-  left edge everything else hangs off — the header and the sticky menu above
-  it are the only centred elements, and they line up with each other. The
-  title also takes `text-wrap: balance`, which is right for a centred block
-  (even line lengths, no lone trailing word) and stays off the left-aligned
-  section headings for the reason given below. Worth knowing: at phone width
-  the longest project title now sets in five lines.
-- **Section headings are large, unbulleted, and left-aligned** — a real
-  heading a clear step under the project title, with the rule between sections
-  doing the separating. The earlier small-label-with-a-square treatment read as
-  a list, not a page. Centred headings were tried and rejected: everything on
-  the page hangs off the same left edge instead. The sticky menu is the one
-  centred element.
-- **Body copy runs the column's full width, ragged-right.** There is no
-  measure cap on prose, and the page title is uncapped too — it uses the width
-  it has and only breaks when it genuinely runs out. No `text-wrap: balance`
-  on headings either: left-aligned, each line should run to the edge before
-  breaking, and balancing would leave the first line short of the width it has.
 
-  The full-width look is the decision and it stands. A measure cap was tried
-  and rejected: at ~68 characters the text block filled a little over half the
-  1180px column and read as a narrow gutter inside a wide page, which is not
-  what this layout is for. Prose runs about 132 characters at 1280px.
+  **Each category label is sized to its own wedge, not to one value for all of
+  them.** It was a flat `--t-micro` in a flat `8rem` box, and both halves were
+  wrong: the box was narrower than the longest label, so "Cloud/Infrastructure"
+  — 146px of text in a 128px box — simply painted outside it, and a size in
+  *pixels* against a wheel measured in *percentages* means a label's share of
+  the radius grows as the wheel shrinks. The same word that fitted at 620px ran
+  from the hub past the pie's edge on a narrower screen.
 
-  **What did change is the justification.** Prose used to be justified with
-  `hyphens: auto`, and Reflection justified without it. Justifying a line this
-  long needs hyphenation to close the gaps it opens, and Chrome's hyphenation
-  broke words at points English does not use — `inf-rastructure`, `recove-ry`,
-  and `ass-igned` in the My Role paragraph, the first thing a recruiter reads.
-  Without hyphenation the gaps arrive instead: a 2.9x word space in Reflection
-  at 1100px and 5.06x on a phone. Ragged-right at the same width has neither
-  problem, so `hyphens` is gone site-wide and Reflection no longer needs its
-  own exception.
+  Both are fixed by solving for the size instead of setting it. The stage is a
+  query container, so `1cqi` is exactly one unit of the 0–100 space the geometry
+  is drawn in — the two coordinate systems become the same one. A label centred
+  on `LABEL_R` is bounded at both ends, by the pie's edge going out and the hub
+  coming in, which gives it 22 units. The face is monospace, so the character
+  count *is* the width in ems and no measurement is needed. `min()` caps the
+  result at the type scale's own value, so a short label never grows and only a
+  label that cannot fit is shrunk, only as far as it must. Every label now holds
+  the same 7.2–28.8 unit allotment at any wheel size; only
+  "Cloud/Infrastructure" is shrunk at all, to 11px.
 
-  Leading carries the width instead of a cap: `1.8` on prose rather than the
-  ~1.65 a narrow measure would want, because a long line needs more room for
-  the eye's return sweep to the start of the next one.
-- **The README and the code frames open collapsed**, scrolling in their own
-  bordered frame, faded at the bottom edge, with a toggle beneath that lifts
-  the cap. **The cap is `clamp(460px, 72vh, 900px)`, not a fixed height**: at
-  460px flat a large monitor got exactly as much reading room as a small
-  laptop, which made these the most scrolled-in things on the page. The floor
-  keeps it no smaller than it was, the ceiling keeps it a framed excerpt rather
-  than something that swallows the page.
-  A 30,000-character document should not push every other section off the page
-  by default. The EN/KO toggle works collapsed or expanded.
-- **A section heading can be named per project** where the generic label is
-  weaker than a specific one — the links row reads "Link to EchoChallenger's
-  Workspace" on that project and "Links" everywhere else.
-- **Key impact metrics are a bento grid**, not a repeated card shape: tile
-  size carries meaning, so the project's headline number takes the room its
-  importance earns and the supporting stats sit around it. Four columns, with
-  one big (2x2) tile, wide (2x1) tiles for numbers that need a qualifying
-  phrase, and squares for the rest. One big plus two squares plus one wide
-  tiles the grid exactly. Which stat is the big one is a per-project decision
-  and lives in the data, never in the template. No comparisons, benchmarks, or
-  citations in this section — the numbers stand on their own.
-- **Links are bare marks with a name beneath**, no pill or border — the same
-  treatment as the tech-stack grid, so the two read as one family. They split
-  across two sections: the repo itself ("<Team> Workspace") at the top of the
-  page, and everything a reader might open alongside the write-up (README,
-  live dashboard, Terraform, the deck) under "Resources" further down.
-- **The workspace links are the first section on a project page**, directly under the
-  title and period line and grouped under Overview in the menu. Where the work
-  actually lives — the repo, the dashboard — is what a reader wants first, not
-  something to find at the bottom.
-- **Reflection stacks its two parts** rather than setting them side by side.
-  Two columns held each to half the width, which made the paragraphs gappy and
-  let the second part — the harder one to write — go unread. It used to be the
-  one place that justified *without* hyphenation; with justification gone
-  site-wide that exception is gone too, and Reflection now sets exactly like
-  every other prose block.
-- **The owner's name is marked in the Members row.** Junhan's avatar already
-  takes `--name-pop`; his *name* takes it too, at a heavier weight than the
-  rest. On a team page where someone else is the lead, the person whose
-  workspace this is should be identifiable without reading the roles. Same
-  reservation rule as everywhere else — no teammate may use that colour.
-- **Every member carries a short title** under their name, not only the lead.
-  Two or three words: the column is about 90px wide, so anything longer wraps
-  to three lines. Junhan's is the short form of the role stated in full under
-  My Role.
-- **Members spread across the full column**, one grid track each
-  (`auto-fit, minmax(9.5rem, 1fr)`, 7.5rem below 860px) rather than a huddle
-  of fixed-width cells on the left. The floor is set so a two-word name stays
-  on one line — "Hwijeong Cho" was wrapping at 84px — and `1fr` spreads the
-  leftover width evenly. The item fills its track at every width; a fixed
-  width in the phone media query re-created the huddle once and was removed.
-- **Members is its own section**, not a row of initials beside the date:
-  circular initial avatars with each name beneath. The page header carries the
-  title and the period only.
-- **Everything that is "a set of things to look at" is a browser panel.**
-  One shell — `components/BrowserPanel.jsx` — carries the tab strip, the
-  address bar and the body, and four sections use it: Architecture &
-  Structure, Recovery Policy, Screenshots, and Code & README. They stay
-  identical by construction rather than by four components agreeing to look
-  the same. The tab carries the short name and the address bar carries the
-  long form, so neither has to compromise.
+  **A size in absolute units inside a proportionally-scaled drawing is a bug
+  waiting for a smaller screen.** If the container scales, the type in it has
+  to scale too, or it silently claims more of the drawing as the drawing gets
+  smaller.
+- **The wheel drifts, slowly, until it is touched.** A continuous
+  counter-rotation — the icon ring one way, the pie and its labels the other,
+  four minutes for a full turn. It is ambient, not informational: the wheel is
+  a static picture of a stack, and this is what keeps it reading as an
+  instrument rather than as a diagram of one. Four minutes is chosen to sit
+  under the threshold at which motion in peripheral vision competes with
+  reading; anything faster is worse than no motion at all.
 
-  **Every panel body is inset by the same pane** (`.code__pane`) and keeps its
-  own border. The code frame used to run edge to edge with no outline while
-  the screenshot panel beside it sat inset — same chrome, two different
-  insides. One inset, applied by the shell, is what keeps them a family.
+  **The pie and its labels turn as one piece**, so a label never slides off the
+  wedge it names — only the ring outside does. Each icon carries a
+  counter-rotation of its own so the logo *and its tooltip* stay upright as the
+  node orbits; both have to be inside it, since an upside-down tooltip is worse
+  than an upside-down logo and rotating the mark alone fixes only one of them.
 
-  **A control that belongs to the active tab goes below the window, not inside
-  it.** The expand toggle was rendered inside the browser and the rounded
-  corner clipped it. Tabs declare a `footer` and the shell places it under the
-  chrome.
-- **Architecture and Folder Structure are one section, a tab each.** They were
-  two stacked sections, which meant scrolling past a full-width diagram to
-  reach the next one and again to reach the tree. They answer the same
-  question — how is this put together — so switching beats scrolling.
-- **The README and Terraform are one section, a tab each — README first.**
-  Same reasoning as the diagrams: both are "show me the actual source". The
-  README leads because it is the way in; the Terraform is the follow-up read.
-  The README's EN/KO toggle moved into its own tab's address bar; on a heading
-  shared with Terraform it would sit there meaning nothing while the Terraform
-  tab was showing.
-- **Screenshots are a tab per scenario, and each pair stacks.** Before above
-  after, both at full column width. Side by side at half the column each shot
-  was too small to see what had changed, which is the only reason both are
-  there. `media.scenarios` in the data is `[{ id, tab, label, before, after }]`
-  — the pairing is explicit rather than inferred from the order of a flat list.
-- **Source code is shown inline through one shared viewer, dressed as a
-  browser window.** The whole thing sits in a bordered, rounded, shadowed
-  frame — `--code-radius: 0.8rem`, a deliberate exception to the site's sharp
-  2px corners, because chrome that is not rounded does not read as a browser.
-  Inside it, top to bottom: a tab strip, an address bar, then the file.
-  - **Tabs carry the file name only.** The full path would not fit and sits
-    in the address bar directly beneath them anyway. The full path is still
-    the tab's `title`, so a hover names it.
-  - **The address bar carries the directory**, with a drawn folder mark, the
-    directory in quiet type and the file name in ink — the split a browser
-    makes between a domain and the rest of a URL, inverted so the specific
-    part is the loud one.
-  - **The selected tab and the address bar share one fill** (`--code-surface`,
-    a wash of the project accent), so the tab appears to hang off the bar as
-    one continuous surface. Its outer bottom corners curve *outward* into the
-    strip through two masked pseudo-elements.
-  - **The strip behind the tabs is `--code-band`, stated per theme** and
-    deliberately darker than the tab surface. Earlier versions tinted the tab
-    without darkening the band, and the silhouette was invisible — the shape
-    only reads when there is something behind it to read against.
-  - An earlier version marked the selected tab with a 2px accent rule along
-    its top edge, which read as a stray line rather than as selection. The bottom fade hints at more content
-  without covering the last line — the body is padded so the gradient lands on
-  empty space at the end of a file. Terraform Code (under Resources) shows the main.tf
-  and links out for the supporting files; Recovery Policy sits with the
-  diagram and the folder tree, because the alert-to-script mapping is a
-  decision worth reading, not a Terraform file. Both are deliberately narrow:
-  a portfolio page shows the files that carry a decision, not the repo.
-- **Folder structure** is the last tab of the Architecture & Structure panel,
-  not a section of its own: the repo layout as a plain monospace tree on the
-  terminal surface (`--terminal-*`, the same tokens the root page's popup
-  uses). It stays dark in both themes — this is literal shell output, and it
-  should read as such rather than following the page.
-- **Four slots always render even when empty** — Architecture Diagram, Folder
-  Structure, Screenshots + Demo Video, README.md. They show a dashed "not added yet"
-  panel rather than disappearing, because they are the easiest sections to
-  overlook while filling a project out. Sections whose absence is meaningful
-  rather than pending (Members on a solo project) still disappear.
-- **Technical Decisions is a crescent selector beside one card, not a list.**
-  Numbered circles run down the **left edge** of the section on a crescent
-  that bulges right at its middle and tucks back at both ends, so the circles
-  at the extremes hang over the section's boundary and read as scalloped tabs
-  rather than as a ring. The numbers sit next to each other with spacing alone
-  between them, with a single faded blank past each end. The run traces a
-  **half-ellipse** — `x` is the oval's width at that height — rather than the
-  parabola it used to, so it reads as one oval edge with the ends tucking in
-  sharply. Blanks *between* the numbers were tried and removed, and a long
-  four-deep tail was tried and cut back: the section was carrying far more
-  height than its content was worth. Picking a number brings it to the
-  **vertical centre** of the section *and grows it* — size is what marks it as
-  chosen while it is still travelling — and carries the whole crescent with
-  it, since every circle is positioned relative to the selected one.
+  **The drift is also, unavoidably, wrong**: it carries the icons off the
+  wedges they belong to, which is the one thing the wheel's layout is for. So
+  the first click anywhere on it snaps everything square and stops the drift
+  for the life of the page — the moment a reader engages, alignment is worth
+  more than atmosphere. Deliberately one-way, unlike the highlight cycle, which
+  comes back after a few quiet seconds: a drift that returned would undo the
+  alignment the reader clicked for. The highlight cycle, the hover tooltips and
+  the click-to-pin all keep working exactly as before, on top of a wheel that
+  is now still.
 
-  **Numbers and blanks are spaced by different rules, and that is the whole
-  trick.** The numbers take a constant step, wide enough to clear a selected
-  circle against its neighbour, and it depends only on how many numbers there
-  are — so adding blanks can never squeeze them. Past the numbers the blanks
-  continue on a *decaying* step and shrink as they go, so the tail converges
-  instead of marching: the arc's edge fills in, and the total can never reach
-  the container's boundary however many blanks are added. One step for
-  everything cannot do both jobs — widen it and the tail escapes the section
-  and covers the next section's text, narrow it and the numbers collide. Both
-  were shipped and both were wrong.
+  **A full-stage rotating layer must not eat the clicks underneath it.** The
+  ring has to cover the whole stage for its rotation to be about the centre,
+  which turned it into a transparent sheet over the pie — and the entire inner
+  circle stopped responding: no slice, no category label, no way to snap the
+  wheel back from anywhere but an icon. It had been a plain static `ul` before
+  the drift was added, so the pie had never needed protecting. Both sheets, the
+  ring and the dial, now pass pointer events straight through; the slices, the
+  labels and the icons take them back individually. **Adding motion to a layer
+  is also a change to what is clickable through it** — check the hit targets
+  underneath, not just the animation.
 
-  **The selected circle's scale rides its own custom property**, not a
-  transform string. The narrow layout has to neutralise `top`/`left` for the
-  flat row, and a blanket `transform: none` there silently took the size boost
-  with it.
-- **The arc cycles on its own**, using the same three pieces of state as the
-  Tech Stack wheel and in the same priority order: an ambient cycle, a pin set
-  by a click, and an idle timer that releases the pin so the section returns to
-  cycling rather than staying frozen on whatever was last clicked. Hovering
-  anywhere over the selector or the card also holds it — the card is long-form
-  text, and swapping it mid-sentence is worse than a wheel changing category.
-  Reduced motion stops the cycle entirely.
+  **Nothing rotates, and that is the settled answer rather than a stopgap.**
+  The wheel's one ambient behaviour is the highlight cycle: one category lit at
+  a time on a timer, previewed on hover, pinned on click, released after a few
+  seconds of quiet.
 
-  The reasoning: four dense trade-off paragraphs stacked as four bordered
-  cards competed with each other and with everything below them. One at a
-  time, chosen deliberately, is the right density. This replaced the bordered
-  `.decision` card and with it the accent `border-left` the detector had
-  always flagged as a side-tab.
-- **The card is inline, and emphatically not a modal.** No overlay, no
-  backdrop, no close button, no focus trap, nothing that takes the arrow keys
-  or the scroll away from the page. The reader can ignore it, scroll past it,
-  or read the rest of the page while it is showing. Keyboard support is a
-  `tablist`: arrows move between numbers, and that handler is bound to the
-  selector, never to the document.
-- **The card is portrait and centred on the section's axis**, stacked
-  title → concept mark → explanation. A hard `aspect-ratio` was tried first and
-  clipped the longer explanations, so the proportion is a consequence of the
-  content rather than a rule imposed on it.
+  A continuous drift was built and rebuilt across several rounds and always
+  broke in the same place, so the reasoning is recorded here to stop anyone
+  re-adding it. A drifting *ring* is fine — icons are round, and a round thing
+  on a turning disc looks the same at every angle. A drifting *dial* is not,
+  because the dial carries the category labels and those labels are **radial**,
+  each set along its own wedge's spoke. On a turning disc they point seven
+  different ways and all change together, which is what reads as text spinning.
 
-  **Every card is the size of the longest decision.** Letting each take its own
-  text's height gave four cards of four different shapes, which is not what a
-  deck looks like. A hidden copy of every decision is stacked in one grid cell
-  behind the live card — `visibility: hidden`, never `display: none`, since a
-  display-none child contributes no height and height is the entire point — so
-  the window ends up as tall as the tallest card and the live and leaving cards
-  fill it. Measuring in JavaScript would work too, and would go stale the
-  moment the copy changed.
+  The textbook repair is to counter-rotate each label against the live rotation
+  so it stays level — one value, read every frame by both the spin and the
+  correction. **That architecture is right and its output is still wrong here,
+  for reasons about this wheel's data rather than about the technique.** Level
+  text has to fit across its wedge, and it has to clear its neighbours as it
+  orbits. Measured on this stack: the one-item Recovery wedge is 16 degrees, 26px
+  of arc for a word needing 58px; and at the label radius **three of the seven
+  neighbour pairs overlap** once the labels are level, with two more inside a few
+  pixels. Neither is recoverable by font size, by wrapping a single word, or by
+  computing the correction more often.
 
-  **The mark's `max-height` is the card's height dial**, not the figure band's
-  `min-height`: the glyph renders at its cap and the band wraps it, so at
-  10.5rem it was taking 189px of every card regardless of how much text the
-  decision had. The band is `flex: 1 1 auto`, so on the cards whose text is
-  shorter than the longest one's the spare height goes to the mark instead of
-  pooling as dead space at the bottom.
+  Radial labels exist precisely because a narrow wedge has depth but no width —
+  and radial labels require a dial that does not turn. With the dial fixed there
+  is no relative motion left for the ring to have either, so the drift went
+  altogether.
 
-  **Card width and section height trade against each other**, and both were
-  measured before choosing. At 23rem the card is a proper 0.74 portrait but the
-  section runs 653px; past 25rem the section stops shrinking — the arc's floor
-  takes over — and the card only gets squarer. 24rem is where the two curves
-  cross: 384x462, a 0.83 portrait, in a 615px section.
-
-- **On the card, the title outranks the explanation.** It was set a step
-  *below* the body text, which read as a caption sitting on top of a paragraph
-  rather than as the name of the decision. The title is `--t-lead`, the card's
-  copy a step down from page prose at `--t-small`. Those copy sizes are scoped
-  to the card so the shared decision classes are untouched elsewhere.
-- **The other decisions sit as grey filler cards fanned behind the live one**
-  — the same idea as the arc's grey filler circles. They are depth only: no
-  content, `aria-hidden`, fanned alternately left and right so the stack sits
-  *behind* the card rather than trailing off one corner. **The fill has to be
-  the grey, not the transparency**: a white ghost at low opacity on a white
-  page is invisible, which is exactly how the first version shipped. The card must not stretch to the arc's row for this to work: the
-  ghosts are `inset: 0` on its box, and a stretched box leaves them standing a
-  head taller than the card they back.
-- **The card carries a trading-card frame** — a second rule inset from the
-  border plus opened corners, both in the project accent. Once the height was
-  allowed to follow the text the proportions stopped reading as a card on
-  their own, so the edge is what carries the idea now. Drawn with two
-  pseudo-elements and layered gradients rather than eight corner nodes.
-- **The whole card travels, not the text inside it.** The border, radius and
-  ground live on the *face*, and the element around it is a clipping viewport
-  with no frame of its own — so a complete card leaves through the top as a
-  complete card rises behind it, through a full card-height of travel. An
-  earlier version kept the frame static and slid only the contents, which read
-  as text moving inside a card that never went anywhere. Depth here is the
-  border alone: the viewport clips, and a drop shadow would be sheared off at
-  its edge. Centring is `justify-self: center` pulled back
-  by half the arc's column and half the gap — centred on its own column alone
-  sat it noticeably right of the page's axis. The comparison line
-  keeps `.decision__chose` / `.decision__over` / `.mark` exactly as they were.
-  The mark is a drawn SVG named by `glyph` in the project's data, so the
-  component holds no per-project knowledge; an unnamed decision gets a neutral
-  default rather than a diagram that pretends to illustrate it.
-- **Changing decisions is a shuffle, not a slide.** The arriving card is dealt
-  off the deck — it starts offset, turned and slightly small, the way a card
-  sits in a spread hand, and settles square; the leaving one is flicked away in
-  the other direction; and the deck riffles behind them, replayed by keying the
-  stack on the selection. Rotation is what makes it read as cards rather than
-  as a panel changing its contents — an earlier straight vertical slide did
-  not, however far it travelled.
-
-  **Position and presence are CSS, not an animation loop.** The circles'
-  positions are written as inline style and eased by a CSS transition, and the
-  arriving card's resting state is its normal style with no `backwards` fill —
-  so a frame that never composites lands everything where it belongs. The
-  first build of this drove both through framer's animation and presence
-  system, and a paused `requestAnimationFrame` left the circles stranded at
-  the previous selection and **three card faces stacked on top of each other**.
-  The leaving card is decoration only: `aria-hidden`, `inert`, and removed on
-  a timer rather than on an animation event, so it cannot outlive its own
-  animation. Both animations drop out under `prefers-reduced-motion`.
-- **Two inline marks in narrative prose.** Backticks render as inline code on
+  **When a fix keeps breaking somewhere new, question whether the thing being
+  fixed should exist.** Three of five rounds on this component went to
+  rotation-state bugs. None of them were bugs in the highlight cycle, the
+  tooltips, the pinning, or the label auto-fit, all of which have worked since
+  the day they were written.- **Two inline marks in narrative prose.** Backticks render as inline code on
   a bordered code surface — identical to what a backtick gets inside the
   rendered README, so the treatment is the same wherever it appears.
   `**text**` renders bold in the *project accent* rather than default black
@@ -527,7 +320,70 @@ decisions behind it are recorded below rather than left in the code.
 - **Sections fade in on scroll**, using the same `Reveal` component as the
   landing page — including its reduced-motion path, which renders the content
   plainly with no animation at all.
-- **Page heading:** the long descriptive project title is the H1, with the
+- **The whole type ladder sits one notch higher than it did, and the desktop
+  heading scale no longer shrinks.** Every step of `--t-*` moved by the same
+  proportion — the floor from 11px to 12px, the reading size from 16.5px to
+  18px — so the hierarchy is unchanged and only the ground under it moved.
+  `--display-scale` above 1101px went from 0.92 to 1.04: the old figure was a
+  deliberate shrink on the assumption the clamps were already generous there,
+  and they were not. It put section headings at 25px under a 50px page title
+  with 15px labels around them, and the page read as a reduction of itself on
+  exactly the screens it is mostly opened on. Section headings are 31.6px now,
+  the title 56.6px. Marks moved with the type rather than being left behind —
+  tech logos 48→53px, the Members avatar 46→51px, the role monogram 56→62px.
+
+  **One place did not take the rise: the calendar's weekday row.** Every other
+  label is free to grow; that one multiplies by seven and then has to fit
+  beside a phase list that must stay the wider column. "Wednesday" at 12px
+  needs 64px of column, which pushed the calendar past the list it exists to
+  support. Held at 11px it needs 59px and the proportion survives. **A hard
+  geometric constraint outranks a global step** — and when a bump is applied
+  everywhere, the thing to go looking for is whatever was already sized by
+  something other than taste.
+- **The sticky menu is centred against the toggle, not against its own box.**
+  The theme toggle is fixed in the top-right corner and is the only object on
+  that side of the strip, which shortens the run the eye reads as the bar. With
+  symmetric padding the entries were centred on the content column and
+  measurably so — and still looked wrong, because that left 279px of air to the
+  left of the first entry against 229px between the last one and the toggle.
+  The bar reserves the toggle's own footprint (`--toggle-zone`) on its right,
+  which evens the two gaps at 234px. **Symmetry against the box is not the same
+  as symmetry against what is in it.**
+
+  The padding underneath is the plain gutter. It used to carry a 3.75rem floor
+  on both sides, whose only job was keeping the entries clear of the toggle;
+  once the toggle had its own reserved zone the floor was dead width, and with
+  the larger entries it was enough to push the bar into a scroll at tablet
+  widths. Below 861px the toggle rides in the strip above the bar rather than
+  on it, so there is nothing to reserve and the compensation is dropped.
+- **The welcome line is three flat colours and no gradient.** "Welcome to" and
+  the apostrophe-s after the name set in body ink; "Junhan" takes the flat
+  indigo the landing page's Hero settles it into; "Workspace" takes the
+  palette's steel. The name is the only saturated colour in the line, and that
+  is what makes it the thing the screen is about — everything else is ink or
+  grey, so it wins on chroma rather than on weight.
+
+  **The gradient had to go, and softening it was not enough.** It was a wash
+  clipped to the paragraph's glyphs, carrying "Welcome to" and the possessive
+  either side of the name. The problem was structural, not a matter of degree:
+  a ramp painted across a paragraph gives every fragment a *different* colour
+  depending on where it happens to sit, and the two characters after the name
+  sat far enough along the ramp to match neither the words before them nor the
+  word after. They read as a typo. Flat ink cannot have that failure mode — the
+  possessive simply belongs to the phrase it is part of. **A gradient across
+  running text colours by position, not by meaning**; where the fragments carry
+  different meanings, that is a coincidence waiting to look like a mistake.
+
+  **"Workspace" is dusty denim** — `--c-denim`, #4A6B8A light and #8CA9C4 dark,
+  a colour with exactly one job on the site and no other user. A neutral grey
+  held the slot first, on the reasoning that only a neutral could never compete
+  with the name beside it; denim is a blue, but a muted one, far enough from
+  `--name-pop`'s vivid blue that the name still wins the line. The base accent
+  was ruled out for the opposite reason: it lifts to #3B82F6 in dark, within a
+  few points of `--name-pop`, and Junhan's colour stays his alone. Measured
+  against the page: ink 11.7:1, name 3.9:1, denim 5.1:1 in light; 15:1, 4.4:1
+  and 7.5:1 in dark — all clear of the 3:1 the 50px display size needs.
+- **Page heading:** the long descriptive project title is the H1, with the- **Page heading:** the long descriptive project title is the H1, with the
   short name — the team's, for team projects — above it as a small
   accent-coloured eyebrow. The eyebrow is what ties the page back to the
   sidebar entry the reader clicked; the sidebar itself keeps the short names.
@@ -536,6 +392,31 @@ decisions behind it are recorded below rather than left in the code.
   `ThemeToggle` component, the same pre-paint script in `index.html`, the same
   `theme` key in localStorage, and tokens redefined under `[data-theme]`. The
   toggle is parked top-right at every width.
+- **The project rail folds away, and it is opt-in.** The pages are dense enough
+  that 284px is worth reclaiming, so a toggle at the rail's top-right corner
+  collapses it and the content column takes the full width. The preference is
+  remembered, but **expanded is always the first-visit state** — a rail that is
+  collapsed before anyone asked hides the site's own table of contents from the
+  one reader who has not learned it yet.
+
+  **Two width tokens, not one.** `--rail-w` is how wide the rail is drawn;
+  `--sidebar-w` is how much room the content column gives up to it. They are the
+  same number until the rail folds, at which point the second goes to zero while
+  the first stays put — so the rail *slides out* rather than narrowing to
+  nothing, which would have reflowed its own list on the way and read as the
+  links collapsing rather than the panel leaving. One value moves the rail and
+  the content margin together and they can never disagree about where the rail
+  ends.
+
+  The control rides at the rail's right edge when open and at the page's own
+  left edge when closed, carried across by that same property, so it reads as
+  one control that stayed put while the panel slid out from behind it. The arrow
+  flips rather than being swapped for a mirrored twin. A folded rail is
+  `visibility: hidden`, which takes it out of the tab order and the
+  accessibility tree at once — a rail nobody can see must not still be a set of
+  links a keyboard can reach. Below the drawer breakpoint the control is hidden
+  entirely: the rail is already a drawer with its own button, and there is no
+  width to reclaim.
 - **Responsive:** the sidebar is a real column above 1100px, narrows to 248px
   through the tablet range, and becomes a drawer behind a hamburger at 860px
   and below. A fixed full-height rail is not a layout a phone can carry, so it
@@ -549,7 +430,13 @@ decisions behind it are recorded below rather than left in the code.
   wayfinding device on a long page misreport position.
 - **Sticky menu:** collapses the sections into five category entries —
   Workspace, Overview, Tech & Architecture, Demo, Resources, Reflection —
-  rather than listing every heading, centred in the content column. Workspace
+  rather than listing every heading, centred in the content column.
+  Tech & Architecture now covers six sections in page order: the stack, the
+  architecture panel, the implementation timeline, the recovery config, the
+  decisions and trade-offs, and the cost. Adding to a group means adding to the
+  end of it or inserting where page order already puts the section — a group
+  that is not contiguous makes the only wayfinding device on a long page
+  misreport position. Workspace
   is first and lands on the page header itself, since Overview deliberately
   skips past the title and repo links to My Role and there was otherwise no way
   back up. Tech & Architecture

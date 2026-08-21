@@ -6,7 +6,22 @@ import NotFound from './components/NotFound.jsx'
 import { findProject } from './data/projects.js'
 import { useHashRoute } from './lib/useHashRoute.js'
 import ThemeToggle from './components/ThemeToggle.jsx'
-import { MenuIcon } from './components/icons.jsx'
+import { MenuIcon, PanelIcon } from './components/icons.jsx'
+
+// Whether the project rail is folded away. Opt-in and remembered, but never
+// the starting state: a first visit shows the projects, because a sidebar
+// that is collapsed before anyone asked for it hides the site's own table of
+// contents from the one reader who has not learned it yet.
+const SIDEBAR_KEY = 'sidebar'
+
+function readCollapsed() {
+  try {
+    return window.localStorage.getItem(SIDEBAR_KEY) === 'collapsed'
+  } catch {
+    // Private mode, or storage disabled. The rail simply does not remember.
+    return false
+  }
+}
 
 export default function App() {
   const slug = useHashRoute()
@@ -17,6 +32,18 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const closeDrawer = () => setDrawerOpen(false)
 
+  // Desktop only — below the drawer breakpoint the rail is already a drawer
+  // and has its own control.
+  const [collapsed, setCollapsed] = useState(readCollapsed)
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_KEY, collapsed ? 'collapsed' : 'open')
+    } catch {
+      // Nothing to do: the preference just does not survive the session.
+    }
+  }, [collapsed])
+
   useEffect(() => {
     if (!drawerOpen) return
     const onKey = (event) => event.key === 'Escape' && setDrawerOpen(false)
@@ -25,7 +52,26 @@ export default function App() {
   }, [drawerOpen])
 
   return (
-    <div className="workspace">
+    // `--sidebar-w` collapses to zero on this element, and both the rail's own
+    // width and the content column's left margin read it — so one value moves
+    // the two of them together and they can never disagree about where the
+    // rail ends.
+    <div className="workspace" data-sidebar={collapsed ? 'collapsed' : 'open'}>
+      {/* Rides at the rail's right edge when it is open and at the page's own
+          left edge when it is not, carried across by the same custom property
+          that moves the rail. One control in one place, rather than a collapse
+          button that disappears with the thing it collapsed. */}
+      <button
+        type="button"
+        className="sidebar-toggle"
+        aria-expanded={!collapsed}
+        aria-controls="workspace-sidebar"
+        onClick={() => setCollapsed((value) => !value)}
+      >
+        <PanelIcon />
+        <span className="sr-only">{collapsed ? 'Show projects' : 'Hide projects'}</span>
+      </button>
+
       <button
         type="button"
         className="drawer-toggle"

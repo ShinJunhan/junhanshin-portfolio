@@ -24,6 +24,12 @@
   /* A seventh hue, so a six-person team never repeats and the tech wheel has
      one colour per category. Deliberately not a blue. */
   --c-violet: #5B4A66;
+  /* Dusty denim. Not a project accent and not in the wheel's rotation — it has
+     exactly one job, which is the last word of the welcome line. A muted,
+     greyed blue: near enough to the site's indigo family to belong, far enough
+     from --name-pop's vivid blue that it cannot be mistaken for Junhan's
+     colour, which stays his alone. */
+  --c-denim: #4A6B8A;
 
   /* Fallback for anything rendered outside a project page. */
   --accent: var(--accent-base);
@@ -75,21 +81,21 @@
      every width while the heading clamps shrink, so without this a section
      heading lands only 1.23x the body size on a phone, which does not read as
      a hierarchy at all. The narrow end needs proportionally more. */
-  --display-scale: 1.14;
+  --display-scale: 1.2;
 
   /* Type scale. Role names, not values — nothing outside this block states a
      font-size in rem. The steps are deliberately coarse: the previous system
      carried 33 distinct sizes, eight of them inside a 1.44px band, which is
      below the threshold at which anyone perceives a difference. 11px is the
      floor for any text with a job to do. */
-  --t-micro: 0.6875rem;  /* 11px — smallest functional label; hard floor */
-  --t-mini: 0.71875rem;  /* 11.5px — mono metadata, tabs, tooltips */
-  --t-tiny: 0.78125rem;  /* 12.5px — captions, code, secondary detail */
-  --t-small: 0.84375rem; /* 13.5px — UI labels, nav, buttons */
-  --t-base: 0.9375rem;   /* 15px — UI default */
-  --t-prose: 1.03125rem; /* 16.5px — reading size; Newsreader sets small */
-  --t-lead: 1.125rem;    /* 18px — lede, sub-headings */
-  --t-brand: 1.375rem;   /* 22px — the sidebar wordmark */
+  --t-micro: 0.75rem;    /* 12px — smallest functional label; hard floor */
+  --t-mini: 0.78125rem;  /* 12.5px — mono metadata, tabs, tooltips */
+  --t-tiny: 0.84375rem;  /* 13.5px — captions, code, secondary detail */
+  --t-small: 0.90625rem; /* 14.5px — UI labels, nav, buttons */
+  --t-base: 1rem;        /* 16px — UI default */
+  --t-prose: 1.125rem;   /* 18px — reading size; Newsreader sets small */
+  --t-lead: 1.25rem;     /* 20px — lede, sub-headings */
+  --t-brand: 1.5rem;     /* 24px — the sidebar wordmark */
 
   /* Deliberately sharp. Not zero — a hairline of radius keeps a 1px border
      from looking ragged where it turns the corner — but far short of the
@@ -103,7 +109,14 @@
   --radius-card: 5px;
 
   /* Layout */
-  --sidebar-w: 284px;
+  /* Two values, not one. `--rail-w` is how wide the rail itself is drawn;
+     `--sidebar-w` is how much room the content column gives up to it. They are
+     the same number until the rail is folded away, at which point the second
+     goes to zero while the first stays put — a rail that narrowed to nothing
+     would reflow its own list on the way out, which reads as the links
+     collapsing rather than as the panel leaving. */
+  --rail-w: 284px;
+  --sidebar-w: var(--rail-w);
   /* Widened from 880px: these pages carry diagrams, screenshot grids, and
      metric rows, which all want more room than a pure reading measure. Prose
      inside them is still held to its own `ch` limits so lines stay readable. */
@@ -112,6 +125,11 @@
   /* Read back by SectionNav to place the scroll-spy boundary, so this value
      is the single source of truth for the sticky bar's height. */
   --section-nav-h: 52px;
+  /* How much of the top-right corner the fixed theme toggle occupies — its own
+     width plus the offset it sits at. The sticky menu reserves this on its
+     right so the entries centre in the room the toggle leaves rather than in
+     the room it does not. */
+  --toggle-zone: 3.2rem;
 
   /* Terminal surface — the folder tree. Same values the root app's popup
      uses, and dark in both themes: this is literal terminal output, so it
@@ -126,23 +144,20 @@
      colour there, not a gradient, and it does not change with the theme. */
   --name-pop: rgb(58, 125, 214);
   /* The welcome line's sweep, built from the indigo palette above. */
-  --welcome-gradient: linear-gradient(
-    100deg,
-    #1F2E44 0%,
-    #3E5C89 45%,
-    #6B86B4 100%
-  );
-
   --shadow-card: 0 4px 16px rgba(31, 46, 68, 0.07);
   --scrim: rgba(15, 21, 31, 0.42);
 
   color-scheme: light;
 }
 
-/* Headings hold one face at every width; only their size ratio moves. */
+/* Headings hold one face at every width; only their size ratio moves. The
+   desktop figure was 0.92 — a deliberate shrink, on the assumption that the
+   clamps were already generous there. They were not: it put section headings
+   at 25px under a 50px title, and the page looked like a reduction of itself
+   on exactly the screens it is mostly opened on. */
 @media (min-width: 1101px) {
   :root {
-    --display-scale: 0.92;
+    --display-scale: 1.04;
   }
 }
 
@@ -165,13 +180,9 @@
   --c-steel: #9AA6B2;
   --c-forest: #6BAA88;
   --c-violet: #A997BC;
-
-  --welcome-gradient: linear-gradient(
-    100deg,
-    #F1F5FC 0%,
-    #9FBBE4 45%,
-    #6B86B4 100%
-  );
+  /* Lifted like the rest, and kept dusty: the chroma stays low so it does not
+     drift toward either --name-pop or --c-indigo on a dark ground. */
+  --c-denim: #8CA9C4;
 
   --terminal-bg: #222C3B;
   --terminal-border: #465569;
@@ -246,9 +257,77 @@ button:focus-visible {
   min-height: 100dvh;
 }
 
+/* Folded away. `--sidebar-w` is redefined here rather than on each element,
+   because the rail's own width and the content column's left margin both read
+   it — one value moves the two together and they can never disagree about
+   where the rail ends. The pages are dense enough that the 284px is worth
+   reclaiming; it is opt-in, remembered, and never the starting state. */
+.workspace[data-sidebar='collapsed'] {
+  --sidebar-w: 0px;
+}
+
 .content {
   margin-left: var(--sidebar-w);
   min-height: 100dvh;
+  transition: margin-left 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* Rides at the rail's right edge while it is open and at the page's own left
+   edge once it is not, carried across by the same property that moves the
+   rail — so it reads as one control that stayed put while the panel slid out
+   from behind it. `max()` is what keeps it on screen at zero width. */
+.sidebar-toggle {
+  position: fixed;
+  top: 0.7rem;
+  left: max(0.65rem, calc(var(--sidebar-w) - 3.1rem));
+  z-index: 75;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: left 0.32s cubic-bezier(0.33, 1, 0.68, 1), color 0.2s ease,
+    background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.sidebar-toggle svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  transition: transform 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+/* The arrow turns to face the way the rail will go, rather than the icon being
+   swapped for a mirrored twin. */
+.workspace[data-sidebar='collapsed'] .sidebar-toggle svg {
+  transform: scaleX(-1);
+}
+
+.sidebar-toggle:hover {
+  color: var(--ink);
+  background: var(--bg-alt);
+  border-color: var(--border);
+}
+
+/* Below the drawer breakpoint the rail is already a drawer with its own
+   button, and there is no width to reclaim by folding it. */
+@media (max-width: 860px) {
+  .sidebar-toggle {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content,
+  .sidebar,
+  .sidebar-toggle,
+  .sidebar-toggle svg {
+    transition: none;
+  }
 }
 
 /* ---------- Sidebar ---------- */
@@ -257,11 +336,22 @@ button:focus-visible {
    strip (50), the drawer button (60), the scrim (65), the sidebar (70). The
    open drawer covers the button that opened it — its own close button takes
    over from there. */
+/* Slides out rather than shrinking: a rail narrowing to nothing reflows its
+   own contents on the way, which reads as the list collapsing rather than the
+   panel leaving. `visibility` takes it out of the tab order and the
+   accessibility tree at the same time, so a folded rail is not a set of links
+   a keyboard can still reach but nobody can see. */
+.workspace[data-sidebar='collapsed'] .sidebar {
+  transform: translateX(-100%);
+  visibility: hidden;
+}
+
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 70;
-  width: var(--sidebar-w);
+  width: var(--rail-w);
+  transition: transform 0.32s cubic-bezier(0.33, 1, 0.68, 1), visibility 0.32s;
   height: 100dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -480,33 +570,42 @@ button:focus-visible {
   text-align: center;
 }
 
-/* One gradient painted across the whole phrase and clipped to the glyphs, so
-   it runs continuously from "Welcome to" through "'s Workspace" — the name in
-   the middle opts out of it rather than splitting it into two sweeps.
-   `inline-block` so the painted box hugs the text instead of spanning the
-   whole column, which would leave most of the ramp off the letters. */
+/* Three flat colours across one line, and no gradient at all. There was a wash
+   clipped to the glyphs, carrying "Welcome to" and the apostrophe-s after the
+   name. It had to go for a reason the softening could not fix: a ramp painted
+   across the paragraph gives every fragment a *different* colour depending on
+   where it happens to sit, and the two characters after the name sat far
+   enough along it to match neither the words before them nor the word after.
+   They read as a mistake. Flat ink cannot have that problem — the possessive
+   simply belongs to the phrase it is part of. */
 .welcome__message {
-  display: inline-block;
   margin: 0;
   font-family: var(--font-header);
   font-weight: var(--display-weight);
   font-size: calc(clamp(1.9rem, 1.2rem + 3.2vw, 3.4rem) * var(--display-scale));
   letter-spacing: var(--display-track);
   line-height: var(--display-lh);
-  background-image: var(--welcome-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
   overflow-wrap: anywhere;
 }
 
-/* The name interrupts the sweep: `text-fill-color` overrides the clipped
-   background for this span only, so it lands as the Hero's flat indigo while
-   the gradient carries on either side of it. */
+/* The name is the one thing on this screen that has to be remembered, so it
+   takes the only saturated colour in the line — the same flat indigo the
+   landing page's Hero settles it into, reserved for him site-wide. Everything
+   else is ink or grey, which is what leaves it the loudest thing here. */
 .welcome__name {
   color: var(--name-pop);
-  -webkit-text-fill-color: var(--name-pop);
+}
+
+/* Dusty denim — its own colour, used nowhere else on the site. A neutral grey
+   held this slot first, on the reasoning that only a neutral could never
+   compete with the name beside it; denim is a blue, but a muted one, and it
+   sits far enough from --name-pop's vivid blue that the name still wins the
+   line. The base accent was ruled out for the opposite reason: it lifts to
+   #3B82F6 in dark, within a few points of --name-pop, and Junhan's colour
+   stays his alone. */
+.welcome__where {
+  color: var(--c-denim);
 }
 
 .welcome__hint {
@@ -595,75 +694,121 @@ button:focus-visible {
   color: var(--text-secondary);
 }
 
-/* ---------- Members ---------- */
+/* ---------- Members (page header) ---------- */
 
-/* Its own section now, so the circles get room and each carries its name
-   rather than relying on a tooltip nobody opens. */
+/* Part of the header block, directly under the period line — not a section. It
+   had a heading, a divider and an anchor of its own, which made a row of five
+   circles look like something to read rather than one more fact about the
+   project, alongside the title and the dates.
+
+   Centred, because the header block is: the eyebrow, the title and the period
+   line all centre, and the row has to sit on the same axis or the header stops
+   being one block. This is the only centred content on the page and the row
+   joins it rather than becoming an exception to it. */
 .avatars {
   list-style: none;
-  margin: 0;
+  margin: 0.85rem 0 0;
   padding: 0;
-  /* A track per member across the full column rather than a huddle of 84px
-     cells on the left. The floor is wide enough for a two-word name to stay
-     on one line — "Hwijeong Cho" was wrapping — and `1fr` then spreads the
-     leftover width evenly, so five members occupy the measure they are given
-     instead of a third of it. */
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr));
-  gap: 2rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
 }
 
 .avatars__item {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  width: 100%;
 }
 
+/* 28px. At 40 it still read as a component; at header scale it is a caption in
+   circles, and the names it would need room for are in the tooltip and the
+   screen-reader text rather than on the page. */
 .avatars__circle {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--avatar-tint);
   color: #FFFFFF;
   font-family: var(--font-mono);
-  font-size: var(--t-small);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  /* The tooltip is the only way to a name from the pointer, so the cursor has
+     to say there is something to hover for. */
+  cursor: help;
 }
 
-/* --name-pop is Junhan's colour site-wide, and his avatar already takes it.
-   His name takes it too: on a team page where someone else is the lead, the
-   owner of the workspace should be identifiable at a glance. */
-.avatars__item--owner .avatars__name {
-  color: var(--name-pop);
-  font-weight: 700;
+/* Junhan's circle keeps --name-pop, which is the whole reason the row can lose
+   its names and still say which one is his: it is the only blue in a row of
+   warm and green, by construction. See AVATAR_TINTS in components/Avatars.jsx.
+   A ring picks him out further without spending a second colour. */
+.avatars__item--owner .avatars__circle {
+  box-shadow: 0 0 0 1.5px var(--bg), 0 0 0 3px var(--name-pop);
 }
 
-.avatars__name {
-  font-size: var(--t-small);
-  font-weight: 500;
-  line-height: 1.35;
-  text-align: center;
-  color: var(--text-primary);
-  /* Only break a name when it genuinely cannot fit: the track is sized so a
-     normal two-word name never has to. */
-  overflow-wrap: normal;
-  font-family: var(--font-heading);
+/* Fires once, the first time My Role reaches the middle of the viewport — see
+   lib/useSectionReached.js. The row of five names and the section that says
+   which of them he was are the same fact stated twice, and nothing otherwise
+   connected them; this is what makes the reader look back up.
+
+   Slow on purpose. The glow gathers for most of a second before the circle
+   moves at all, peaks once, and takes another second to disperse. A short
+   sharp pop reads as a rendering glitch — something the page did *to* you —
+   where a slow bloom reads as the page pointing at something. It can afford
+   the time precisely because it only ever happens once.
+
+   Two shadows: a soft bloom that grows out of the circle's own edge, and a
+   ring that expands past it and fades. Both carry blur or spread and a real
+   size progression rather than sitting as a static halo. */
+@keyframes avatar-pop {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--avatar-tint) 0%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--avatar-tint) 0%, transparent);
+  }
+  14% {
+    transform: scale(1.02);
+    box-shadow:
+      0 0 8px 1px color-mix(in srgb, var(--avatar-tint) 18%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--avatar-tint) 0%, transparent);
+  }
+  32% {
+    transform: scale(1.07);
+    box-shadow:
+      0 0 18px 3px color-mix(in srgb, var(--avatar-tint) 38%, transparent),
+      0 0 0 3px color-mix(in srgb, var(--avatar-tint) 26%, transparent);
+  }
+  /* The one moment the circle actually moves. */
+  50% {
+    transform: scale(1.24);
+    box-shadow:
+      0 0 30px 6px color-mix(in srgb, var(--avatar-tint) 58%, transparent),
+      0 0 0 9px color-mix(in srgb, var(--avatar-tint) 20%, transparent);
+  }
+  66% {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 26px 5px color-mix(in srgb, var(--avatar-tint) 40%, transparent),
+      0 0 0 17px color-mix(in srgb, var(--avatar-tint) 11%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--avatar-tint) 0%, transparent),
+      0 0 0 30px color-mix(in srgb, var(--avatar-tint) 0%, transparent);
+  }
 }
 
-/* Only the members who carry one — a lead, say — get this second line. */
-.avatars__role {
-  margin-top: -0.35rem;
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  letter-spacing: 0.04em;
-  line-height: 1.35;
-  text-align: center;
-  color: var(--accent);
+.avatars__circle--lit {
+  animation: avatar-pop 2.6s cubic-bezier(0.33, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatars__circle--lit {
+    animation: none;
+  }
 }
 
 /* ---------- Empty section slot ---------- */
@@ -694,19 +839,31 @@ button:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 
-/* Centred in the content column. `safe center` rather than plain `center`:
-   when the entries do overflow — a phone — plain centring pushes the first
-   one off the scrollable start edge where it can never be reached, while
-   `safe` falls back to start alignment at exactly that point.
-   Padding is symmetric so the centring stays true, and wide enough on both
-   sides to clear the fixed theme toggle at the top right. */
+/* Centred in the room the toggle leaves, not in the whole bar. `safe center`
+   rather than plain `center`: when the entries do overflow — a phone — plain
+   centring pushes the first one off the scrollable start edge where it can
+   never be reached, while `safe` falls back to start alignment at exactly that
+   point.
+
+   The padding is deliberately *asymmetric*: the right side carries the fixed
+   theme toggle's footprint on top of the base gutter. With equal padding the
+   entries were centred on the content column and measurably so — but the
+   toggle is the only object on that side of the strip, and it shortened the
+   run the eye reads as the bar. That left 279px of air to the left of the
+   first entry against 229px between the last one and the toggle, and a 50px
+   difference at that scale reads as "not centred" even though the arithmetic
+   says otherwise. Reserving the toggle's own width on the right evens the two
+   gaps. Symmetry against the box is not the same as symmetry against what is
+   in it. */
 .section-nav__bar {
   display: flex;
   align-items: center;
   justify-content: safe center;
   gap: 0.4rem;
   height: 100%;
-  padding: 0 max(var(--gutter), 3.75rem);
+  padding-block: 0;
+  padding-left: var(--gutter);
+  padding-right: calc(var(--gutter) + var(--toggle-zone));
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -759,6 +916,35 @@ button:focus-visible {
   opacity: 1;
 }
 
+/* Below the widest layout the content column is narrower but the entry list is
+   the same length, and at seven entries it no longer fits: the bar needed 829px
+   of a 776px column and fell back to scrolling. The entries tighten rather than
+   the list shortening — the spacing between them is the cheapest thing in the
+   bar, and a menu that scrolls is a menu whose last entry nobody finds. */
+@media (max-width: 1100px) {
+  .section-nav__bar {
+    gap: 0.2rem;
+    /* The toggle's reserved zone goes too. It exists to centre the entries
+       against the toggle, and that only means anything while there is empty
+       space either side of them to centre *in* — here the entries nearly fill
+       the bar, so the reservation was 51px of dead width buying an optical
+       adjustment nobody could see, at the cost of the menu fitting at all. */
+    padding-right: var(--gutter);
+  }
+  /* Spacing only — the entries keep their type size. Reclaiming the toggle's
+     zone is what actually bought the room; dropping a type step on top of it
+     was measured afterwards and turned out to be spending legibility on
+     headroom that was already there. */
+  .section-nav__item {
+    padding: 0 0.35rem;
+  }
+  .section-nav__item::after {
+    left: 0.35rem;
+    right: 0.35rem;
+  }
+}
+
+
 /* ---------- Sections ---------- */
 
 .project__sections {
@@ -795,7 +981,7 @@ button:focus-visible {
   /* A real heading rather than a labelled list item — a clear step under the
      project title, and a clear step over body copy. No bullet: the rule
      between sections already separates them. */
-  font-size: calc(clamp(1.3rem, 1.1rem + 0.9vw, 1.7rem) * var(--display-scale));
+  font-size: calc(clamp(1.45rem, 1.15rem + 1.05vw, 1.9rem) * var(--display-scale));
   letter-spacing: var(--display-track);
   line-height: var(--display-lh);
   color: var(--ink);
@@ -912,55 +1098,45 @@ button:focus-visible {
 }
 
 .bento__abbr {
-  position: relative;
   border-bottom: 1px dotted var(--text-secondary);
   cursor: help;
 }
 
-/* Appears immediately on hover or focus, unlike the browser's own tooltip.
-   Centred over the label and allowed to run wider than its tile — the grid
-   does not clip, and the hovered tile is lifted above its neighbours.
-   The cap is the tile's own width, never more. Centred on the tile, anything
-   wider overhangs by half the difference, and on the last column that
-   overhang becomes the document's scroll width. Two earlier fixed caps (15rem,
-   then 11rem) each held until the next layout change moved the column. */
+/* Hangs off the cursor, in the viewport's own coordinates — it is portalled to
+   `document.body`, so it has no ancestor to be positioned against and no box to
+   overflow out of. Anchored above the *tile* it used to sit centimetres from
+   the word being pointed at, floating over the row above; on the top row it
+   covered the section heading.
+
+   `clamp` keeps it on screen without measuring anything: the left edge cannot
+   go past the viewport minus the tooltip's own maximum width, and cannot come
+   in nearer than the gutter on the other side. A near-edge tooltip stops
+   rather than being clipped. Because it is fixed, it can never add to the
+   document's scroll width either — which is what the old absolute version had
+   to cap its width to avoid. */
 .bento__tip {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.45rem);
-  transform: translateX(-50%);
-  z-index: 3;
+  position: fixed;
+  left: clamp(0.5rem, calc(var(--tip-x) + 0.95rem), calc(100vw - 17rem));
+  top: min(calc(var(--tip-y) + 1.05rem), calc(100vh - 4.5rem));
+  z-index: 60;
   width: max-content;
-  max-width: min(11rem, 100%);
-  overflow-wrap: anywhere;
-  padding: 0.3rem 0.55rem;
+  max-width: 16rem;
+  overflow-wrap: normal;
+  padding: 0.35rem 0.6rem;
   border-radius: var(--radius-sm);
   background: var(--ink);
   color: var(--bg);
   font-family: var(--font-mono);
   font-size: var(--t-mini);
   font-weight: 500;
-  line-height: 1.4;
-  /* The label above is uppercase; this is a sentence and must not inherit
-     it. Nor may the sr-only expansion — some screen readers spell all-caps
-     out letter by letter. */
+  line-height: 1.45;
+  /* The label above is uppercase; this is a sentence and must not inherit it.
+     Nor may the sr-only expansion — some screen readers spell all-caps out
+     letter by letter. */
   text-transform: none;
   letter-spacing: 0;
-  text-align: center;
-  opacity: 0;
+  text-align: left;
   pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-
-.bento__abbr:hover .bento__tip,
-.bento__abbr:focus-visible .bento__tip {
-  opacity: 1;
-}
-
-/* Without this the tooltip would slide under the tile to its right. */
-.bento__tile:has(.bento__abbr:hover),
-.bento__tile:has(.bento__abbr:focus-visible) {
-  z-index: 2;
 }
 
 .bento__tile {
@@ -1080,8 +1256,8 @@ button:focus-visible {
 .tech__mark {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 48px;
+  width: 53px;
+  height: 53px;
   flex-shrink: 0;
 }
 
@@ -1115,24 +1291,205 @@ button:focus-visible {
   font-family: var(--font-label);
 }
 
+/* ---------- Tech stack: wheel + tool notes ---------- */
+
+/* The wheel to the left, the reasoning beside it. Centred alone it left half
+   the section empty and answered only "what", never "why any of it". The wheel
+   keeps every bit of its behaviour — the drift, the ambient highlight, the
+   hover tooltips, the click-to-pin — because only the box around it moved.
+
+   The wheel column is sized to the wheel, which is a square with its own
+   max-width, so the notes take whatever is left rather than the two splitting
+   the row evenly. */
+.stack-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  /* Wider than the page's usual column gap. Two dense things — a wheel of
+     twenty marks and a list of four questions — sitting at the normal distance
+     read as one crowded block; the gap is what separates them into a diagram
+     and its commentary. */
+  gap: clamp(2.25rem, 5vw, 4.5rem);
+  /* Both columns start on the same line. The notes column reserves the height
+     of its own fully-expanded state, so it is the taller of the two — centring
+     the wheel against it pushed the wheel down the page and left the panel
+     looking as though it floated above it. Aligned to the start they read as
+     two columns of one section.
+
+     `start` is also what keeps the panel still: it no longer needs to stretch
+     to reserve room, because the hidden full-height copy inside it does that. */
+  align-items: start;
+}
+
+.stack-layout--wheel-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Left-aligned in its column rather than centred in it: the notes beside it
+   read as a column of text starting at a left edge, and a wheel floating in
+   the middle of its own half would leave a gutter between the two that belongs
+   to neither. */
+.stack-layout:not(.stack-layout--wheel-only) .wheel {
+  justify-content: flex-start;
+}
+
+/* Below the wheel's breakpoint the notes follow the grouped card list instead
+   of sitting beside a wheel, so they need their own separation from it. */
+.stack-groups + .stack-notes {
+  align-self: auto;
+  margin-top: clamp(1.5rem, 4vw, 2rem);
+}
+
+/* The wheel is the taller column, so the section's height is set by it and the
+   list opens *inside* a box that does not move — the same arrangement that
+   keeps Implementation Steps still while a phase slides open. Two things had to
+   change for that to hold: the row anchors to the top of its column instead of
+   being centred in it, and the column is given the row's full height to grow
+   into.
+
+   Centred was the bug the reader was seeing. Every time a panel opened the list
+   grew, and staying centred meant the whole thing shifted *up* by half of what
+   it grew — so the row above the one just clicked moved out from under the
+   cursor. Measured: opening the second of four rows moved the two rows above
+   it up by 56px — half of what the panel added.
+
+   The column also reserves the height of the fully-expanded list, through a
+   hidden copy of it stacked in the same grid cell — so the section's boundary
+   is fixed at its largest state and nothing an opening panel does can move it.
+   The alternative was shrinking the type until everything fitted, which made
+   the section stable by making it harder to read.
+
+   Implementation Steps was already right for the same reason and it is why that
+   one reads as stable: its wrapper is a plain flex column with no justification
+   and its grid aligns to `start`, so a panel opening only ever pushes what is
+   below it. */
+.stack-notes {
+  justify-content: flex-start;
+}
+
+/* The live list and the hidden full-height copy share one cell. */
+.disclosures__stack {
+  display: grid;
+}
+
+.disclosures__stack > * {
+  grid-area: 1 / 1;
+}
+
+/* Laid out, not painted — `visibility` rather than `display`, because a
+   display-none child contributes no height and height is the whole job. */
+.disclosures--reserve {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* The mark the wheel shows for this tool, at the size a list row can carry.
+   Borrowed rather than redrawn: recognition is the whole point, and a second
+   icon for the same tool two inches from the first would defeat it. */
+.tool-note__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+.tool-note__icon img {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+}
+
+/* The same monogram the wheel falls back to for a tool with no logo on disk,
+   so the pair still matches. */
+.tool-note__initial {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Set like a phase's name — this is the same row, and the two sections should
+   not disagree about how a thing you can open looks. It spent a version a step
+   smaller, to make the fully-expanded list fit inside the wheel's height; the
+   column reserves that height outright now, so the size no longer has to pay
+   for the stability. */
+.tool-note__question {
+  font-family: var(--font-heading);
+  font-size: var(--t-lead);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  transition: color 0.25s ease;
+}
+
+.disclosure--open .tool-note__question {
+  color: var(--accent);
+}
+
+/* A tool row is shorter than a phase row: no date range to clear, and four of
+   them beside a wheel rather than four across a column. */
+.stack-notes .disclosure__toggle {
+  padding: 1rem 0.2rem;
+}
+
+.stack-notes .disclosure__panel p {
+  padding: 0 0.2rem 1.1rem calc(0.2rem + 2.9rem);
+}
+
+/* Through the tablet range the notes go under the wheel, which recentres —
+   two columns here would put the sentences on a measure too narrow to read
+   and shrink the wheel past the point its labels survive. */
+@media (max-width: 1100px) {
+  .stack-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(1.5rem, 3vw, 2.25rem);
+  }
+  .stack-layout:not(.stack-layout--wheel-only) .wheel {
+    justify-content: center;
+  }
+}
+
 /* ---------- Tech stack: radial wheel ---------- */
 
 /* Icons ride a ring around the outside; the middle is a pie divided one slice
    per category, each slice and its icons sharing a colour so the association
    reads without a legend. One category highlights at a time, cycling on a
-   timer unless the reader takes hold of it — see StackWheel.jsx, which also
-   drops the cycle entirely under prefers-reduced-motion.
+   timer unless the reader takes hold of it, and the two rings drift slowly
+   against each other until the first click squares them up — see
+   TechStackWheel.jsx, which drops both motions entirely under
+   prefers-reduced-motion.
    Below 861px this is not rendered at all; the grouped card list takes over. */
 .wheel {
   display: flex;
   justify-content: center;
 }
 
+/* A query container, so the labels inside can be sized as a fraction of the
+   wheel rather than in fixed pixels. `1cqi` is 1% of the stage's width, which
+   is exactly one unit of the 0–100 space the geometry is drawn in — the two
+   coordinate systems are the same one, which is what makes the label maths
+   below readable. */
 .wheel__stage {
+  container-type: inline-size;
   position: relative;
   width: 100%;
   max-width: 620px;
   aspect-ratio: 1;
+  /* The ring and the dial are full-stage squares, and a rotating square's
+     painted box grows by up to root-two: at 115 degrees the 620px ring paints
+     824px wide and its empty corners pushed the *document's* scroll width by
+     55px. Nothing is in those corners — the icons ride a radius well inside
+     them — so clipping costs nothing visible.
+
+     `clip` rather than `hidden`, which would make this a scroll container, and
+     with a margin so the tooltip above the topmost icon still has somewhere to
+     go: it sits about 18px above the stage's edge and the corners escape by
+     102px, so 2rem lets one through and stops the other. */
+  overflow: clip;
+  overflow-clip-margin: 2rem;
 }
 
 .wheel__pie {
@@ -1140,6 +1497,11 @@ button:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.wheel__slice,
+.wheel__label {
+  pointer-events: auto;
 }
 
 .wheel__slice {
@@ -1160,17 +1522,45 @@ button:focus-visible {
 /* Centred on its own point, so the percentage position is the label's middle
    rather than its top-left corner. The rotation that runs it along its wedge's
    radius is applied inline, since it differs per slice — which is also why the
-   active state cannot re-declare `transform` here without losing it. */
+   active state cannot re-declare `transform` here without losing it.
+
+   **The size is solved per label, not set once for all of them.** It used to be
+   a flat `--t-micro` in a flat `8rem` box, and both halves of that were wrong.
+   The box was narrower than the longest label, so "Cloud/Infrastructure" — 146px
+   of text in a 128px box — simply painted outside it. And a size in pixels
+   against a wheel measured in percentages means the label's share of the radius
+   *grows as the wheel shrinks*: the same word that fits at 620px runs from the
+   hub past the pie's edge on a narrower screen.
+
+   Both are fixed by solving for the size instead. The face is monospace, so
+   every glyph is the same width and the character count *is* the width in ems —
+   no measuring required. Width = chars x 0.608em at this face; dividing the
+   allotment by that gives the size that exactly fills it. 0.62 is used rather
+   than the measured 0.608 so the fit lands just inside rather than exactly on
+   the boundary.
+
+   `min()` caps it: a short label never grows past the scale's own value, it
+   just leaves room unused. Only a label that cannot fit gets shrunk, and only
+   as far as it has to. The floor is deliberately below the site's 12px type
+   minimum for the same reason the calendar's weekday row sits under it — a
+   hard geometric constraint outranks a global step — and `ellipsis` is the
+   backstop under even that. */
 .wheel__label {
   position: absolute;
-  width: 8rem;
+  width: calc(var(--label-span, 22) * 1cqi);
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-mono);
-  font-size: var(--t-micro);
+  font-size: clamp(
+    0.5625rem,
+    min(var(--t-micro), calc(var(--label-span, 22) * 1cqi / (var(--chars, 12) * 0.62))),
+    var(--t-micro)
+  );
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
@@ -1188,10 +1578,67 @@ button:focus-visible {
   opacity: 1;
 }
 
+/* The pie and its labels turn as one piece. Wrapping them is what keeps a
+   label glued to the wedge it names while the ring outside drifts the other
+   way — rotating the labels separately would have had each one sliding off
+   its own slice.
+
+   The rotation itself is written by `paint` in TechStackWheel.jsx, one frame
+   at a time, and deliberately not declared here — the snap home has to start
+   from the angle the dial is actually at, which a CSS animation keeps inside
+   the compositor where JS cannot read it.
+
+   Like the ring below, it is a full-stage sheet and takes no pointer events of
+   its own, so a click in an empty corner outside the pie falls through to the
+   page instead of landing on an invisible div. The slices and the labels take
+   them back individually. */
+.wheel__dial {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* A full-stage sheet over the pie, which once swallowed every click meant for a
+   slice or a label. It passes pointer events straight through; only the nodes
+   themselves take them back. Rotating it is what carries the icons round; the
+   angle comes from `paint`, against the dial's. */
 .wheel__ring {
+  position: absolute;
+  inset: 0;
   list-style: none;
   margin: 0;
   padding: 0;
+  pointer-events: none;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+/* ---- The drift ----------------------------------------------------------
+   A slow counter-rotation, ambient rather than informational: four minutes
+   for a full turn, which is under the threshold at which peripheral motion
+   competes with reading. It is the difference between a wheel that looks like
+   an instrument and one that looks like a picture of an instrument.
+
+   It is also, unavoidably, wrong: the icons drift off the wedges they belong
+   to, and that layout is what the whole component is for. Which is why the
+   first click anywhere on it snaps everything square and stops the drift for
+   the life of the page — the moment a reader engages, alignment is worth more
+   than atmosphere. That snap is done in JS, from the angle the ring is
+   actually at, because only the animation knows that number.
+
+   `prefers-reduced-motion` never starts it: the class is not applied at all,
+   so there is nothing here to override. */
+/* Takes back exactly the rotation the ring applied, so a logo and its tooltip
+   stay upright while the node they sit in orbits. It is also the tooltip's
+   positioning context, which is why the tooltip is inside it rather than a
+   sibling: one counter-rotation has to cover both. */
+.wheel__node-spin {
+  display: block;
+  position: relative;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
 
 .wheel__node {
@@ -1199,6 +1646,7 @@ button:focus-visible {
   transform: translate(-50%, -50%);
   cursor: pointer;
   transition: transform 0.35s ease;
+  pointer-events: auto;
 }
 
 /* Names the individual tool on hover. Sits above its icon, and lifts the whole
@@ -1241,8 +1689,8 @@ button:focus-visible {
 .wheel__node-mark {
   display: grid;
   place-items: center;
-  width: clamp(2.3rem, 5.5vw, 2.9rem);
-  height: clamp(2.3rem, 5.5vw, 2.9rem);
+  width: clamp(2.55rem, 6vw, 3.2rem);
+  height: clamp(2.55rem, 6vw, 3.2rem);
   border-radius: 50%;
   border: 2px solid var(--node-tint);
   background: var(--card-bg);
@@ -1788,23 +2236,30 @@ button:focus-visible {
 .arc {
   position: relative;
   margin-left: -1.9rem;
-  /* The numbers' step is a percentage of this height, so this is what decides
-     whether they clear each other: NUM_STEP of it has to exceed a selected
-     circle's radius plus its neighbour's. Kept as tight as that allows — the
-     section was carrying far more height than its content was worth. Sized so
-     the arc and the card come out about level: below this the numbers start
-     to crowd, above it the arc, not the content, is what makes the section
-     tall. */
-  min-height: 28.5rem;
+  /* The floor, and the value for any deck of four or fewer. Sized so the arc
+     and the card come out about level: below this the numbers start to crowd,
+     above it the arc, not the content, is what makes the section tall. A
+     longer deck raises it — see arcHeight() in DecisionsSection.jsx.
+
+     Named, because the circles' size is derived from it: the step between
+     numbers is a percentage of this, and `--pip-size` multiplies the same
+     figure rather than measuring the laid-out box. The arc can stretch taller
+     than this when the card does, which only ever gives the circles more room
+     than they asked for. */
+  --arc-h: 28.5rem;
+  /* Overridden inline by DecisionsSection once it knows how many decisions
+     there are. This is the ceiling and the value for four of them. */
+  --pip-size: 3rem;
+  min-height: var(--arc-h);
 }
 
 .arc__pip {
   position: absolute;
   display: grid;
   place-items: center;
-  width: 3rem;
-  height: 3rem;
-  margin: -1.5rem 0 0 -1.5rem;
+  width: var(--pip-size);
+  height: var(--pip-size);
+  margin: calc(var(--pip-size) / -2) 0 0 calc(var(--pip-size) / -2);
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--border);
@@ -1827,11 +2282,12 @@ button:focus-visible {
 }
 
 /* Spacing made visible. Without them the numbers bunch, and a bare four-dot
-   arc reads as an accident rather than as an instrument. */
+   arc reads as an accident rather than as an instrument. Held to a share of
+   the numbered circles so the pair keeps its proportion as the run tightens. */
 .arc__pip--blank {
-  width: 1.9rem;
-  height: 1.9rem;
-  margin: -0.95rem 0 0 -0.95rem;
+  width: calc(var(--pip-size) * 0.633);
+  height: calc(var(--pip-size) * 0.633);
+  margin: calc(var(--pip-size) * -0.3165) 0 0 calc(var(--pip-size) * -0.3165);
   border-color: color-mix(in srgb, var(--border) 60%, transparent);
   background: color-mix(in srgb, var(--bg-alt) 50%, transparent);
 }
@@ -1851,9 +2307,12 @@ button:focus-visible {
   border-color: var(--accent);
 }
 
+/* The digit rides the circle rather than sitting at a fixed size: on a run
+   tight enough to shrink the circles, a 15px numeral would touch the border
+   it is centred in. */
 .arc__digit {
   font-family: var(--font-mono);
-  font-size: var(--t-base);
+  font-size: min(var(--t-base), calc(var(--pip-size) * 0.42));
   font-weight: 600;
   color: var(--text-secondary);
 }
@@ -1907,16 +2366,25 @@ button:focus-visible {
   border-radius: var(--radius-card);
   background: var(--bg-alt);
   /* Fanned from the middle, alternating side to side and stepping further out
-     each layer, so the deck reads as spread rather than as one card's shadow. */
+     each layer, so the deck reads as spread rather than as one card's shadow.
+
+     The spread stops widening past the third layer. It was tied straight to
+     depth, so the fan grew with the deck: at seven decisions the outermost
+     ghost sat rotated 19 degrees and shifted 53px, and its corner cleared the
+     page's right gutter and put a horizontal scrollbar on the document. Depth
+     still steps the opacity and the vertical offset, so a longer deck still
+     reads as deeper — it just stops getting wider. */
+  --spread: min(var(--depth), 3);
   transform-origin: 50% 100%;
-  transform: rotate(calc(var(--depth) * var(--fan, 1) * 3.2deg))
-    translate(calc(var(--depth) * var(--fan, 1) * 0.55rem), calc(var(--depth) * -0.3rem));
+  transform: rotate(calc(var(--spread) * var(--fan, 1) * 3.2deg))
+    translate(calc(var(--spread) * var(--fan, 1) * 0.55rem), calc(var(--depth) * -0.3rem));
   opacity: calc(1 - var(--depth) * 0.16);
 }
 
 .dcard__ghost:nth-child(even) {
   --fan: -1;
 }
+
 
 /* The clipping viewport for the travelling cards. A one-cell grid: the hidden
    sizer and the live card share that cell, so the window is as tall as the
@@ -2202,10 +2670,16 @@ button:focus-visible {
   /* A tighter fan: at phone width the card already fills the column, and the
      full rotation pushed the deck past the section's edge and gave the page a
      horizontal scroll. Rotating about the centre rather than the bottom edge
-     halves how far the corners swing for the same angle. */
+     halves how far the corners swing for the same angle.
+
+     The angle is capped as well as reduced. It was tied straight to depth, so
+     a longer deck still swung further: at seven decisions the outermost layer
+     reached 5.4 degrees, and on a card as tall as this one that is enough
+     corner travel to put two pixels of scroll back on the document. Past the
+     second layer the angle holds and only the step and the fade continue. */
   .dcard__ghost {
     transform-origin: 50% 50%;
-    transform: rotate(calc(var(--depth) * var(--fan, 1) * 0.9deg))
+    transform: rotate(calc(min(var(--depth), 2) * var(--fan, 1) * 0.9deg))
       translateY(calc(var(--depth) * -0.25rem));
   }
 
@@ -2237,6 +2711,170 @@ button:focus-visible {
   color: var(--text-primary);
 }
 
+/* ---------- Workspace row: links + At a Glance ---------- */
+
+/* Two columns. The links took a full-width section to hold three small tiles
+   and left most of the row empty; the summary is what that room is for, and
+   the pair means the top of the page answers "where does this live" and "what
+   was it" in one glance instead of in two sections.
+
+   Two fractions, not `max-content` on the left. Sizing that column to its
+   content worked while it held three tiles and nothing else; now it also holds
+   a heading, and "<Team> Workspace" at heading size is far wider than the
+   tiles under it — at tablet width it took 450px of a 715px row and left the
+   sentences 172px to wrap in. Both columns are headed the same way now, so
+   they are two comparable columns and should be sized as such. The right one
+   is a little wider because it holds sentences and the left holds three
+   marks. */
+.workspace-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(1.75rem, 4vw, 3.5rem);
+  align-items: start;
+}
+
+/* A project with no summary yet gets the row back as it was. */
+.workspace-row--links-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The left column heads itself. The heading takes the same treatment the page
+   gives a section heading, because that is what it is — it even carries the
+   section's own heading id.
+
+   The gap under it is the one every other section gets between its heading and
+   its body. At 1.1rem the marks sat closer to the title than the title sat to
+   the section above, which read as the heading belonging to the icons rather
+   than to the section. */
+.workspace-row__col {
+  display: grid;
+  align-content: start;
+  gap: 1.85rem;
+}
+
+/* No rule between the halves any more. It was the join that said the two
+   belonged to one section; the summary is a bordered card now and brings its
+   own edge, so a rule beside it would be two borders doing one job. */
+
+/* A bordered card, not a second column of prose. The summary had a heading of
+   its own level with the workspace's, and two headings at the same level read
+   as two sections; the box is what makes it self-contained now. Same card
+   vocabulary the rest of the page uses — 1px border, the card ground, the
+   sharp 2px corner — so it reads as belonging here rather than as a callout
+   pasted in. */
+.glance {
+  margin: 0;
+  padding: clamp(1.15rem, 2.2vw, 1.6rem);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* The card's name, inside it. Set as a caption rather than a heading: it is a
+   label on a box, and at heading weight it was competing with the section
+   title beside it for a rank it does not hold. */
+.glance__caption {
+  margin: 0 0 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.glance__list {
+  margin: 0;
+  display: grid;
+  gap: 0.95rem;
+}
+
+/* The tick sits in its own column and spans both rows, so the label and the
+   sentence share one left edge and the three entries read as a checklist
+   rather than as three paragraphs with marks dropped in front of them. */
+/* Two rows and two columns: the badge and the label share the first line, and
+   the sentence runs under both, indented to the label's left edge so the three
+   entries read as a list rather than as three paragraphs with marks dropped in
+   front of them. */
+.glance__row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 0.55rem;
+  row-gap: 0.3rem;
+  align-items: center;
+}
+
+/* One tick per row, on that row's label line. It spent a version spanning both
+   rows and pinned to the top of the pair, which left it floating beside the gap
+   between the label and the sentence and belonging to neither. In row one,
+   centred on the label's own line, it is unambiguously that label's mark.
+
+   The mark is the bare tick. A boxed one and a circled one were both tried:
+   the first read as a form control and the second as a badge, and neither is
+   what a note beside a sentence is. */
+.glance__check {
+  grid-row: 1;
+  align-self: center;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.glance__check svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.glance__label {
+  grid-column: 2;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Justified by word spacing only. `hyphens: auto` was tried with it and did
+   exactly what it says — broke words across lines, which is what the request
+   for justification was never asking for. Without hyphenation the browser has
+   only the spaces to stretch, which is the trade: slightly looser lines in
+   exchange for whole words. `text-justify: inter-word` states that explicitly
+   rather than leaving it to a default that varies by engine and language. */
+.glance__text {
+  grid-column: 2;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.62;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+  color: var(--text-primary);
+}
+
+/* Stacked below the links once the row cannot hold both: the sentences need a
+   reading measure more than they need to be beside anything. */
+@media (max-width: 900px) {
+  .workspace-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+}
+
+/* Below the width where a label and a sentence both read, the label goes on
+   its own line and the sentence takes the column. */
+@container (max-width: 26rem) {
+  .glance__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+}
+
 /* ---------- Link rows ---------- */
 
 /* Bare marks with their names beneath — no pill, no border, no fill. Same
@@ -2266,7 +2904,7 @@ button:focus-visible {
   place-items: center;
   /* A glyph, not text — sized to the tile rather than to the scale. The
      icons are 1em, so this is what actually scales them. */
-  font-size: 1.75rem;
+  font-size: 1.95rem;
   line-height: 1;
   color: var(--ink);
   transition: color 0.18s ease;
@@ -2551,7 +3189,7 @@ a.link-tile:hover .link-tile__mark {
    breakpoint takes over entirely. */
 @media (min-width: 861px) and (max-width: 1100px) {
   :root {
-    --sidebar-w: 248px;
+    --rail-w: 248px;
   }
   .sidebar {
     padding: 1.5rem 1.1rem 2rem;
@@ -2571,6 +3209,12 @@ a.link-tile:hover .link-tile__mark {
   .section-nav {
     top: var(--mobile-bar-h);
   }
+  /* The toggle rides in the strip above the bar here rather than on it, so
+     there is no footprint to reserve — and the entries scroll rather than
+     centre, where extra padding is just dead scroll length. */
+  .section-nav__bar {
+    padding-right: var(--gutter);
+  }
   .section {
     scroll-margin-top: calc(var(--mobile-bar-h) + var(--section-nav-h));
     padding: 2rem 0;
@@ -2582,23 +3226,6 @@ a.link-tile:hover .link-tile__mark {
   }
   .project__title {
     max-width: none;
-  }
-  /* Members: smaller circles and tighter columns so a four-person team still
-     fits across a phone rather than wrapping to one per row. */
-  .avatars {
-    grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
-    gap: 1.4rem 1rem;
-  }
-  /* The item fills its grid track at every width now; the track is what
-     narrows on a phone, not the item. A fixed 68px here re-created the
-     huddle the grid was introduced to fix. */
-  .avatars__item {
-    width: 100%;
-  }
-  .avatars__circle {
-    width: 46px;
-    height: 46px;
-    font-size: var(--t-small);
   }
   /* Metric numbers are the loudest thing on the page; at phone width they do
      not need to be. This targeted `.metric` for a long time — a class no
@@ -2628,5 +3255,1308 @@ a.link-tile:hover .link-tile__mark {
   * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- Problem & Context: the idea board ---------- */
+
+/* Pinned notes rather than a paragraph. Four separate thoughts, each a
+   complete sentence, laid out so a reader can take one without reading the
+   other three — which is the one thing a block of prose cannot offer.
+
+   The tilt is the whole illusion and it is deliberately small: 1–2 degrees
+   reads as "placed by hand", 5 reads as a broken grid. It comes from the
+   component as `--tilt` and alternates sign, so no two neighbours lean the
+   same way. */
+/* Four notes across, but not four of the same note. The two that carry the
+   project's actual problem take more width and a larger type size; the two
+   that give context around them sit narrower and quieter. `align-items: start`
+   is what keeps it a board rather than a row of panels — each note is its own
+   height, so the run is uneven the way pinned paper is. */
+/* Four columns, with the two notes carrying the problem itself spanning two
+   each and the supporting notes taking one. Two leads fill the first row and
+   four supports fill the second, so the board tiles exactly at six notes and
+   at four. The widths used to be fractional column sizes — `1.24fr 1.24fr 1fr
+   1fr` — which put the tier in the *position* rather than in the note, so the
+   fifth and sixth notes landed in lead-width columns whatever tier they were.
+   Spans travel with the note.
+
+   The tier counts have to divide the rows, which is a real constraint on the
+   data rather than only on the CSS: two leads fill row one and four supports
+   fill row two. Three leads and three supports was tried and left the last row
+   holding a single note beside three empty columns. The two problems are the
+   leads; everything else — the foundation, the values, the goals, the
+   applicability — is context around them, which is the same split the copy
+   already makes. */
+.board {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0 0.6rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(1.1rem, 2.2vw, 1.8rem);
+}
+
+.board__note--lead {
+  grid-column: span 2;
+}
+
+/* A faint wash, never a post-it yellow: the tint comes from the component as
+   `--note-tint` and alternates between the project's accent and the site's
+   base indigo. Two colours the page already owns rather than a third hue —
+   one accent per themed page is the rule, and the base palette is the ground
+   everything is measured against, not a second accent. The paper reads as
+   paper because of the lift, not because of the colour. */
+.board__note {
+  position: relative;
+  padding: 1.5rem 1.15rem 1.15rem;
+  background: color-mix(in srgb, var(--note-tint, var(--accent)) 7%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--note-tint, var(--accent)) 18%, var(--border));
+  border-radius: var(--radius-sm);
+  transform: rotate(var(--tilt, 0deg));
+  /* Two shadows doing different jobs: a tight one that seats the note's edge
+     against the board, and a longer soft one that lifts it off. A single
+     shadow gives either a sticker or a floating card, never a pinned note.
+
+     Both are held close to `--shadow-card`, the value every other raised
+     surface on the site uses. They were roughly three times that, which made
+     four notes the heaviest thing in a section whose own rule is that a 1px
+     border carries depth and a shadow only ever hints at it. The lift has to
+     be readable, not the loudest thing on the page. */
+  box-shadow:
+    0 1px 2px rgba(31, 46, 68, 0.05),
+    0 6px 14px -6px rgba(31, 46, 68, 0.11);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Straightens and rises under the cursor — the gesture of picking one up to
+   read it. */
+.board__note:hover {
+  transform: rotate(0deg) translateY(-3px);
+  box-shadow:
+    0 1px 2px rgba(31, 46, 68, 0.06),
+    0 12px 22px -8px rgba(31, 46, 68, 0.15);
+}
+
+[data-theme='dark'] .board__note {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.24),
+    0 6px 14px -6px rgba(0, 0, 0, 0.34);
+}
+
+[data-theme='dark'] .board__note:hover {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 12px 22px -8px rgba(0, 0, 0, 0.42);
+}
+
+/* The pin: a flat filled disc, and nothing else. It was drawn as a domed
+   pinhead — a radial highlight offset up and left, plus its own drop shadow —
+   which put the one rendered-3D object on a site built entirely from flat
+   fills and 1px borders. At 13px across it was also the smallest element in
+   the section and the most detailed, which is exactly backwards. A plain
+   circle still reads as a pin because of where it sits. */
+.board__pin {
+  position: absolute;
+  top: -0.42rem;
+  left: 50%;
+  width: 0.8rem;
+  height: 0.8rem;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--note-tint, var(--accent));
+}
+
+.board__label {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  /* Pulled toward ink rather than set at the tint's own value. At full
+     strength on its own pale wash the emerald label came out at 2.7:1 — this
+     is 11px uppercase type, which needs 4.5:1, and it was the one piece of
+     small text on the board. The mix keeps the hue that ties the label to its
+     note and takes the luminance it needs from the page's ink, which flips
+     with the theme so the same rule works in both. */
+  color: color-mix(in srgb, var(--note-tint, var(--accent)) 60%, var(--ink));
+}
+
+.board__text {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.62;
+  color: var(--text-primary);
+}
+
+/* The two notes that carry the problem itself: wider by the grid, and a step
+   up in type and padding so the difference survives a reader who is only
+   skimming. The supporting pair keeps the smaller setting. */
+.board__note--lead {
+  padding: 1.7rem 1.4rem 1.35rem;
+}
+
+.board__note--lead .board__text {
+  font-size: var(--t-base);
+  line-height: 1.66;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board__note,
+  .board__note:hover {
+    transition: none;
+  }
+}
+
+/* Two across through the tablet range — a lead beside a support on each row,
+   so the size difference still reads — then one per row on a phone, where
+   four columns of anything is not a board. */
+/* Two columns through the tablet range, and every note takes one of them. A
+   lead spanning both came out a 714px-wide sticky note, which is a banner
+   rather than a note; at this width the tier is carried by its type size and
+   padding alone, which is what it was doing before the spans existed. Six
+   notes then fill three even rows. */
+@media (max-width: 1100px) {
+  .board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .board__note--lead {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 620px) {
+  .board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .board__note--lead {
+    grid-column: span 1;
+  }
+}
+
+/* ---------- My Role: the same bento, carrying sentences ---------- */
+
+/* The monogram and the role title down the left, the tiles beside them. It
+   sat as a header row across the top; as a column it gives the mark somewhere
+   to be large without pushing the grid down the page, and the two halves read
+   as one unit rather than as a banner over a card grid. Left-aligned, not
+   centred: it is the start of a line of reading, not a masthead. */
+.role {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+  /* Centred against the tiles, not pinned to their top edge. The bento is the
+     taller column and sets the section's height, so `start` left the mark and
+     the title in the top corner with the rest of the column empty beneath
+     them. */
+  align-items: center;
+}
+
+.role__who {
+  display: grid;
+  justify-items: start;
+  gap: 0.9rem;
+}
+
+/* Sized like a profile picture rather than a badge. It is the only portrait on
+   a site that has no photographs — the initials stand in for one — and at the
+   56px it spent as a header ornament it read as an annotation on the heading
+   above it rather than as the person the section is about. */
+.role-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: clamp(7.5rem, 11vw, 9.5rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  /* His colour, reserved site-wide. Nothing else on the page may take it. */
+  background: var(--name-pop);
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  /* Held to the same letter-to-circle ratio the Members avatar uses, so the
+     two read as one mark at two sizes rather than as two different marks. */
+  font-size: clamp(2.1rem, 3.1vw, 2.7rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* The whole role on one line of copy, stated once. Set in the heading face
+   rather than as a small-caps label: it is a title, and at label size under a
+   mark this size it looked like a caption for the circle. */
+.role__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-lead);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  /* Ink, not --name-pop. The mark above it is already carrying his colour, and
+     a second saturated line directly under a 152px disc of the same blue makes
+     the block shout rather than introduce. The circle says whose; the title
+     says what. */
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* The same arrival the Members circle plays, at this one's size and landing a
+   beat later — near half of the pair first, far half after, which is what
+   makes the two read as one gesture rather than two coincidences. It starts
+   from a visible circle rather than from nothing: if the observer never fires,
+   the mark is simply there. */
+@keyframes role-mark-land {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--name-pop) 0%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--name-pop) 0%, transparent);
+  }
+  14% {
+    transform: scale(1.02);
+    box-shadow:
+      0 0 10px 1px color-mix(in srgb, var(--name-pop) 18%, transparent),
+      0 0 0 0 color-mix(in srgb, var(--name-pop) 0%, transparent);
+  }
+  32% {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 26px 5px color-mix(in srgb, var(--name-pop) 36%, transparent),
+      0 0 0 6px color-mix(in srgb, var(--name-pop) 24%, transparent);
+  }
+  50% {
+    transform: scale(1.13);
+    box-shadow:
+      0 0 46px 10px color-mix(in srgb, var(--name-pop) 55%, transparent),
+      0 0 0 17px color-mix(in srgb, var(--name-pop) 18%, transparent);
+  }
+  66% {
+    transform: scale(1.03);
+    box-shadow:
+      0 0 38px 7px color-mix(in srgb, var(--name-pop) 38%, transparent),
+      0 0 0 30px color-mix(in srgb, var(--name-pop) 10%, transparent);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--name-pop) 0%, transparent),
+      0 0 0 48px color-mix(in srgb, var(--name-pop) 0%, transparent);
+  }
+}
+
+.role-mark--lit {
+  animation: role-mark-land 2.6s cubic-bezier(0.33, 0, 0.2, 1) 0.34s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .role-mark--lit {
+    animation: none;
+  }
+}
+
+/* Three tiers on six columns: a lead at 3x2, two mediums at 3x1 and three
+   smalls at 2x1 fill eighteen cells over three rows exactly. Six equal tiles
+   was the version this replaced — a uniform grid says every duty weighed the
+   same, which is the one thing this section exists to deny.
+
+   `grid-auto-rows: auto`, with no floor. The floor was a `minmax(6.5rem, …)`
+   that inflated every short tile to a height its text did not need, which is
+   what put dead space under the sentences at every tier. A row is now as tall
+   as the tallest thing in it and no taller. */
+.bento--role {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-rows: auto;
+}
+
+.bento__tile--lead {
+  grid-column: span 3;
+  grid-row: span 2;
+}
+
+.bento__tile--medium {
+  grid-column: span 3;
+}
+
+.bento__tile--small {
+  grid-column: span 2;
+}
+
+/* A quiet lift on hover: the card surface steps toward the page's own ground,
+   which is the only direction it can move without introducing a colour. It
+   says the tile is a thing rather than a printed panel, and stops there —
+   these are not links and must not offer to be clicked. */
+.bento--role .bento__tile {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.bento--role .bento__tile:hover {
+  /* All the way to the page's own ground rather than part-way. A 62% mix put
+     six values of 255 between the hovered card and its neighbours, which is
+     not a cue anyone would notice. Landing on --bg is still the quietest move
+     available — it introduces no colour the page does not already have — and
+     it is legible against the white cards either side. */
+  background: var(--bg);
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bento--role .bento__tile {
+    transition: none;
+  }
+}
+
+/* The figure that earns the lead tile its size, in the same monospace
+   treatment the Key Impact Metrics numbers use — this is the same kind of
+   claim, and it should read as one. The unit sits on the number's baseline
+   rather than under it, so the pair reads as a single phrase. */
+.role-tile__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.bento__tile--lead .bento__value {
+  font-size: calc(clamp(2.6rem, 1.7rem + 3.2vw, 3.9rem) * var(--display-scale));
+}
+
+.role-tile__unit {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+/* A tile's height is set by whatever else shares its row — and for the lead, by
+   the two tiles it spans — so the difference between that height and its own
+   content has to go somewhere. Most tiles hold a single sentence now that the
+   headings are gone, and `space-between` cannot distribute one child: it left
+   the whole difference under the sentence, which is exactly the dead space it
+   was added to remove. Centred, the leftover splits above and below and the
+   sentence sits on the tile's optical middle. The lead still spreads, because
+   it has two things to spread — the figure and the sentence. */
+.bento--role .bento__tile {
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.bento--role .bento__tile--lead {
+  justify-content: space-between;
+}
+
+/* The lead spans two rows, so its height is set by the two tiles beside it
+   rather than by its own content — and whatever those come out at, the
+   difference pooled as dead space under the sentence. Distributing instead of
+   stacking turns that difference into deliberate spacing: the label sits on
+   the top edge, the sentence on the bottom, level with the bottom of the tile
+   next to it, and the figure takes the room between them. The `gap` above
+   stays as the floor, so a tile whose content nearly fills it does not spread
+   any further than it already would.
+
+.bento__tile--lead {
+  grid-column: span 3;
+  grid-row: span 2;
+}
+
+.bento__tile--medium {
+  grid-column: span 3;
+}
+
+.bento__tile--small {
+  grid-column: span 2;
+}
+
+/* The figure that earns the lead tile its size, in the same monospace
+   treatment the Key Impact Metrics numbers use — this is the same kind of
+   claim, and it should read as one. The unit sits on the number's baseline
+   rather than under it, so the pair reads as a single phrase. */
+.role-tile__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0;
+}
+
+.bento__tile--lead .bento__value {
+  font-size: calc(clamp(2.6rem, 1.7rem + 3.2vw, 3.9rem) * var(--display-scale));
+}
+
+.role-tile__unit {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.bento__prose {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* The headline claim reads at the page's own prose size — it is the one a
+   reader should be able to take at a glance from across the section. The
+   smallest tier steps down again, so the three tiers separate by type as well
+   as by area. */
+.bento__tile--lead .bento__prose {
+  font-size: var(--t-prose);
+  line-height: 1.6;
+}
+
+.bento__tile--small .bento__prose {
+  font-size: var(--t-tiny);
+  line-height: 1.55;
+}
+
+/* Through the tablet range the sidebar still holds a column, so the content is
+   about 714px and three tiles across would put a sentence on a four-word
+   measure. The hierarchy moves from area to width instead: the lead takes the
+   full row, the mediums go two across, the smalls three. Giving the lead a
+   half row here was tried and collapsed the tiers — lead, medium and small all
+   came out 350px wide, which is a uniform grid with extra steps. */
+@media (max-width: 1100px) {
+  /* The identity column stops being a column: at this width taking 13rem off
+     the front of the grid leaves the tiles on a measure they cannot carry a
+     sentence on. The mark and the title go back to a row above them. */
+  .role {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .role__who {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1.1rem;
+    padding-top: 0;
+  }
+  .role-mark {
+    width: clamp(5rem, 12vw, 6.5rem);
+    font-size: clamp(1.5rem, 3.4vw, 1.9rem);
+  }
+  .bento__tile--lead {
+    grid-column: span 6;
+    grid-row: span 1;
+  }
+  .bento__tile--medium {
+    grid-column: span 3;
+  }
+  .bento__tile--small {
+    grid-column: span 2;
+  }
+}
+
+/* One tile per row on a phone. Nothing spans, and the lead keeps its weight
+   through its stat and its type sizes rather than through area. */
+@media (max-width: 640px) {
+  .bento--role {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .bento__tile--lead,
+  .bento__tile--medium,
+  .bento__tile--small {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+}
+
+/* ---------- Implementation steps: calendar pair + phase list ---------- */
+
+/* The phase list is the content and the calendar supports it, so the split is
+   deliberately uneven: the calendar column is sized by its own grid and the
+   list takes everything left over.
+
+   `align-items: start` matters here — the calendar is the taller column in
+   every state, which is what pins the section's height and lets a phase open
+   without moving the section's bottom edge. */
+.steps {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: start;
+}
+
+/* The two months stack rather than sitting side by side. Across, each month
+   had seven columns in half the available width — about 24px a column, which
+   is not enough to write "Wednesday" over and forced the names onto their
+   side. One month per row gives every column the width its name needs. */
+.steps__calendar {
+  display: grid;
+  gap: clamp(1rem, 2vw, 1.6rem);
+  padding: clamp(0.9rem, 1.6vw, 1.25rem);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.cal {
+  /* Wide enough for the longest weekday name, and no wider: this is what the
+     whole column's width comes from. */
+  /* Sized by the longest weekday name, not by taste: seven columns each wide
+     enough for "Wednesday", inside a column the phase list still has to be
+     wider than. */
+  --cal-col: clamp(3.9rem, 4.6vw, 4.05rem);
+  /* Cells are wider than they are tall. A square cell at this column width
+     would have made two months 700px of section height for a date grid that
+     is the supporting half of the section. */
+  --cal-row: clamp(2rem, 2.8vw, 2.4rem);
+}
+
+.cal__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-heading);
+  font-size: var(--t-small);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cal__grid {
+  display: grid;
+  grid-template-columns: repeat(7, var(--cal-col));
+  gap: 2px;
+}
+
+/* Spelled out and set across the top, the way a wall calendar does it.
+   Abbreviations need a convention the reader already shares — "Tu" and "Th",
+   "S" and "S" — and the column is sized so the full name fits. */
+.cal__weekday {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 0.35rem;
+  font-family: var(--font-heading);
+  /* The one place on the page that did not take the type-scale rise. Every
+     other label is free to grow; this one multiplies by seven and then has to
+     fit beside a phase list that must stay the wider column. "Wednesday" at
+     12px needs 64px of column, which pushed the calendar past the list it is
+     supposed to support. Held at the old 11px, it needs 59px and the
+     proportion survives. A hard geometric constraint outranks a global step. */
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Only one of the pair is ever shown; the media query below swaps them. */
+.cal__weekday-short {
+  display: none;
+}
+
+/* The page's own background, exactly as it is everywhere else on the section
+   — so a day outside the project reads as empty board rather than as a cell
+   that has been given a colour meaning "no". The 2px grid gap on the darker
+   panel behind is what keeps it legible as a grid. */
+.cal__cell {
+  position: relative;
+  height: var(--cal-row);
+  background: var(--bg);
+  border-radius: 1px;
+  transition: background-color 0.32s ease;
+}
+
+/* Leading and trailing blanks that square the month off. Present so the grid
+   holds its shape, invisible so they do not read as days. */
+.cal__cell--void {
+  background: none;
+}
+
+/* The baseline: the whole project period, always, in the pale shade. This is
+   the section's resting reading — the shape of the project — and it does not
+   go away when a phase is picked. */
+.cal__cell[data-in='true'] {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg));
+}
+
+/* The open phase, brought up to full strength on top of that baseline. Two
+   weights of one hue rather than two hues: the page's rule is one accent, and
+   a second colour here would be the only place breaking it. */
+.cal__cell[data-lit='true'] {
+  background: var(--accent);
+}
+
+/* The heading face, not the monospace one. These are the only numerals in the
+   component and they are not a column of figures that has to line up — they
+   are the calendar's own type, and they should read as the page's. */
+.cal__date {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-family: var(--font-heading);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-secondary);
+  transition: color 0.32s ease;
+}
+
+.cal__cell[data-in='true'] .cal__date {
+  color: var(--ink);
+}
+
+.cal__cell[data-lit='true'] .cal__date {
+  color: var(--card-bg);
+  font-weight: 700;
+}
+
+/* The list plus the control above it, as one column. */
+.disclosures__wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Right-aligned above the list, on the line where the first row's rule
+   starts. Always here and always live: reserving the row means opening a phase
+   never nudges the list down by the height of a button, and a control that is
+   sometimes inert is worse than one that is sometimes absent — the reader who
+   clicks it and gets nothing concludes it is broken. */
+.disclosures__bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.55rem;
+}
+
+.stack-notes .disclosures__bar {
+  padding-bottom: 0.35rem;
+}
+
+.disclosures__all {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  cursor: pointer;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.disclosures__all:hover:not(:disabled) {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* The list itself, shared by both accordions. */
+.disclosures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ---- Disclosure: the shared accordion row ----
+   One row that opens. Implementation Steps uses it for a phase and Tech Stack
+   for a tool; both needed the same behaviour and the same look, and two copies
+   of a slide-open panel drift apart the first time either is touched. What is
+   specific to each stays specific — a phase has an index, a name and a date
+   range, a tool has an icon and a question — and everything that is just "a row
+   that opens" lives here. */
+.disclosure {
+  border-bottom: 1px solid var(--border);
+}
+
+.disclosure__heading {
+  margin: 0;
+  font: inherit;
+}
+
+/* Flex, not a fixed grid of four columns. A phase has an index, a name, a date
+   range and a chevron; a tool has an icon, a question and a chevron. The row
+   does not care — whatever sits in the middle grows and the chevron is pushed
+   to the end. */
+.disclosure__toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  padding: 1.35rem 0.2rem;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+.disclosure__toggle:hover .phase__name,
+.disclosure__toggle:hover .tool-note__question {
+  color: var(--accent);
+}
+
+/* Whatever the row is titled by takes the space, so the chevron lands on the
+   right-hand edge. */
+.phase__name,
+.tool-note__question {
+  flex: 1 1 auto;
+}
+
+.disclosure__chevron {
+  margin-left: auto;
+}
+
+.phase__index {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  transition: color 0.25s ease;
+}
+
+.disclosure--open .phase__index {
+  color: var(--accent);
+}
+
+.phase__name {
+  font-family: var(--font-heading);
+  font-size: var(--t-lead);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  transition: color 0.25s ease;
+}
+
+.disclosure--open .phase__name {
+  color: var(--accent);
+}
+
+/* The dates read as metadata, not as part of the title — same monospace
+   treatment the page uses for every other figure. */
+.phase__range {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.disclosure__chevron {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--text-secondary);
+  transition: transform 0.32s cubic-bezier(0.33, 1, 0.68, 1), color 0.25s ease;
+}
+
+.disclosure--open .disclosure__chevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+/* The slide. A grid row going 0fr -> 1fr is the one way to transition a box
+   to a height nobody has measured — `height: auto` is not an animatable
+   value, and a fixed max-height either clips the longest phase or spends the
+   whole transition easing through empty space on the shortest. The inner
+   element is what clips while the row is short. */
+.disclosure__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.36s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.disclosure__panel[data-open='true'] {
+  grid-template-rows: 1fr;
+}
+
+.disclosure__panel-inner {
+  overflow: hidden;
+  /* The text fades and rises slightly behind the opening row, so the panel
+     reads as one movement rather than as a box growing with finished text
+     already sitting inside it. */
+  opacity: 0;
+  transform: translateY(-0.35rem);
+  transition: opacity 0.26s ease, transform 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.disclosure__panel[data-open='true'] .disclosure__panel-inner {
+  opacity: 1;
+  transform: none;
+}
+
+.disclosure__panel p {
+  margin: 0;
+  padding: 0 0.2rem 1.35rem calc(0.2rem + 2.4rem);
+  max-width: 68ch;
+  font-family: var(--font-body);
+  font-size: var(--t-prose);
+  line-height: 1.75;
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure__chevron,
+  .disclosure__panel,
+  .disclosure__panel-inner,
+  .cal__cell,
+  .cal__date {
+    transition: none;
+  }
+}
+
+/* The calendar drops under the list rather than shrinking to a column it
+   cannot be read in. */
+@media (max-width: 1100px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .steps__calendar {
+    order: 2;
+    justify-content: center;
+  }
+  .disclosures__wrap {
+    order: 1;
+  }
+}
+
+/* Below this the seven full names no longer fit, so the grid takes whatever
+   width it is given and the names drop to three letters. Clipping the full
+   name instead was tried and reads as broken type rather than as an
+   abbreviation — "Wednesda" is not a shorter word. Three letters is a
+   convention every reader already shares; one letter is not, which is why
+   "S"/"S" and "T"/"T" are never the fallback. */
+@media (max-width: 560px) {
+  .cal {
+    --cal-col: minmax(0, 1fr);
+  }
+  .cal__grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+  .cal__weekday-full {
+    display: none;
+  }
+  .cal__weekday-short {
+    display: inline;
+  }
+}
+
+@media (max-width: 420px) {
+  .disclosure__toggle {
+    row-gap: 0.3rem;
+  }
+  /* The range drops to its own line rather than squeezing the name. */
+  .phase__range {
+    flex: 1 0 100%;
+    padding-left: 2.4rem;
+  }
+  .disclosure__panel p {
+    padding-left: 0.2rem;
+  }
+}
+
+/* ---------- Cost analysis ---------- */
+
+/* The chart and the reading beside it, not under it: the bullets explain
+   individual rows, and a reader who has to scroll away from the bar to find
+   out why it is short has to hold the number in their head to do it. */
+/* Two columns and two rows: the chart beside the reading, and beneath them a
+   footer row holding the total and the caveat. The footers are siblings in one
+   grid row rather than the last child of each column — nested, each sat above
+   its own column's bottom edge by its own height, so the two rules heading
+   them landed at different heights and the section read as two panels placed
+   side by side. Sharing a row, they start on the same line and the rule runs
+   straight across the section.
+
+   DOM order is chart, its footer, reading, its footer, so a single column
+   stacks in the order it should be read; the columns are placed explicitly. */
+.cost {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  column-gap: clamp(1.5rem, 3vw, 3rem);
+  row-gap: 0;
+  align-items: stretch;
+}
+
+.cost__chart {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.cost__foot--chart {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.cost__read {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.cost__foot--read {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.cost__chart,
+.cost__read {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One rule, drawn once per column at the same height on both. */
+.cost__foot {
+  margin-top: 1.3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.cost__key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.1rem;
+  margin: 0 0 1.1rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--text-secondary);
+}
+
+.cost__key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cost__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 1px;
+}
+
+/* Grey is the comparison and the accent is the project, which is the whole
+   reading of the chart — so those two are the only fills in it. */
+.cost__key-item--base .cost__swatch {
+  background: var(--text-secondary);
+}
+
+.cost__key-item--ours .cost__swatch {
+  background: var(--accent);
+}
+
+.cost__unit {
+  margin-left: auto;
+  letter-spacing: 0.04em;
+}
+
+/* `1fr` plus `space-between`: the rows take the height the column was given
+   and open up the gaps between themselves to fill it, rather than stacking at
+   a fixed rhythm and leaving the remainder as dead space at the bottom. The
+   floor keeps them from ever closing tighter than their natural spacing. */
+.cost__rows {
+  margin: 0;
+  flex: 1;
+  display: grid;
+  gap: 1.05rem;
+  align-content: space-between;
+}
+
+.cost__row {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.cost__row-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.5rem;
+  font-family: var(--font-label);
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.cost__row-note {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.cost__row-bars {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+}
+
+/* Track and figure are two grid columns, not two flex items. The longest bar
+   is 100% of its track by definition, and as a flex item at full width it
+   pushed its own printed figure out of the row. The grid gives the number a
+   column of its own that the bar can never take.
+
+   The other half of the same problem: several of these rows are zero, and a
+   number trapped inside a zero-width bar is unreadable. Outside the bar, both
+   ends of the scale print the same way. */
+.cost__bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.05rem;
+}
+
+.cost__bar-track {
+  display: block;
+}
+
+.cost__bar-fill {
+  display: block;
+  width: var(--share);
+  /* A stub rather than nothing: a row at zero should still read as a bar that
+     is at zero, not as a row whose bar failed to render. */
+  min-width: 2px;
+  height: 0.72rem;
+  border-radius: 1px;
+}
+
+.cost__bar--base .cost__bar-fill {
+  background: color-mix(in srgb, var(--text-secondary) 62%, var(--bg));
+}
+
+.cost__bar--ours .cost__bar-fill {
+  background: var(--accent);
+}
+
+.cost__bar-value {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.cost__bar--ours .cost__bar-value {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cost__row--total {
+  margin: 0;
+}
+
+.cost__row--total .cost__row-bars {
+  display: flex;
+  gap: 1.4rem;
+}
+
+.cost__total {
+  font-family: var(--font-mono);
+  font-size: var(--t-lead);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.cost__total--base {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.cost__total--ours {
+  color: var(--accent);
+}
+
+.cost__notes {
+  margin: 0;
+  padding-left: 1.15rem;
+  flex: 1;
+  display: grid;
+  gap: 1rem;
+  align-content: space-between;
+}
+
+/* The page's reading size, not a caption size. These bullets are the
+   explanation the chart cannot give on its own — they were set at 12.5px
+   beside a chart of 15px figures, which made the part a reader has to
+   actually read the smallest thing in the section. */
+.cost__notes li {
+  font-family: var(--font-body);
+  font-size: var(--t-prose);
+  line-height: 1.72;
+  color: var(--text-primary);
+}
+
+.cost__notes li::marker {
+  color: var(--accent);
+}
+
+/* The caveat is load-bearing, not fine print: these are estimates, and the
+   whole section is misread without it. Set apart by a rule rather than shrunk
+   into a footnote. */
+/* The rule belongs to the footer row, which draws it across both columns at
+   one height — this is just the text under it. */
+.cost__caveat {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .cost {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+  .cost__chart,
+  .cost__foot--chart,
+  .cost__read,
+  .cost__foot--read {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  /* Stacked, the reading follows the chart's own footer, so it needs the space
+     a column gap was giving it. */
+  .cost__read {
+    margin-top: clamp(1.5rem, 3vw, 2.25rem);
+  }
+}
+
+/* ---------- Architecture diagrams, drawn ---------- */
+
+/* Everything in a diagram takes its colour from here rather than from the
+   data, which is the point of describing diagrams instead of exporting them:
+   one theme change moves every diagram on the site, and a project accent
+   reaches them without anyone editing a shape.
+
+   The exports these replaced were raster images in an SVG wrapper — up to
+   1.7MB, blurry at page width, permanently light-mode, and unreadable to
+   anything that was not a pair of eyes. */
+.archd {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Boundaries, not objects: no fill on the outermost, a barely-there wash
+   inside it, and a dashed outline for anything that is not the provider's.
+   They are the quietest thing in the drawing on purpose — a zone is context,
+   and a filled box competes with the nodes standing in it. */
+.archd__zone-box {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+
+.archd__zone--cloud .archd__zone-box {
+  fill: color-mix(in srgb, var(--accent) 3%, transparent);
+}
+
+.archd__zone--region .archd__zone-box {
+  fill: color-mix(in srgb, var(--accent) 5%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 28%, var(--border));
+}
+
+/* Outside the provider — drawn as a dashed boundary, the convention for a
+   network that is not the one the diagram is mostly about. */
+.archd__zone--onprem .archd__zone-box {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-dasharray: 5 4;
+}
+
+/* The part the caption is actually about. */
+.archd__zone--focus .archd__zone-box {
+  fill: color-mix(in srgb, var(--accent) 8%, transparent);
+  stroke: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.archd__zone-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--text-secondary);
+}
+
+.archd__zone-note {
+  font-weight: 400;
+  fill: var(--text-secondary);
+  opacity: 0.75;
+}
+
+.archd__node-box {
+  fill: var(--card-bg);
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+
+.archd__node-label {
+  font-family: var(--font-label);
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+
+.archd__node-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--text-secondary);
+}
+
+/* The glyph carries the accent and nothing else does, so the eye lands on
+   what each box *is* before it reads the label. */
+.archd__glyph {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.archd__edge-line {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.archd__edge--dash .archd__edge-line {
+  stroke-dasharray: 5 4;
+}
+
+/* Painted with a halo of the panel's own ground, so a label that lands on a
+   line is legible without moving the line or the label. */
+.archd__edge-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  fill: var(--text-secondary);
+  /* Alignment is deliberately NOT set here. It is a presentation attribute on
+     the element, and any CSS declaration of it — however generic — wins over
+     the attribute, so a rule here silently overrode every label that asked to
+     be set from its right edge. */
+  paint-order: stroke fill;
+  stroke: var(--card-bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.archd__aside {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  fill: var(--text-secondary);
+}
+
+.archd__aside--on {
+  fill: var(--accent);
+}
+
+/* A drawn diagram is vector all the way down, so it has no "full size" to
+   open — it re-renders at whatever width it is given. Below the point where
+   the type inside it would stop being readable it scrolls sideways in its own
+   frame instead of shrinking further; the page itself never scrolls. */
+.figure__frame--drawn {
+  padding: clamp(0.6rem, 1.5vw, 1.1rem);
+  overflow-x: auto;
+}
+
+@media (max-width: 860px) {
+  .figure__frame--drawn .archd {
+    min-width: 700px;
   }
 }

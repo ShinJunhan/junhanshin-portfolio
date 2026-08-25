@@ -88,3 +88,13 @@ export const CloseIcon = () => (
     <path d="M6 6l12 12M18 6L6 18" />
   </svg>
 )
+
+// Two stacked planes — the same drawing held at two levels of detail, which
+// is what the Clean / Detailed toggle switches between.
+export const LayersIcon = () => (
+  <svg {...base}>
+    <path d="M12 3 3 7.5l9 4.5 9-4.5z" />
+    <path d="M3 12.5 12 17l9-4.5" />
+    <path d="M3 17.5 12 22l9-4.5" />
+  </svg>
+)

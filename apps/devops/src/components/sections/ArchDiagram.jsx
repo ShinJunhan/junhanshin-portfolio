@@ -84,15 +84,37 @@ function roundedPath(points) {
   return d.join(' ')
 }
 
-// The two-leg L an edge takes when it has no waypoints of its own. `bend`
-// forces the leg order where the automatic choice reads wrong — between two
-// nodes that are nearly aligned on both axes there is no obviously right
-// answer, so the data gets to say.
+// The route an edge takes when it has no waypoints of its own. `bend` forces
+// the leg order where the automatic choice reads wrong — between two nodes
+// that are nearly aligned on both axes there is no obviously right answer, so
+// the data gets to say.
+//
+// Both anchors sit on the face the line actually approaches: a vertical-first
+// edge leaves a bottom edge and arrives at a top edge, and a horizontal-first
+// one leaves a side and arrives at a side. Two faces on the same axis cannot
+// be joined by a single L — the second leg of one ends up running *along* the
+// target's border instead of into it, which is how the SQL line into
+// PostgreSQL came to spend its last 106 units, arrowhead included, underneath
+// the box it was pointing at. So the offset is taken in a middle leg, and the
+// line meets the box square.
 function route(from, to, bend) {
   const dx = to.x - from.x
   const dy = to.y - from.y
+  // Which axis the two boxes are actually clear of each other on. Picking by
+  // raw distance alone chose the horizontal for the internet gateway and the
+  // load balancer under it, whose spans overlap by 24 units — so the line left
+  // one box's left face heading right and arrived at the other's right face,
+  // crossing both. An axis they overlap on cannot carry the first leg.
+  const clearX = Math.abs(dx) > (from.w + to.w) / 2
+  const clearY = Math.abs(dy) > (from.h + to.h) / 2
   const horizontalFirst =
-    bend === 'h' ? true : bend === 'v' ? false : Math.abs(dx) > Math.abs(dy)
+    bend === 'h'
+      ? true
+      : bend === 'v'
+        ? false
+        : clearX !== clearY
+          ? clearX
+          : Math.abs(dx) > Math.abs(dy)
 
   const start = horizontalFirst
     ? { x: from.x + (Math.sign(dx) || 1) * (from.w / 2), y: from.y }
@@ -106,8 +128,13 @@ function route(from, to, bend) {
     : Math.abs(start.x - end.x) < 1
   if (straight) return { d: roundedPath([start, end]), start, end }
 
-  const corner = horizontalFirst ? { x: end.x, y: start.y } : { x: start.x, y: end.y }
-  return { d: roundedPath([start, corner, end]), start, end }
+  // The jog happens halfway along, which puts it in open space between the
+  // two boxes rather than hard against either one.
+  const mid = horizontalFirst ? (start.x + end.x) / 2 : (start.y + end.y) / 2
+  const corners = horizontalFirst
+    ? [{ x: mid, y: start.y }, { x: mid, y: end.y }]
+    : [{ x: start.x, y: mid }, { x: end.x, y: mid }]
+  return { d: roundedPath([start, ...corners, end]), start, end }
 }
 
 // Waypoints, for the few edges that have to go around something. The anchors
@@ -238,26 +265,26 @@ function Zone({ zone }) {
   )
 }
 
-function Edge({ edge, nodes, id }) {
+// Geometry once, drawn twice: the line belongs under the boxes and the label
+// belongs over everything, so an edge cannot be one element any more. A
+// diagram that names a node it does not define is skipped rather than
+// throwing the whole page away.
+function geometry(edge, nodes) {
   const from = nodes[edge.from]
   const to = nodes[edge.to]
-  // A diagram that names a node it does not define should show the rest of
-  // itself rather than throwing the whole page away.
   if (!from || !to) return null
+  return edge.via ? routeVia(from, to, edge.via) : route(from, to, edge.bend)
+}
 
-  const { d, start, end } = edge.via
-    ? routeVia(from, to, edge.via)
-    : route(from, to, edge.bend)
-
+function Edge({ edge, geo, id }) {
   return (
     <g className={`archd__edge${edge.dash ? ' archd__edge--dash' : ''}`}>
       <path
-        d={d}
+        d={geo.d}
         className="archd__edge-line"
         markerEnd={`url(#${id}-arrow)`}
         markerStart={edge.dir === 'both' ? `url(#${id}-arrow-back)` : undefined}
       />
-      {edge.label && <EdgeLabel edge={edge} start={start} end={end} />}
     </g>
   )
 }
@@ -297,6 +324,11 @@ export default function ArchDiagram({ diagram, title, id: forcedId }) {
       { ...node, w: node.w ?? NODE_W, h: node.h ?? NODE_H },
     ])
   )
+  // Routed up front so the line layer and the label layer are drawn from one
+  // set of numbers rather than each working the geometry out again.
+  const edges = (diagram.edges ?? [])
+    .map((edge) => ({ edge, geo: geometry(edge, nodes) }))
+    .filter(({ geo }) => geo)
 
   return (
     <svg
@@ -337,15 +369,30 @@ export default function ArchDiagram({ diagram, title, id: forcedId }) {
         <Zone key={zone.id ?? zone.label} zone={zone} />
       ))}
 
-      {/* Edges under nodes, so a line that passes near a box tucks behind it
-          rather than crossing its label. */}
-      {(diagram.edges ?? []).map((edge, i) => (
-        <Edge key={`${edge.from}-${edge.to}-${i}`} edge={edge} nodes={nodes} id={id} />
+      {/* Zones, then connectors, then boxes, then edge labels — four layers,
+          in that order, because each one has to survive the next. A line
+          passing near a box tucks behind it rather than crossing its label,
+          and a label has nothing left to hide behind it: it used to sit in
+          its own edge's group, where the next edge's line and every node box
+          drawn afterwards painted straight over it. */}
+      {edges.map(({ edge, geo }, i) => (
+        <Edge key={`${edge.from}-${edge.to}-${i}`} edge={edge} geo={geo} id={id} />
       ))}
 
       {(diagram.nodes ?? []).map((node) => (
         <Node key={node.id} node={node} />
       ))}
+
+      {edges.map(({ edge, geo }, i) =>
+        edge.label ? (
+          <EdgeLabel
+            key={`${edge.from}-${edge.to}-${i}`}
+            edge={edge}
+            start={geo.start}
+            end={geo.end}
+          />
+        ) : null
+      )}
 
       {(diagram.captions ?? []).map((caption) => (
         <text

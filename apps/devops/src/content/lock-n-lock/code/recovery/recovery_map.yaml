@@ -1,0 +1,282 @@
+# ==================================================
+# Recovery Policy Configuration
+# ==================================================
+#
+# mode
+#
+# auto_recovery
+#   - The Recovery Controller performs the recovery automatically
+#   - On a successful verify, a recovery-success entry is logged
+#
+# notify_only
+#   - No automatic recovery is attempted
+#   - Alerting and an Event History entry only
+#
+# category
+#
+# user_service
+#   - A user-facing service failure
+#   - Alert: yes / auto-recovery: yes / recovery.log
+#
+# maintenance
+#   - An operational component failure
+#   - Alert: no / auto-recovery: yes / maintenance.log
+#
+# security
+#   - A security event
+#   - Alert: yes / auto-recovery: no / event.log
+#
+# Notes
+#   - The PostgresDown policy is still to be decided
+#   - Notify-only vs. promoting the replica is under review
+#   - RecoveryControllerDown cannot recover itself, so a separate protection
+#     mechanism is under review
+#
+# ==================================================
+
+
+# --------------------------------------------------
+# User Service Recovery
+# --------------------------------------------------
+
+# App service failure
+BankAppDown:
+  description: "LockBank FastAPI container is down"
+  category: user_service
+  notify: true
+  notify_success: true
+  log: recovery.log
+  mode: auto_recovery
+  action: restart_remote_container
+  target: aws-app
+  command: "bash ./actions/aws_app_restart.sh"
+  pre_verify:
+    type: http
+    url: "${APP_HEALTH_URL}"
+    timeout: 5
+  verify:
+    type: http
+    url: "${APP_HEALTH_URL}"
+    timeout: 5
+  retry: 3
+  verify_delay: 20
+  retry_interval: 15
+  cooldown: 30
+
+
+  # AppNginxDown:
+  # description: "AWS App Nginx container is down"
+  # category: user_service
+  # notify: true
+  # notify_success: true
+  # log: recovery.log
+  # mode: auto_recovery
+  # action: restart_remote_container
+  # target: aws-nginx
+  # command: "bash ./actions/aws_app_restart.sh lb-security-nginx"
+  # verify:
+  #   type: http
+  #   url: "${APP_HEALTH_URL}"
+  #   timeout: 5
+  # retry: 3
+  # verify_delay: 10
+  # retry_interval: 10
+  # cooldown: 10
+
+
+# --------------------------------------------------
+# Maintenance Recovery
+# --------------------------------------------------
+
+# Operational component
+# Recovered automatically when Prometheus goes down
+PrometheusDown:
+  description: "Prometheus service is down"
+
+  category: maintenance
+  notify: false
+  log: maintenance.log
+
+  mode: auto_recovery
+
+  action: restart_container
+
+  target: lb-monitoring-prometheus
+
+  command: "bash ./actions/docker_restart.sh lb-monitoring-prometheus"
+
+  pre_verify:
+    type: http
+    url: "http://prometheus:9090/-/ready"
+    timeout: 5
+
+  verify:
+    type: http
+    url: "http://prometheus:9090/-/ready"
+    timeout: 5
+
+  retry: 3
+  cooldown: 300
+
+
+# Operational component
+# Recovered automatically when Grafana goes down
+GrafanaDown:
+  description: "Grafana service is down"
+
+  category: maintenance
+  notify: false
+  log: maintenance.log
+
+  mode: auto_recovery
+
+  action: restart_container
+
+  target: lb-monitoring-grafana
+
+  command: "bash ./actions/docker_restart.sh lb-monitoring-grafana"
+
+  pre_verify:
+    type: http
+    url: "http://grafana:3000/api/health"
+    timeout: 5
+
+  verify:
+    type: http
+    url: "http://grafana:3000/api/health"
+    timeout: 5
+
+  retry: 3
+  cooldown: 300
+
+
+# Operational component
+# Recovered automatically when Alertmanager goes down
+AlertmanagerDown:
+  description: "Alertmanager service is down"
+
+  category: maintenance
+  notify: false
+  log: maintenance.log
+
+  mode: auto_recovery
+
+  action: restart_container
+
+  target: lb-monitoring-alertmanager
+
+  command: "bash ./actions/docker_restart.sh lb-monitoring-alertmanager"
+
+  pre_verify:
+    type: http
+    url: "http://alertmanager:9093/-/ready"
+    timeout: 5
+
+  verify:
+    type: http
+    url: "http://alertmanager:9093/-/ready"
+    timeout: 5
+
+  retry: 3
+  cooldown: 300
+
+NginxExporterDown:
+  description: "Nginx Exporter service is down"
+
+  category: maintenance
+  notify: false
+  log: maintenance.log
+
+  mode: auto_recovery
+
+  action: restart_container
+
+  target: lb-monitoring-nginx-exporter
+
+  command: "bash ./actions/docker_restart.sh lb-monitoring-nginx-exporter"
+
+  pre_verify:
+    type: http
+    url: "http://nginx-exporter:9113/metrics"
+    timeout: 5
+
+  verify:
+    type: http
+    url: "http://nginx-exporter:9113/metrics"
+    timeout: 5
+
+  retry: 3
+  cooldown: 300
+
+
+# --------------------------------------------------
+# Security Events
+# --------------------------------------------------
+
+# A spike in failed logins
+# For an operator to look at
+HighLoginFailureRate:
+  description: "High login failure rate detected"
+
+  category: security
+  notify: true
+  log: event.log
+
+  mode: notify_only
+
+
+# Rate limiting has kicked in
+# For an operator to look at
+RateLimitTriggered:
+  description: "Rate limit triggered"
+
+  category: security
+  notify: true
+  log: event.log
+
+  mode: notify_only
+
+
+# --------------------------------------------------
+# Database Recovery
+# --------------------------------------------------
+#
+# PostgresDown:
+#   description: "PostgreSQL primary container is down"
+#
+#   category: database
+#   notify: true
+#   log: recovery.log
+#
+#   mode: auto_recovery
+#
+#   action: restart_remote_container
+#
+#   target: lb-postgres-main
+#
+#   command: "bash ./actions/remote_docker_restart.sh lb-postgres-main lb-postgres-main"
+#
+#   verify:
+#     type: command
+#     command: "bash ./actions/remote_pg_isready.sh lb-postgres-main lb-postgres-main lb-user lb-db"
+#     timeout: 10
+#
+#   retry: 2
+#   cooldown: 30
+#
+# NOTE:
+# - The DB is deployed on the AWS lb-postgres-main host
+# - The Recovery Controller runs in the on-premises monitoring environment,
+#   so this needs a remote-execution path
+# - To be enabled once terraform plan/apply and the DB deployment are verified
+# - Promoting the replica and failover are out of scope for automation
+
+
+# --------------------------------------------------
+# Pending Decisions
+# --------------------------------------------------
+#
+# - How to protect against RecoveryControllerDown
+#   - Docker restart policy
+#   - systemd
+#   - External monitoring

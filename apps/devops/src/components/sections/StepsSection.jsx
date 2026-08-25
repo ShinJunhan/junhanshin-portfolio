@@ -19,8 +19,15 @@ import EmptySlot from './EmptySlot.jsx'
 // `implementation` in a project's data:
 //
 //   months  ['2026-04', '2026-05']   which grids to draw, in order
-//   span    { from, to }             the whole project, lit when nothing is picked
+//   span    { from, to } | [{ from, to }, …]
+//                                   the whole project, lit when nothing is picked
 //   phases  [{ id, title, range, from, to, text }]
+//
+// `span` takes a list because a project does not always run in one unbroken
+// stretch. A single range paints every day between its ends, which on a project
+// that stopped for a week and came back paints a week nobody worked as though
+// they had. Listing the stretches leaves the gap unlit, which is the true
+// picture and is also the more interesting one.
 //
 // Dates are plain 'YYYY-MM-DD' strings and every comparison below is a string
 // comparison on them. Deliberately not `Date`: `new Date('2026-04-20')` parses
@@ -78,6 +85,13 @@ function monthGrid(key) {
 
 const within = (date, range) => Boolean(range) && date >= range.from && date <= range.to
 
+// One range or several, read the same way. A project that ran straight through
+// writes an object and never thinks about this; one that paused writes a list.
+const inAny = (date, value) =>
+  Array.isArray(value)
+    ? value.some((range) => within(date, range))
+    : within(date, value)
+
 export default function StepsSection({ project }) {
   const plan = project.implementation
   // Collapsed by default: the section opens as a list of four phases and a
@@ -91,14 +105,21 @@ export default function StepsSection({ project }) {
   // accordion is the one pattern that forbids that. What a phase does is its
   // own business now; Collapse all is how you get back to the summary.
   const [openIds, setOpenIds] = useState(() => new Set())
+  // See StackSection: the bulk control staggers the rows so opening all of them
+  // is an unfold rather than one long jump, and a single click is never delayed
+  // by its own row number. The two sections share the control, so they share
+  // the behaviour.
+  const [cascade, setCascade] = useState(false)
 
-  const toggle = (id) =>
+  const toggle = (id) => {
+    setCascade(false)
     setOpenIds((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
+  }
 
   const months = useMemo(() => (plan?.months ?? []).map(monthGrid), [plan])
 
@@ -158,7 +179,7 @@ export default function StepsSection({ project }) {
                     key={cell.date}
                     // Three states, one hue: outside the project entirely,
                     // inside it but not in the open phase, and lit.
-                    data-in={within(cell.date, plan.span) ? 'true' : undefined}
+                    data-in={inAny(cell.date, plan.span) ? 'true' : undefined}
                     data-lit={
                       litRanges.some((range) => within(cell.date, range)) ? 'true' : undefined
                     }
@@ -185,20 +206,25 @@ export default function StepsSection({ project }) {
             type="button"
             className="disclosures__all"
             aria-expanded={allOpen}
-            onClick={() =>
+            onClick={() => {
+              setCascade(true)
               setOpenIds(allOpen ? new Set() : new Set(phases.map((phase) => phase.id)))
-            }
+            }}
           >
             {allOpen ? 'Collapse all' : 'Expand all'}
           </button>
         </div>
 
-        <ol className="disclosures">
+        <ol className={`disclosures${cascade ? ' disclosures--cascade' : ''}`}>
         {phases.map((phase, index) => {
           const isOpen = openIds.has(phase.id)
 
           return (
-            <li className={`disclosure${isOpen ? ' disclosure--open' : ''}`} key={phase.id}>
+            <li
+              className={`disclosure${isOpen ? ' disclosure--open' : ''}`}
+              key={phase.id}
+              style={{ '--disclosure-i': index }}
+            >
               <h3 className="disclosure__heading">
                 <button
                   type="button"

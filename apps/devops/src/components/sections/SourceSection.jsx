@@ -3,13 +3,17 @@ import Prism from 'prismjs'
 import BrowserPanel, { splitPath } from '../BrowserPanel.jsx'
 import Markdown from '../Markdown.jsx'
 import { docsFor } from '../../data/docs.js'
+import { slidesFor } from '../../data/slides.js'
 import { ExternalIcon, LanguageIcon } from '../icons.jsx'
+import { useSlideDeck } from './SlideDeck.jsx'
 import EmptySlot from './EmptySlot.jsx'
 import 'prismjs/components/prism-hcl'
 import 'prismjs/components/prism-yaml'
+import 'prismjs/components/prism-bash'
+import 'prismjs/components/prism-python'
 
 // The written documents and the source, one panel with a tab each, in the
-// order a reader needs them: README, Runbook, Terraform.
+// order a reader needs them: README, Runbook, Terraform, the deck.
 //
 // That order is the argument the section makes. The README says what the
 // system is, the Runbook says how it is operated, and the Terraform is the
@@ -17,10 +21,28 @@ import 'prismjs/components/prism-yaml'
 // the first and third; one that is meant to be *run* has a middle document,
 // and putting it between them is what makes the difference visible.
 //
+// The presentation deck comes last, after the source, because it is the one
+// document that was never the artefact — it is the account given of the work
+// once the work was done, and it reads as a summary to anyone who has just
+// been through the three above it.
+//
 // A document's language toggle lives in the address bar of its own tab rather
 // than on the section heading: it belongs to that document, and on a shared
 // heading it would sit there while Terraform was showing and mean nothing.
-const GRAMMARS = { tf: 'hcl', hcl: 'hcl', tfvars: 'hcl', yml: 'yaml', yaml: 'yaml' }
+// Extension to Prism grammar. A file whose extension is not here renders as
+// plain text rather than failing — `highlight` returns null and the tab falls
+// back to an unhighlighted `<code>`, so adding a language is one entry here
+// plus its import above, and forgetting to is a dull tab, never a broken one.
+const GRAMMARS = {
+  tf: 'hcl',
+  hcl: 'hcl',
+  tfvars: 'hcl',
+  yml: 'yaml',
+  yaml: 'yaml',
+  sh: 'bash',
+  bash: 'bash',
+  py: 'python',
+}
 
 function highlight(content, path) {
   const name = GRAMMARS[path.split('.').pop()?.toLowerCase()]
@@ -99,6 +121,11 @@ export default function SourceSection({ project }) {
     [project.slug]
   )
 
+  // The presentation deck, if this project has one on disk. Its tab carries
+  // enough state of its own — which slide is centred, whether the notes are
+  // open — that the hook holds it and hands back the pieces the panel needs.
+  const slideTab = useSlideDeck(useMemo(() => slidesFor(project.slug), [project.slug]))
+
   // Language per document, not one shared setting: the README has a Korean
   // translation and the runbook does not, and a single flag would have left
   // the toggle claiming KO on a tab that only exists in English.
@@ -109,8 +136,8 @@ export default function SourceSection({ project }) {
 
   const toggle = (id) => setExpandedIds((open) => ({ ...open, [id]: !open[id] }))
 
-  if (files.length === 0 && documents.length === 0) {
-    return <EmptySlot>No README, runbook, or Terraform code added yet.</EmptySlot>
+  if (files.length === 0 && documents.length === 0 && !slideTab) {
+    return <EmptySlot>No README, runbook, Terraform code, or slides added yet.</EmptySlot>
   }
 
   const tabs = []
@@ -159,10 +186,19 @@ export default function SourceSection({ project }) {
     })
   }
 
-  // Terraform last: the documents are the way in, the source is the follow-up
-  // read for anyone who wants to check the claims they make.
-  for (const file of files) {
-    tabs.push({
+  // The source after the documents: those are the way in, the source is the
+  // follow-up read for anyone who wants to check the claims they make.
+  //
+  // One tab holding all of them rather than one tab each. On a project with two
+  // documents and six files that was eight tabs wrapping onto two rows, and the
+  // eight were not peers — two are prose and six are what the prose is about.
+  // Nesting says that, and the strip fits on one line again.
+  //
+  // A single file still gets its own top-level tab. Wrapping one file in a
+  // group would add a level of navigation to hide nothing, and the projects
+  // that ship one Terraform file read better without it.
+  if (files.length > 0) {
+    const fileTab = (file) => ({
       id: file.path,
       label: splitPath(file.path).base,
       address: file.path,
@@ -177,6 +213,31 @@ export default function SourceSection({ project }) {
         </button>
       ),
       render: () => <CodeTab file={file} expanded={!!expandedIds[file.path]} />,
+    })
+
+    if (files.length === 1) {
+      tabs.push(fileTab(files[0]))
+    } else {
+      tabs.push({
+        id: 'source-code',
+        // Not "Terraform". The key in the data is still called that, but the
+        // files under it are HCL, bash, Python and YAML, and a tab that names
+        // one of the four would be wrong three times over.
+        label: 'Source code',
+        subTabs: files.map(fileTab),
+      })
+    }
+  }
+
+  // Last, and view-only: the address bar names the deck rather than a path
+  // because there is no file here to open — the slides are images on a page.
+  if (slideTab) {
+    tabs.push({
+      id: 'slides',
+      label: 'Project Presentation Slides',
+      address: slideTab.address,
+      aside: slideTab.aside,
+      render: () => slideTab.body,
     })
   }
 

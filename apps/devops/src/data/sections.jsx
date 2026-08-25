@@ -30,6 +30,9 @@ import ReflectionSection from '../components/sections/ReflectionSection.jsx'
 //             screenshots, the README — a standing empty heading is the point.
 //             Sections whose absence is meaningful rather than pending (a solo
 //             project has no Members) leave this off and disappear instead.
+//             May also be a function of the project, for a slot that is
+//             pending on most projects but genuinely not applicable on one —
+//             read it through `alwaysFor` rather than testing it directly.
 //   bare      the body renders its own heading(s) rather than the page putting
 //             one above it. For a section whose columns mean different things
 //             and each need naming — one heading over both would claim to
@@ -114,7 +117,11 @@ export const SECTIONS = [
     id: 'recovery',
     label: 'Recovery Logic & Alert Routing',
     has: (project) => project.recoveryPolicy?.length > 0,
-    always: true,
+    // Standing empty on a project that has not filled it in, gone entirely on
+    // one that sets `recoveryPolicy: null` — a project with no recovery config
+    // to show should not carry a permanent "not added yet" for a file that is
+    // never going to arrive.
+    always: (project) => project.recoveryPolicy !== null,
     Body: RecoveryPolicySection,
   },
   {
@@ -190,6 +197,14 @@ export function labelOf(section, project) {
   return typeof section.label === 'function' ? section.label(project) : section.label
 }
 
+// Same shape as `labelOf`, for the same reason. A project opts a standing empty
+// slot out by setting that section's key to `null` — which reads differently
+// from leaving it undefined: undefined is "not filled in yet", null is "this
+// project does not have one". Only `always` functions look at the difference.
+export function alwaysFor(section, project) {
+  return typeof section.always === 'function' ? section.always(project) : section.always
+}
+
 export function sectionsFor(project) {
-  return SECTIONS.filter((section) => section.always || section.has(project))
+  return SECTIONS.filter((section) => alwaysFor(section, project) || section.has(project))
 }

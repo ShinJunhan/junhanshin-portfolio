@@ -1,0 +1,193 @@
+groups:
+  - name: monitoring
+
+    rules:
+      # ==================================================
+      # Application Alerts
+      # Enabled once scraping the AWS App ASG instances was verified
+      #
+      # BankAppDown:
+      # - The LockBank /health endpoint is failing
+      # - Probed through Nginx on 80 rather than exposing FastAPI's 8080 directly
+      # - Alertmanager sends a Telegram alert, and
+      #   the Recovery Controller attempts a recovery.
+      #
+      # AppNodeExporterDown:
+      # - node_exporter on the App server is down
+      # - Detects that server resource metrics can no longer be collected.
+      # - Kept separate from BankAppDown: the thing to recover is not the same.
+      # ==================================================
+
+      - alert: BankAppDown
+        expr: max(probe_success{job="app-health"}) == 0
+        for: 10s
+        labels:
+          severity: critical
+          category: user_service
+          service: lockbank-app
+        annotations:
+          summary: LockBank App Down
+          description: LockBank /health probe via Nginx is failed.
+
+      - alert: HighLoginFailureRate
+        expr: nginx_login_401_count >= 3
+        for: 10s
+        labels:
+          severity: warning
+          category: security
+          service: lockbank-app
+        annotations:
+          summary: High Login Failure Rate
+          description: Login failure count exceeded threshold in recent Nginx logs.
+
+      - alert: RateLimitTriggered
+        expr: nginx_status_429_count >= 5
+        for: 30s
+        labels:
+          severity: warning
+          category: security
+          service: nginx
+        annotations:
+          summary: Rate Limit Triggered
+          description: HTTP 429 count exceeded threshold in recent Nginx logs.
+
+      # - alert: AppNodeExporterDown
+      #   expr: up{job="app-nodes", instance=~".*:9100"} == 0
+      #   for: 30s
+      #   labels:
+      #     severity: warning
+      #     category: exporter
+      #     service: app-node-exporter
+      #   annotations:
+      #     summary: App Node Exporter Down
+      #     description: App server node_exporter metrics endpoint is down.
+
+      # ==================================================
+      # Database Alerts
+      # Enabled once scraping the DB node and the PostgreSQL exporter was verified
+      #
+      # PostgresDown:
+      # - The DB is down, judged by the PostgreSQL service or its exporter
+      # - Classified critical: a DB failure can reach the user-facing service.
+      #
+      # PostgresExporterDown:
+      # - The PostgreSQL exporter itself is down
+      # - Split out from the DB failure so the two can be told apart.
+      # ==================================================
+
+      # - alert: PostgresDown
+      #   expr: pg_up{job="db-node", instance=~".*:9187"} == 0
+      #   for: 30s
+      #   labels:
+      #     severity: critical
+      #     category: database
+      #     service: postgres
+      #   annotations:
+      #     summary: PostgreSQL Down
+      #     description: PostgreSQL database is not accepting connections.
+
+      # - alert: PostgresExporterDown
+      #   expr: up{job="db-node", instance=~".*:9187"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: warning
+      #     category: exporter
+      #     service: postgres-exporter
+      #   annotations:
+      #     summary: PostgreSQL Exporter Down
+      #     description: PostgreSQL exporter metrics endpoint is down.
+
+      # - alert: DBNodeExporterDown
+      #   expr: up{job="db-node", instance=~".*:9100"} == 0
+      #   for: 1m
+      #   labels:
+      #     severity: warning
+      #     category: exporter
+      #     service: db-node-exporter
+      #   annotations:
+      #     summary: DB Node Exporter Down
+      #     description: DB server node_exporter metrics endpoint is down.
+
+
+      # ==================================================
+      # Maintenance Alerts
+      # Enabled against the current Prometheus scrape targets
+      # For an operational component, Alertmanager sends a Telegram alert and
+      # the Recovery Controller attempts a recovery.
+      # The outcome is written to maintenance.log.
+      # ==================================================
+
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          category: maintenance
+          service: prometheus
+        annotations:
+          summary: Prometheus Down
+          description: Prometheus scrape target is down.
+
+      - alert: AlertmanagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          category: maintenance
+          service: alertmanager
+        annotations:
+          summary: Alertmanager Down
+          description: Alertmanager scrape target is down.
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          category: maintenance
+          service: grafana
+        annotations:
+          summary: Grafana Down
+          description: Grafana scrape target is down.
+      
+      - alert: NginxExporterDown
+        expr: up{job="nginx-exporter"} == 0
+        for: 30s
+        labels:
+          severity: warning
+          category: maintenance
+          service: nginx-exporter
+        annotations:
+          summary: Nginx Exporter Down
+          description: Nginx Exporter scrape target is down.
+
+      # ==================================================
+      # Test Alerts
+      # ==================================================
+
+      # - alert: TestAlert
+      #   expr: vector(1)
+      #   for: 10s
+      #   labels:
+      #     severity: warning
+      #     category: test
+      #   annotations:
+      #     summary: Test Alert
+      #     description: Prometheus → Alertmanager → Recovery test
+
+      # ==================================================
+      # TODO Alerts
+      # To be enabled once the real scrape targets and app metrics are settled
+      # Kept apart from the live alerts so the two are not confused
+      # ==================================================
+
+      # - alert: NginxDown
+      #   expr: up{job="nginx"} == 0
+      #   for: 30s
+      #   labels:
+      #     severity: warning
+      #     category: maintenance
+      #     service: nginx
+      #   annotations:
+      #     summary: Nginx Down
+      #     description: Nginx availability check requires nginx-exporter or blackbox-exporter.

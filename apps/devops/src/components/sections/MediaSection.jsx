@@ -4,7 +4,13 @@ import EmptySlot from './EmptySlot.jsx'
 // Screenshots and the demo video.
 //
 // The screenshots are a tab per scenario, and each tab shows that scenario's
-// before and after **stacked**, not side by side. Stacking is what makes the
+// before and after **stacked**, not side by side.
+//
+// A shot may override its own caption with `state`. Not every scenario is a
+// before-and-after: a baseline has nothing to compare against, and an attack
+// run is better labelled by what the shot proves — "99% of requests blocked"
+// says more than "After" does. The default stays Before/After, so a project
+// that pairs its shots the ordinary way writes nothing extra. Stacking is what makes the
 // pair readable: at half the column width each shot was too small to see what
 // had changed, which is the entire reason both are here. One tab per scenario
 // also means the section no longer runs to eight full-width images.
@@ -65,8 +71,8 @@ export default function MediaSection({ project }) {
             address: scenario.label ?? scenario.tab ?? `Scenario ${i + 1}`,
             render: () => (
               <div className="shots">
-                <Shot shot={scenario.before} state="Before" />
-                <Shot shot={scenario.after} state="After" />
+                <Shot shot={scenario.before} state={scenario.before?.state ?? 'Before'} />
+                <Shot shot={scenario.after} state={scenario.after?.state ?? 'After'} />
               </div>
             ),
           }))}

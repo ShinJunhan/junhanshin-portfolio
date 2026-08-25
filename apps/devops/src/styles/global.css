@@ -987,16 +987,20 @@ button:focus-visible {
   color: var(--ink);
 }
 
-/* Explanatory copy runs the full width of the column, ragged-right.
+/* Explanatory copy runs the full width of the column, justified.
 
-   Full width is the design's own decision and it stands. What was removed is
-   the justification, not the width: justifying an ~125-character line needed
-   `hyphens: auto` to close the gaps it opened, and that broke words at points
-   English does not use — `inf-rastructure`, `ass-igned` in the My Role
-   paragraph. Ragged-right at the same width needs no hyphenation, so
-   Reflection no longer needs its own exception either.
+   The earlier note here argued against justifying at all, on the evidence
+   that it needed `hyphens: auto` to close its gaps and that hyphenation broke
+   words at points English does not use — `inf-rastructure`, `ass-igned`. That
+   diagnosis was right about hyphenation and wrong about justification: the
+   two are separable. `hyphens: none` with `text-justify: inter-word` leaves
+   the browser only the spaces to stretch, so every word stays whole and the
+   flush right edge is bought with word spacing alone. `.glance__text` has
+   been set that way for a while and is the pattern this follows.
 
-   Leading carries the width instead: 1.8 rather than the 1.7 a capped
+   The trade is real and it is spacing, not broken words: at an ~125-character
+   measure a line with few spaces in it opens wider gaps than a capped measure
+   would. Leading absorbs some of that — 1.8 rather than the 1.7 a short
    measure would want, because a long line needs more room for the return
    sweep back to the start of the next one. */
 .prose p {
@@ -1005,7 +1009,9 @@ button:focus-visible {
   /* Leading is tuned to the measure, not to a universal ratio. At the full
      column width a line runs long, so the return sweep needs more room. */
   line-height: 1.8;
-  text-align: left;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
   color: var(--text-primary);
 }
 
@@ -1020,7 +1026,9 @@ button:focus-visible {
   font-size: var(--t-lead);
   font-weight: 400;
   line-height: 1.7;
-  text-align: left;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
   color: var(--ink);
 }
 
@@ -1301,7 +1309,18 @@ button:focus-visible {
    The wheel column is sized to the wheel, which is a square with its own
    max-width, so the notes take whatever is left rather than the two splitting
    the row evenly. */
+/* A little more air above than `.section__head`'s 1.35rem leaves. The tooltip
+   over a wheel icon is drawn above that icon, and the topmost icons ride the
+   very edge of the stage — at narrow widths the label lands about 35px above
+   the stage's own box, which is further than the heading gap. The heading
+   rhythm is right for every section whose content starts at its box edge, so
+   the room is bought back here rather than loosened for all of them.
+
+   Padding, not margin: a margin here is adjacent to `.section__head`'s own
+   bottom margin and the two collapse to the larger of the pair, so 1.6rem of
+   margin bought 4px of gap. Padding does not collapse and adds all of it. */
 .stack-layout {
+  padding-top: 1.6rem;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   /* Wider than the page's usual column gap. Two dense things — a wheel of
@@ -1309,14 +1328,11 @@ button:focus-visible {
      read as one crowded block; the gap is what separates them into a diagram
      and its commentary. */
   gap: clamp(2.25rem, 5vw, 4.5rem);
-  /* Both columns start on the same line. The notes column reserves the height
-     of its own fully-expanded state, so it is the taller of the two — centring
-     the wheel against it pushed the wheel down the page and left the panel
-     looking as though it floated above it. Aligned to the start they read as
-     two columns of one section.
-
-     `start` is also what keeps the panel still: it no longer needs to stretch
-     to reserve room, because the hidden full-height copy inside it does that. */
+  /* Both columns start on the same line, and this is the rule the whole
+     section's stability rests on. Anchored to the top, an opening panel can
+     only ever push what is below it — every row above the one clicked stays
+     exactly where it was. Centred or stretched, the list would grow in both
+     directions and walk the rows above out from under the cursor. */
   align-items: start;
 }
 
@@ -1339,47 +1355,27 @@ button:focus-visible {
   margin-top: clamp(1.5rem, 4vw, 2rem);
 }
 
-/* The wheel is the taller column, so the section's height is set by it and the
-   list opens *inside* a box that does not move — the same arrangement that
-   keeps Implementation Steps still while a phase slides open. Two things had to
-   change for that to hold: the row anchors to the top of its column instead of
-   being centred in it, and the column is given the row's full height to grow
-   into.
+/* Collapsed, the wheel is the taller column and it sets the section's height —
+   which is the size the section should open at, and roughly a screen of it.
 
-   Centred was the bug the reader was seeing. Every time a panel opened the list
-   grew, and staying centred meant the whole thing shifted *up* by half of what
-   it grew — so the row above the one just clicked moved out from under the
-   cursor. Measured: opening the second of four rows moved the two rows above
-   it up by 56px — half of what the panel added.
+   The column used to reserve the height of its own fully-expanded state through
+   a hidden copy of the list, so the boundary never moved at all. That made the
+   section as tall as five open panels at every moment, including the moment a
+   reader first arrives and none of them are open. Stability is worth paying for
+   but not that much: the reserved column ran well past the wheel and the section
+   read as mostly empty.
 
-   The column also reserves the height of the fully-expanded list, through a
-   hidden copy of it stacked in the same grid cell — so the section's boundary
-   is fixed at its largest state and nothing an opening panel does can move it.
-   The alternative was shrinking the type until everything fitted, which made
-   the section stable by making it harder to read.
+   What moves now is the bottom edge and nothing else. `align-items: start` on
+   the grid above is what guarantees that — rows above an opening panel cannot
+   shift — and the panels animate their own height over 0.36s, so the edge
+   travels with them rather than snapping to a new position. Expanding all five
+   at once is the same movement, run in parallel.
 
-   Implementation Steps was already right for the same reason and it is why that
-   one reads as stable: its wrapper is a plain flex column with no justification
-   and its grid aligns to `start`, so a panel opening only ever pushes what is
-   below it. */
+   Implementation Steps works the same way and always has: a flex column with no
+   justification, aligned to `start`, so a panel only ever pushes what is under
+   it. */
 .stack-notes {
   justify-content: flex-start;
-}
-
-/* The live list and the hidden full-height copy share one cell. */
-.disclosures__stack {
-  display: grid;
-}
-
-.disclosures__stack > * {
-  grid-area: 1 / 1;
-}
-
-/* Laid out, not painted — `visibility` rather than `display`, because a
-   display-none child contributes no height and height is the whole job. */
-.disclosures--reserve {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 /* The mark the wheel shows for this tool, at the size a list row can carry.
@@ -1413,9 +1409,9 @@ button:focus-visible {
 
 /* Set like a phase's name — this is the same row, and the two sections should
    not disagree about how a thing you can open looks. It spent a version a step
-   smaller, to make the fully-expanded list fit inside the wheel's height; the
-   column reserves that height outright now, so the size no longer has to pay
-   for the stability. */
+   smaller, to make the fully-expanded list fit inside the wheel's height. It no
+   longer has to fit: the list is free to grow past the wheel, so the type is
+   sized for reading rather than for a height budget. */
 .tool-note__question {
   font-family: var(--font-heading);
   font-size: var(--t-lead);
@@ -1486,10 +1482,17 @@ button:focus-visible {
 
      `clip` rather than `hidden`, which would make this a scroll container, and
      with a margin so the tooltip above the topmost icon still has somewhere to
-     go: it sits about 18px above the stage's edge and the corners escape by
-     102px, so 2rem lets one through and stops the other. */
+     go. That margin was 2rem on the estimate that the tooltip clears the edge
+     by about 18px. It does at a wide stage; it does not at a narrow one. The
+     icons ride a radius fixed as a *fraction* of the stage, so as the stage
+     shrinks they sit proportionally nearer its rim while the tooltip stays the
+     same absolute size — measured at a 430px stage the label reached 35px out,
+     three past the old boundary, and the top of it was sliced off.
+
+     3.5rem clears the widest case with room to spare and still stops the
+     corners, which escape by 102px. */
   overflow: clip;
-  overflow-clip-margin: 2rem;
+  overflow-clip-margin: 3.5rem;
 }
 
 .wheel__pie {
@@ -1545,6 +1548,15 @@ button:focus-visible {
    minimum for the same reason the calendar's weekday row sits under it — a
    hard geometric constraint outranks a global step — and `ellipsis` is the
    backstop under even that. */
+/* A category too long to fit its radial span is set on two lines rather than
+   shrunk past the point the font-size floor allows — past that floor the text
+   simply overflowed and `text-overflow` ate the end of it, which is how
+   "Monitoring & Alerting" was arriving as a stub. The split happens in
+   `labelLines()`; each line is its own block so the break lands at the chosen
+   word rather than wherever the box happens to run out.
+
+   `nowrap` still applies *within* a line, and the ellipsis is kept as a last
+   resort for a single word longer than the whole span. */
 .wheel__label {
   position: absolute;
   width: calc(var(--label-span, 22) * 1cqi);
@@ -1552,9 +1564,8 @@ button:focus-visible {
   border: 0;
   background: none;
   cursor: pointer;
-  white-space: nowrap;
+  text-align: center;
   overflow: hidden;
-  text-overflow: ellipsis;
   font-family: var(--font-mono);
   font-size: clamp(
     0.5625rem,
@@ -1571,6 +1582,13 @@ button:focus-visible {
   color: var(--ink);
   opacity: 0.7;
   transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.wheel__label-line {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wheel__label--on {
@@ -1671,8 +1689,48 @@ button:focus-visible {
   font-weight: 600;
 }
 
+/* Flipped by `paint` on every frame — see TIP_FLIP_Y in TechStackWheel.jsx.
+   An icon near the top of the wheel has its label placed *under* it instead of
+   over it, pointing into the empty band between the ring and the pie. Over it,
+   the label ran past the stage's own edge, where it was clipped, drawn beneath
+   the sticky section menu, or landed on top of the section heading — and the
+   icons either side of it. Under it there is always room, at any wheel size and
+   any rotation. */
+.wheel__node[data-tip='below'] .wheel__node-name {
+  top: calc(100% + 0.35rem);
+  bottom: auto;
+}
+
+/* Anchored by its near edge rather than its middle, for the icons at the far
+   left and right of the ring — see TIP_EDGE_X. Centred, half the label hung
+   past the rim and was clipped; anchored, the whole of it opens inward across
+   the face of the wheel, where there is always room. The icons it crosses are
+   below it in the stack and the label is opaque, so it stays readable. */
+.wheel__node[data-tip-x='start'] .wheel__node-name {
+  /* Not flush with the icon's edge: the icons ride a radius that puts their own
+     boxes a few pixels past the rim, so anchoring to that edge inherits the
+     overhang. A fifth of the mark's width starts the label just inside it —
+     still visibly attached, and clear of the rim at every wheel size. */
+  left: 20%;
+  right: auto;
+  transform: none;
+}
+
+.wheel__node[data-tip-x='end'] .wheel__node-name {
+  left: auto;
+  right: 20%;
+  transform: none;
+}
+
+/* Above every other icon while it is being read. Without this the label is
+   painted in ring order, so a neighbour that happens to come later in the list
+   covers it. */
 .wheel__node:hover {
-  z-index: 2;
+  z-index: 3;
+}
+
+.wheel__node:hover .wheel__node-name {
+  z-index: 3;
 }
 
 .wheel__node:hover .wheel__node-name {
@@ -1839,6 +1897,66 @@ button:focus-visible {
 
 /* A tab at either end still needs its shoulder — the window's padding gives
    it somewhere to sit — so the earlier rule hiding them is gone. */
+
+/* The nested strip, for a tab that groups several files under one name.
+   It sits on --code-surface, the selected tab's own fill, so the tab, this
+   strip and the address bar below it read as a single band rather than as a
+   second row of tabs competing with the first.
+
+   Deliberately not the browser-tab silhouette. The shoulders and the outward
+   curve say "top-level tab"; repeating them one level down would make the two
+   rows look like peers, which is the exact thing the nesting exists to deny.
+   These are flat chips — the relationship a bookmarks bar has to a tab. */
+.code__subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.6rem 0.85rem 0.1rem;
+  background: var(--code-surface);
+}
+
+.code__subtab {
+  appearance: none;
+  padding: 0.28rem 0.62rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  /* Same reasoning as .code__tab: a filename is one unbreakable token, and a
+     long one must lose its tail rather than push the page sideways. */
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.code__subtab:hover {
+  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  color: var(--ink);
+}
+
+/* The selected chip goes *lighter* than the band it sits on, not darker and
+   not more accented. The strip is already an accent wash, so the usual
+   accent-tinted selection would have had nothing to lift off — landing on the
+   card's own ground is the one move that reads as raised here. */
+.code__subtab--on,
+.code__subtab--on:hover {
+  background: var(--card-bg);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .code__subtab {
+    transition: none;
+  }
+}
 
 /* The address bar. Same fill as the selected tab, so the two read as one
    surface and the tab appears to hang off it, exactly as a browser does. */
@@ -2223,7 +2341,18 @@ button:focus-visible {
    The crescent picks; the card shows one decision at a time. Four dense
    trade-offs as four bordered panels competed with each other and with
    everything below them. */
+/* Same reasoning as `.stack-layout` above, in both directions. The arc's
+   outermost circles are the blank ones placed beyond each end of the numbered
+   run, and their offsets sit deliberately outside 0–100% — that overshoot is
+   what stops the run ending abruptly on whichever number happens to be last.
+   It also puts roughly 23px of circle above the arc's own box, and as much
+   below it. Against a 21.6px heading gap the leading blank reached into the
+   section title whenever a decision near the end of the deck was selected.
+   Both ends, because the trailing blank overshoots by the same amount at the
+   other one — and padding rather than margin, which would collapse against the
+   section heading's own margin and give back only the difference. */
 .decisions {
+  padding-block: 1.6rem;
   display: grid;
   grid-template-columns: 7rem minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 2.5rem);
@@ -2707,7 +2836,9 @@ button:focus-visible {
   margin: 0;
   font-size: var(--t-prose);
   line-height: 1.65;
-  text-align: left;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
   color: var(--text-primary);
 }
 
@@ -3152,6 +3283,268 @@ a.link-tile:hover .link-tile__mark {
   font-weight: 700;
 }
 
+/* ---------- Slide deck ---------- */
+
+/* The deck tab: one scrolling column of slides, and the speaker notes as a
+   panel that opens beside it inside the same window. Everything here is drawn
+   from the tokens the README and code tabs already use — the frame is the
+   README's frame, the tag is the accent wash the language toggle uses — so the
+   fourth tab in the strip reads as the same object as the other three. */
+/* A query container and nothing else. Whether the notes fit beside the slides
+   depends on how wide this card is, which is not the same question as how wide
+   the window is — the sidebar collapses on the way down and hands the card
+   back the space it took. */
+.deck {
+  container-type: inline-size;
+}
+
+.deck__stage {
+  display: flex;
+  align-items: stretch;
+  gap: clamp(0.75rem, 1.6vw, 1.1rem);
+}
+
+/* Same height as the README and the code viewer, so switching tabs does not
+   move the page under the reader. Positioned, because a jump to a section
+   measures the slide against this box. */
+.deck__scroll {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  max-height: clamp(460px, 72vh, 900px);
+  overflow-y: auto;
+  /* Sideways gestures stay in the box so they cannot fire the browser's
+     back-navigation; the vertical axis chains, the same as the code viewer. */
+  overscroll-behavior-x: contain;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.deck__list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.1rem, 2.4vw, 1.75rem);
+  margin: 0;
+  padding: clamp(0.75rem, 1.6vw, 1.1rem);
+  list-style: none;
+}
+
+.deck__slide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Held at 16:9 whether or not the image has arrived, which is what lets the
+   whole column keep its height while seventy images load a screen at a time.
+   `contain` rather than `cover`: a slide is a page, and cropping one to fill a
+   frame would cut the edge off whatever is written there. */
+.deck__frame {
+  aspect-ratio: 16 / 9;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.deck__frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.deck__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.55rem;
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  line-height: 1.4;
+}
+
+.deck__number {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--text-secondary);
+}
+
+.deck__label {
+  color: var(--text-primary);
+}
+
+/* Only ten slides carry notes. The tag is how a reader knows the panel has
+   something to say before opening it. */
+.deck__tag {
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-sm);
+  /* Mixed here rather than read from --accent-wash, which resolves against
+     :root and would come out base indigo on every project. */
+  background: color-mix(in srgb, var(--accent) 14%, var(--card-bg));
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Beside the slides, not under them: the notes are read against the slide
+   they belong to, and a panel below would have put the two a scroll apart. */
+.deck__notes {
+  flex: none;
+  width: 300px;
+  max-height: clamp(460px, 72vh, 900px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(0.85rem, 1.8vw, 1.15rem);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.deck__notes-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.5rem;
+  margin: 0 0 0.75rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.deck__notes-slide {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--accent);
+}
+
+.deck__notes-section {
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  color: var(--text-secondary);
+}
+
+/* The line breaks are the speaker's own — one beat per line — so they are
+   kept rather than collapsed into a paragraph. */
+.deck__notes-body {
+  margin: 0;
+  font-size: var(--t-tiny);
+  line-height: 1.7;
+  color: var(--text-primary);
+  white-space: pre-line;
+}
+
+.deck__notes-empty {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+/* ---------- Slide deck: the toolbar in the address bar ---------- */
+
+.deck__bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The same bordered well the README's language toggle sits in, so the two
+   tabs put their controls in the same object in the same place. */
+.deck__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem 0.2rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+}
+
+.deck__jump-icon {
+  display: inline-flex;
+  font-size: var(--t-small);
+  color: var(--text-secondary);
+}
+
+.deck__select {
+  appearance: none;
+  max-width: 13rem;
+  padding: 0.25rem 1.35rem 0.25rem 0.2rem;
+  border: 0;
+  background: none;
+  /* Drawn rather than the platform's own arrow, which the reset above
+     removes: a native select chevron is the one control on this page that
+     would arrive in the operating system's colours. */
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 0.6rem center, right 0.35rem center;
+  background-size: 0.25rem 0.25rem, 0.25rem 0.25rem;
+  background-repeat: no-repeat;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  cursor: pointer;
+  text-overflow: ellipsis;
+  transition: color 0.18s ease;
+}
+
+.deck__select:hover {
+  color: var(--ink);
+}
+
+/* The open list is the browser's, not ours: it inherits nothing from the
+   address bar it drops out of, so it is told the page's own ground and ink. */
+.deck__select option {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.deck__notes-toggle {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease;
+}
+
+.deck__notes-toggle:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.deck__notes-toggle--on {
+  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Under the column rather than beside it, once beside would leave the slide
+   too small to read — the one thing this tab cannot trade away. The threshold
+   is where a 300px panel and its gap still leave the slides a bit over 400px,
+   which is about the width a slide's own body text survives. */
+@container (max-width: 46rem) {
+  .deck__stage {
+    flex-direction: column;
+  }
+
+  .deck__notes {
+    width: auto;
+    max-height: 16rem;
+  }
+}
+
 /* ---------- Reflection ---------- */
 
 
@@ -3384,11 +3777,18 @@ a.link-tile:hover .link-tile__mark {
   color: color-mix(in srgb, var(--note-tint, var(--accent)) 60%, var(--ink));
 }
 
+/* Justified like the rest of the page's prose, by word spacing only. A note
+   is the narrowest measure that gets this treatment, so it is also where the
+   gaps show first — `hyphens: none` is what keeps the cost to spacing instead
+   of letting the browser hyphenate its way out. */
 .board__text {
   margin: 0;
   font-family: var(--font-body);
   font-size: var(--t-tiny);
   line-height: 1.62;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
   color: var(--text-primary);
 }
 
@@ -3455,9 +3855,14 @@ a.link-tile:hover .link-tile__mark {
   align-items: center;
 }
 
+/* Centred on the mark above it. The two are one unit — a portrait and the
+   caption under it — and a caption set flush left under a centred disc reads as
+   two things that happen to be stacked. Only while they *are* stacked: below
+   1100px the pair becomes a row and the title goes back to flush left, which is
+   what a line beside a mark wants. */
 .role__who {
   display: grid;
-  justify-items: start;
+  justify-items: center;
   gap: 0.9rem;
 }
 
@@ -3498,6 +3903,7 @@ a.link-tile:hover .link-tile__mark {
      the block shout rather than introduce. The circle says whose; the title
      says what. */
   color: var(--ink);
+  text-align: center;
   text-wrap: balance;
 }
 
@@ -3696,6 +4102,9 @@ a.link-tile:hover .link-tile__mark {
   font-family: var(--font-body);
   font-size: var(--t-tiny);
   line-height: 1.6;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
   color: var(--text-primary);
 }
 
@@ -3729,8 +4138,12 @@ a.link-tile:hover .link-tile__mark {
   .role__who {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
+    justify-items: start;
     gap: 1.1rem;
     padding-top: 0;
+  }
+  .role__title {
+    text-align: left;
   }
   .role-mark {
     width: clamp(5rem, 12vw, 6.5rem);
@@ -4087,6 +4500,24 @@ a.link-tile:hover .link-tile__mark {
   color: var(--text-primary);
 }
 
+/* Expand all / Collapse all, staggered. One click on one row is instant and
+   must stay that way — the delay below is switched on by the wrapper class,
+   which only the bulk control sets.
+
+   Why it exists: five panels opening in lockstep move the section's bottom edge
+   by roughly 900px in one 0.36s step, and no easing curve stops that reading as
+   a jump. Offsetting each row by 55ms spreads the same travel over about 0.58s
+   and turns it into an unfold — the edge is always moving, never leaping. The
+   step is deliberately small; past ~80ms the list stops reading as one gesture
+   and starts looking like five separate ones.
+
+   The inner fade carries the same offset, so a row's text arrives with its own
+   panel rather than with the first one's. */
+.disclosures--cascade .disclosure__panel,
+.disclosures--cascade .disclosure__panel-inner {
+  transition-delay: calc(var(--disclosure-i, 0) * 55ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .disclosure__chevron,
   .disclosure__panel,
@@ -4094,6 +4525,13 @@ a.link-tile:hover .link-tile__mark {
   .cal__cell,
   .cal__date {
     transition: none;
+  }
+  /* `transition: none` above already cancels the delay; stated anyway so a
+     later edit that reintroduces a transition here does not reintroduce a
+     staircase with it. */
+  .disclosures--cascade .disclosure__panel,
+  .disclosures--cascade .disclosure__panel-inner {
+    transition-delay: 0s;
   }
 }
 

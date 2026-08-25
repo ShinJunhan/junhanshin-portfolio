@@ -64,11 +64,16 @@ function Tech({ item }) {
 // tech whose mark to borrow, so the row shows the same graphic the wheel does
 // for that tool — including the monogram fallback, which is what the wheel
 // shows for anything with no logo file on disk.
-function ToolNote({ note, open, onToggle }) {
+function ToolNote({ note, open, onToggle, index }) {
   const icon = techIcon(note.icon ?? note.tool)
 
   return (
-    <li className={`disclosure${open ? ' disclosure--open' : ''}`}>
+    // `--disclosure-i` is the row's place in the list, and it is only ever read
+    // when the wrapper is cascading — see `disclosures--cascade`.
+    <li
+      className={`disclosure${open ? ' disclosure--open' : ''}`}
+      style={{ '--disclosure-i': index }}
+    >
       <h3 className="disclosure__heading">
         <button
           type="button"
@@ -124,16 +129,25 @@ function StackNotes({ notes }) {
   // reader may well want to compare, and an accordion is the one pattern that
   // forbids that.
   const [openIds, setOpenIds] = useState(() => new Set())
+  // Whether the last thing the reader did was Expand all rather than click a
+  // single row. Opening five panels at once moves the section's bottom edge
+  // several hundred pixels, and doing that in one synchronised step reads as a
+  // jump however well it is eased; staggering the rows turns the same movement
+  // into an unfold. A single click must not be delayed by its own row number,
+  // so the stagger is switched on only for the bulk control.
+  const [cascade, setCascade] = useState(false)
 
   if (!notes?.length) return null
 
-  const toggle = (id) =>
+  const toggle = (id) => {
+    setCascade(false)
     setOpenIds((current) => {
       const next = new Set(current)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
+  }
 
   const allOpen = openIds.size === notes.length
 
@@ -147,41 +161,42 @@ function StackNotes({ notes }) {
           type="button"
           className="disclosures__all"
           aria-expanded={allOpen}
-          onClick={() =>
+          onClick={() => {
+            setCascade(true)
             setOpenIds(allOpen ? new Set() : new Set(notes.map((note) => note.tool)))
-          }
+          }}
         >
           {allOpen ? 'Collapse all' : 'Expand all'}
         </button>
       </div>
 
-      {/* The list and a hidden copy of it with every row open, stacked in one
-          grid cell. The copy is what gives the cell its height, so the column
-          is always as tall as the fully-expanded list and the section's
-          boundary cannot move whatever the reader opens or closes.
+      {/* Just the list. There used to be a second, hidden copy of it stacked in
+          the same grid cell with every row open, so the column always occupied
+          its fully-expanded height and the section's boundary could never move.
+          That bought stability at a price the reader actually pays: with five
+          notes the reserved height ran far past the wheel beside it, and the
+          section opened as a screenful of empty column with a short list at the
+          top of it.
 
-          Reserving it by measuring in JS would work too, and would go stale the
-          moment the copy changed. `visibility: hidden` rather than
-          `display: none` — a display-none child contributes no height, and
-          height is the entire point. */}
-      <div className="disclosures__stack">
-        <ol className="disclosures disclosures--reserve" aria-hidden="true" inert="">
-          {notes.map((note) => (
-            <ToolNote key={`reserve-${note.tool}`} note={note} open onToggle={() => {}} />
-          ))}
-        </ol>
-
-        <ol className="disclosures">
-          {notes.map((note) => (
-            <ToolNote
-              key={note.tool}
-              note={note}
-              open={openIds.has(note.tool)}
-              onToggle={() => toggle(note.tool)}
-            />
-          ))}
-        </ol>
-      </div>
+          The boundary moves now, and that is the intended behaviour rather than
+          a regression. What made the old arrangement necessary was the list
+          being centred in its column — opening a row grew it in both directions
+          and shifted the rows above out from under the cursor. Anchoring to the
+          top fixes that on its own: everything above a panel stays exactly where
+          it was, and only what is below it travels. Since the panels already
+          animate their own height, the section's bottom edge glides with them
+          instead of jumping. */}
+      <ol className={`disclosures${cascade ? ' disclosures--cascade' : ''}`}>
+        {notes.map((note, index) => (
+          <ToolNote
+            key={note.tool}
+            note={note}
+            index={index}
+            open={openIds.has(note.tool)}
+            onToggle={() => toggle(note.tool)}
+          />
+        ))}
+      </ol>
     </div>
   )
 }

@@ -66,6 +66,66 @@ const ICON_R = 44
 // `.wheel__label`.
 const LABEL_SPAN = 22
 
+// Above this many characters a category name is set on two lines instead of
+// one. The font size is solved from the character count against a fixed radial
+// span, and that solve has a floor — past roughly this length the floor wins,
+// the text no longer fits the span, and `text-overflow` quietly eats the end of
+// it. "Monitoring & Alerting" was arriving as a truncated stub.
+//
+// Splitting is the better trade than shrinking further: two lines of ten
+// characters solve to a much larger size than one line of twenty-one, so the
+// label ends up more legible than it was before it overflowed, not less.
+const LABEL_WRAP_OVER = 14
+
+// Breaks a category into at most two lines, at whichever word boundary sits
+// nearest the middle. A '/' keeps its place at the end of the first line —
+// 'Cloud/Infrastructure' reads as 'Cloud/' over 'Infrastructure', and a
+// leading slash on the second line would read as a fraction.
+function labelLines(text, over = LABEL_WRAP_OVER) {
+  if (text.length <= over) return [text]
+
+  const breaks = []
+  for (let i = 0; i < text.length; i += 1) {
+    if (text[i] === ' ') breaks.push({ end: i, start: i + 1 })
+    else if (text[i] === '/') breaks.push({ end: i + 1, start: i + 1 })
+  }
+  if (!breaks.length) return [text]
+
+  const middle = text.length / 2
+  const best = breaks.reduce((a, b) =>
+    Math.abs(a.end - middle) <= Math.abs(b.end - middle) ? a : b
+  )
+  return [text.slice(0, best.end).trim(), text.slice(best.start).trim()]
+}
+
+// Where an icon's tooltip flips from above the icon to below it, as a y in the
+// same 0-100 space the wheel is drawn in.
+//
+// The label is drawn above its icon, and the icons ride a radius fixed as a
+// *fraction* of the stage while the label stays a fixed number of pixels tall.
+// So the nearer the top of the wheel an icon sits, the further its label
+// reaches past the stage's own edge — where it is clipped, lands under the
+// sticky section menu, or collides with the section heading. Below this line
+// the label is placed under the icon instead, pointing into the empty band
+// between the ring and the pie, where there is always room for it.
+//
+// 18 covers the worst case. A label needs about 53px of headroom, which is 15
+// units at the narrowest stage the wheel is drawn at — but the icons' own boxes
+// already sit a little past the rim at that size, so the threshold carries
+// three units of margin on top of the measured need.
+const TIP_FLIP_Y = 18
+
+// The same idea on the other axis. A label is centred on its icon, so half of
+// it hangs off each side — and for the icons at the far left and right of the
+// ring, that half runs past the rim and is cut off exactly as the top ones
+// were. Inside these bounds the label is anchored by its near edge instead of
+// its middle, so it opens *into* the wheel rather than across the rim.
+//
+// 20 is set against the widest label the wheel carries: 'GitHub Actions' is
+// about 110px, and half of that is roughly 15 units at the smallest stage the
+// wheel is drawn at. The extra five are margin.
+const TIP_EDGE_X = 20
+
 const polar = (radius, degrees) => {
   const rad = ((degrees - 90) * Math.PI) / 180
   return { x: CENTER + radius * Math.cos(rad), y: CENTER + radius * Math.sin(rad) }
@@ -149,6 +209,7 @@ export default function TechStackWheel({ groups }) {
   const ringRef = useRef(null)
   const labelRefs = useRef([])
   const spinRefs = useRef([])
+  const nodeRefs = useRef([])
   // The live angle. Deliberately a ref: it changes every frame and nothing
   // rendered depends on it.
   const angleRef = useRef(0)
@@ -177,6 +238,22 @@ export default function TechStackWheel({ groups }) {
     })
   }, [groups])
 
+  // Memoised because `paint` reads it every frame to decide which way each
+  // tooltip should open — see TIP_FLIP_Y.
+  const ringItems = useMemo(
+    () =>
+      groups.flatMap((group, groupIndex) =>
+        group.items.map((item, itemIndex) => ({
+          item,
+          groupIndex,
+          angle:
+            arcs[groupIndex].start +
+            ((itemIndex + 0.5) * arcs[groupIndex].span) / group.items.length,
+        }))
+      ),
+    [groups, arcs]
+  )
+
   // Writes one angle to all four moving parts. The dial turns one way and the
   // ring the other; each label and each icon then takes back exactly the
   // rotation its own layer applied, so text and logos stay upright while their
@@ -198,8 +275,23 @@ export default function TechStackWheel({ groups }) {
       spinRefs.current.forEach((node) => {
         if (node) node.style.transform = `rotate(${-angle}deg)`
       })
+
+      // A node laid out on spoke `a` is on screen at `a + angle`, because the
+      // ring itself carries that rotation. Which half of the icon its tooltip
+      // opens into therefore has to be decided per frame, not once at layout:
+      // the ring is still turning while a reader hovers it.
+      ringItems.forEach((entry, index) => {
+        const node = nodeRefs.current[index]
+        if (!node) return
+        const rad = ((entry.angle + angle - 90) * Math.PI) / 180
+        const y = CENTER + ICON_R * Math.sin(rad)
+        const x = CENTER + ICON_R * Math.cos(rad)
+        node.dataset.tip = y < TIP_FLIP_Y ? 'below' : 'above'
+        node.dataset.tipX =
+          x < TIP_EDGE_X ? 'start' : x > 100 - TIP_EDGE_X ? 'end' : 'center'
+      })
     },
-    [arcs]
+    [arcs, ringItems]
   )
 
   // The home alignment, painted before the browser gets a chance to show a
@@ -282,16 +374,6 @@ export default function TechStackWheel({ groups }) {
     setHoverIndex(index)
   }
 
-  const ringItems = groups.flatMap((group, groupIndex) =>
-    group.items.map((item, itemIndex) => ({
-      item,
-      groupIndex,
-      angle:
-        arcs[groupIndex].start +
-        ((itemIndex + 0.5) * arcs[groupIndex].span) / group.items.length,
-    }))
-  )
-
   return (
     <div className="wheel" onMouseLeave={() => setHoverIndex(null)}>
       <div className="wheel__stage">
@@ -344,7 +426,10 @@ export default function TechStackWheel({ groups }) {
                   // solved from. Monospace makes that solvable without
                   // measuring anything: every glyph is the same width, so the
                   // character count is the width, in ems.
-                  '--chars': group.category.length,
+                  // The *longest line*, not the whole string: the font size is
+                  // solved from this, and a wrapped label's width is set by its
+                  // widest line rather than by its total length.
+                  '--chars': Math.max(...labelLines(group.category).map((l) => l.length)),
                   '--label-span': LABEL_SPAN,
                 }}
                 aria-pressed={index === pinnedIndex}
@@ -353,7 +438,11 @@ export default function TechStackWheel({ groups }) {
                 onBlur={() => setHoverIndex(null)}
                 onClick={() => select(index)}
               >
-                {group.category}
+                {labelLines(group.category).map((line) => (
+                  <span className="wheel__label-line" key={line}>
+                    {line}
+                  </span>
+                ))}
               </button>
             )
           })}
@@ -368,6 +457,9 @@ export default function TechStackWheel({ groups }) {
             return (
               <li
                 key={item}
+                ref={(node) => {
+                  nodeRefs.current[index] = node
+                }}
                 className={`wheel__node${on ? ' wheel__node--on' : ''}`}
                 style={{
                   left: `${at.x}%`,

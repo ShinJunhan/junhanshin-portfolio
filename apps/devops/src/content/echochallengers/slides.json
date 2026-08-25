@@ -1,0 +1,558 @@
+{
+  "deck": "EchoChallengers — AWS-Based Self-Healing Infrastructure",
+  "totalSlides": 70,
+  "imageFormat": "webp",
+  "imageDimensions": {
+    "width": 1800,
+    "height": 1014
+  },
+  "sourceRenderer": "PowerPoint-exported PDF (not LibreOffice)",
+  "imageBase": "/projects/project1_echochallengers/slides/",
+  "coverSlides": [
+    1,
+    2
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "num": "01",
+      "title": "Project Overview",
+      "slideStart": 3,
+      "slideEnd": 10
+    },
+    {
+      "id": "team",
+      "num": "02",
+      "title": "Team Members & Roles",
+      "slideStart": 11,
+      "slideEnd": 16
+    },
+    {
+      "id": "process",
+      "num": "03",
+      "title": "Process & Methodology",
+      "slideStart": 17,
+      "slideEnd": 20
+    },
+    {
+      "id": "architecture",
+      "num": "04",
+      "title": "System Architecture",
+      "slideStart": 21,
+      "slideEnd": 23
+    },
+    {
+      "id": "progress",
+      "num": "05",
+      "title": "Progress & Demo",
+      "slideStart": 24,
+      "slideEnd": 51
+    },
+    {
+      "id": "debugging",
+      "num": "06",
+      "title": "Debugging",
+      "slideStart": 52,
+      "slideEnd": 66
+    },
+    {
+      "id": "evaluation",
+      "num": "07",
+      "title": "Self-Evaluation",
+      "slideStart": 67,
+      "slideEnd": 70
+    }
+  ],
+  "slides": [
+    {
+      "number": 1,
+      "file": "slide-01.webp",
+      "section": "cover",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 2,
+      "file": "slide-02.webp",
+      "section": "cover",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 3,
+      "file": "slide-03.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 4,
+      "file": "slide-04.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 5,
+      "file": "slide-05.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 6,
+      "file": "slide-06.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 7,
+      "file": "slide-07.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 8,
+      "file": "slide-08.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 9,
+      "file": "slide-09.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 10,
+      "file": "slide-10.webp",
+      "section": "overview",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 11,
+      "file": "slide-11.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 12,
+      "file": "slide-12.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 13,
+      "file": "slide-13.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 14,
+      "file": "slide-14.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 15,
+      "file": "slide-15.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 16,
+      "file": "slide-16.webp",
+      "section": "team",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 17,
+      "file": "slide-17.webp",
+      "section": "process",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 18,
+      "file": "slide-18.webp",
+      "section": "process",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 19,
+      "file": "slide-19.webp",
+      "section": "process",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 20,
+      "file": "slide-20.webp",
+      "section": "process",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 21,
+      "file": "slide-21.webp",
+      "section": "architecture",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 22,
+      "file": "slide-22.webp",
+      "section": "architecture",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 23,
+      "file": "slide-23.webp",
+      "section": "architecture",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 24,
+      "file": "slide-24.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 25,
+      "file": "slide-25.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 26,
+      "file": "slide-26.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 27,
+      "file": "slide-27.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 28,
+      "file": "slide-28.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 29,
+      "file": "slide-29.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 30,
+      "file": "slide-30.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 31,
+      "file": "slide-31.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 32,
+      "file": "slide-32.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 33,
+      "file": "slide-33.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 34,
+      "file": "slide-34.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "For this project, we built four failure scenarios to verify the monitoring-based auto-recovery (self-healing) flow.\nEach scenario was designed around a failure that could realistically happen in a production environment, with the goal of verifying this flow: Prometheus Alert → AlertManager → Recovery Controller → automatic recovery → status normalization.\nFor each scenario, we also verified the Slack notification, the recovery log entry, and whether the Grafana dashboard returned to normal.\nNginxDown restarts the service automatically once nginx_up drops to 0.\nNginxExporterDown restarts the exporter itself.\nHighCPU terminates the load process once CPU exceeds 80%.\nHighMemoryUsage runs a memory-cleanup command once memory exceeds 70%.\nWe'll walk through each of these scenarios briefly, then show them actually running in the demo video.\""
+    },
+    {
+      "number": 35,
+      "file": "slide-35.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 36,
+      "file": "slide-36.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 37,
+      "file": "slide-37.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 38,
+      "file": "slide-38.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 39,
+      "file": "slide-39.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 40,
+      "file": "slide-40.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 41,
+      "file": "slide-41.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 42,
+      "file": "slide-42.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 43,
+      "file": "slide-43.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 44,
+      "file": "slide-44.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 45,
+      "file": "slide-45.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 46,
+      "file": "slide-46.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 47,
+      "file": "slide-47.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 48,
+      "file": "slide-48.webp",
+      "section": "progress",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 49,
+      "file": "slide-49.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 50,
+      "file": "slide-50.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We verified that the monitoring-based auto-recovery flow works correctly when a web service failure occurs. "
+    },
+    {
+      "number": 51,
+      "file": "slide-51.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Key items to check\nrecovery.log entries\ncritical.log entries\nSlack Alert and Recovery notifications\nGrafana Dashboard status changes\nAlertManager alert status"
+    },
+    {
+      "number": 52,
+      "file": "slide-52.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 53,
+      "file": "slide-53.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 54,
+      "file": "slide-54.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 55,
+      "file": "slide-55.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 56,
+      "file": "slide-56.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 57,
+      "file": "slide-57.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 58,
+      "file": "slide-58.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 59,
+      "file": "slide-59.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 60,
+      "file": "slide-60.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 61,
+      "file": "slide-61.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 62,
+      "file": "slide-62.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 63,
+      "file": "slide-63.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 64,
+      "file": "slide-64.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 65,
+      "file": "slide-65.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 66,
+      "file": "slide-66.webp",
+      "section": "debugging",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 67,
+      "file": "slide-67.webp",
+      "section": "evaluation",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 68,
+      "file": "slide-68.webp",
+      "section": "evaluation",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 69,
+      "file": "slide-69.webp",
+      "section": "evaluation",
+      "hasNotes": false,
+      "notes": null
+    },
+    {
+      "number": 70,
+      "file": "slide-70.webp",
+      "section": "evaluation",
+      "hasNotes": false,
+      "notes": null
+    }
+  ]
+}

@@ -107,9 +107,21 @@ history and gets its own surface rather than being buried or apologized for.
 
 - **EchoChallengers** (Apr 20 – May 22, 2026) — self-healing AWS infrastructure.
   Full write-up: role, context, six metrics (30–60s MTTR, 5–10s MTTD, 27 PRs merged,
-  41 AWS resources in ~10 min, 12 cases resolved, 4 scenarios validated), seven-category
-  tech stack, real Terraform `main.tf`, real `recovery_map.yml` and `alert.rules.yml`,
-  four technical decisions, five named teammates, a 30k-character README (EN + KO).
+  41 Terraform resources in ~10 min, 12 cases resolved, 4 scenarios validated),
+  seven-category tech stack, real Terraform `main.tf`, real `recovery_map.yml` and
+  `alert.rules.yml`, four technical decisions, five named teammates, a
+  30k-character README (EN + KO).
+- **Lock-N-Lock** (May 27 – Jun 24, 2026) — the LockBank security build, team of
+  five, Junhan as team lead and infrastructure track owner. Full write-up: three
+  role figures (~60 Terraform resources, 5 parallel tracks, 6 commands), seven
+  duty tiles, technical decisions, architecture diagrams, a cost section, and the
+  team's 72-slide final report deck rendered in the SlideDeck tab.
+- **ThisPod-ThatPod** (Jun 29 – Aug 27, 2026) — the team that built **hailcast**,
+  AI demand-forecast autoscaling and FinOps on EKS. Team of six, Junhan as team
+  lead and operations track owner. Full write-up: eight duty tiles, eight
+  architecture views in both drawn and redrawn form, five demo dashboards, a
+  measured cost section reading the Cost and Usage Report through Glue and Athena,
+  and four repository trees.
 - **Credential:** AWS Certified Solutions Architect – Associate. This is the only
   certification held.
 - **Work history:** Team Lead, Wellness College (O2 Footprint), Feb 2025 – Mar 2026;
@@ -119,10 +131,16 @@ history and gets its own surface rather than being buried or apologized for.
   infrastructure bootcamp; relocating to Methuen, MA in September 2026.
 - **Icon assets:** real vendor SVGs under `apps/devops/src/assets/icons/`.
 
-**Real projects, material not yet written:** Lock-N-Lock, hailcast, the KT Cloud
-TECH UP fellowship build, two individual projects, Cloud Resume Challenge,
-Kubernetes Challenge. All seven are genuine and will be filled in. Their current
-entries are scaffolding — `period: 'TBD'`, "Decision title", placeholder metrics.
+**Real projects, material not yet written:** the KT Cloud TECH UP fellowship
+build, two individual projects, Cloud Resume Challenge, Kubernetes Challenge. All
+five are genuine and will be filled in. Their current entries are scaffolding —
+`period: 'TBD'`, "Decision title", placeholder metrics.
+
+**A team's name and its product's name are different facts.** ThisPod-ThatPod is
+the team and the GitHub org; hailcast is the app it built, and it stays the
+product name in repository trees, AWS resource names and dashboard titles. The
+sidebar and the Workspace heading carry the team; the page eyebrow carries the
+product. Do not collapse the two.
 
 **Must never be fabricated:** metrics, periods, teammate names, decision rationale,
 or outcomes for any unfilled project. Empty is correct; plausible is not. The site's

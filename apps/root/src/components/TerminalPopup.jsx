@@ -1,28 +1,198 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 
+const START_HINT = 'Type "help" to see available commands.'
+
+// Each command maps a flag to its output. '' is the bare, no-flag form; a
+// command with only '' takes no arguments at all.
 const COMMANDS = {
-  help: () =>
-    'Available commands: whoami, experience, skills, certs, contact, help',
-  whoami: () =>
-    "Junhan Shin — career-changer moving from program leadership into cloud infrastructure. Currently completing a 6-month cloud infra bootcamp in Korea, relocating to Methuen, MA in Sept 2026.",
-  experience: () =>
-    [
-      'Team Lead, Wellness College (O2 Footprint) — Feb 2025-Mar 2026',
-      '  Ran a government-funded workforce program: ~1.7B KRW annual budget,',
-      '  vendor negotiation, 770+ students managed across 15 program cycles.',
-      '',
-      'Freelance Math Tutor — Apr 2020-Feb 2023',
-      '  1-on-1 and group instruction, zero student attrition.',
-      '',
-      'Yoga Instructor / Studio Receptionist — 2014-2019',
-      '',
-      'Type "skills" or "certs" for the technical side.',
+  whoami: {
+    '': [
+      'My name is Junhan Shin. I am an emerging Cloud/DevOps Engineer with a',
+      "Bachelor's in Information and Statistics and a minor in Computer Science",
+      'and Engineering. I spent 10+ years working as a teacher and a',
+      'public-private operator before going back to school for an accelerated',
+      'program in cloud infrastructure.',
     ].join('\n'),
-  skills: () =>
-    'Terraform, Ansible, Docker, Kubernetes, Helm, ArgoCD, GitHub Actions, AWS (EC2/S3/VPC/Lambda/DynamoDB/IAM), Prometheus/Grafana.',
-  certs: () => 'AWS Certified Solutions Architect – Associate.',
-  contact: () => 'Email: junhanshin17@gmail.com — see the footer for LinkedIn, GitHub, and more.',
+  },
+
+  experience: {
+    '': [
+      'KT Cloud TECH UP Enterprise Fellowship',
+      'Cloud Infrastructure Engineer & Interim Squad Lead (Aug-Oct 2026)',
+      '',
+      'Public-Private Operations Senior Manager (Mar 2025-Mar 2026)',
+      'Public-Private Operations Manager (Mar 2023-Feb 2025)',
+      'Student Academic Advisor_Mathematics Specialty (May 2021-Feb 2023)',
+      'Licensed Mathematics Academic Coach (Apr 2020-Feb 2023)',
+      'Certified Yoga Teacher & Sound Bath Practitioner (Mar 2014-Aug 2019)',
+      'Administrative Assistant (Jun 2018-Aug 2019)',
+      'Mathematics Private Instructor (Mar 2010-Mar 2011)',
+      '',
+      'Type "education --college", "education --latest", "education --highschool",',
+      '"projects", or "skills" for more.',
+    ].join('\n'),
+  },
+
+  education: {
+    '': [
+      'Advanced Cloud Infrastructure & Architecture Accelerated Program',
+      'The National Institute for High-Tech Industry Engineering, Class of 2026',
+      '--',
+      'Bachelor of Science, Information and Statistics',
+      'Chungnam National University, Class of 2018',
+      '--',
+      'Shintanjin High School, Class of 2009',
+      '--',
+      'Type "education --college", "education --latest", or "education --highschool" for details.',
+    ].join('\n'),
+    '--college': [
+      'Major: Bachelor of Science, Information and Statistics',
+      'Minor: Computer Science and Engineering',
+      'Chungnam National University, Class of 2018',
+      'GPA: 4.273 / 4.5',
+      '',
+      'Relevant coursework: Data Structures, Algorithms, Operating Systems,',
+      'Database Systems, Computer Architectures, Object-Oriented Design.',
+    ].join('\n'),
+    // "Track" here is deliberate, not a stale copy of the summary's
+    // "Accelerated Program" wording. Confirmed with Junhan.
+    '--latest': [
+      'Advanced Cloud Infrastructure & Architecture Track',
+      'The National Institute for High-Tech Industry Engineering',
+      'KDT Framework, Class of 2026',
+      '',
+      'Relevant coursework: Python, Linux, PostgreSQL, AWS (EC2, S3, VPC,',
+      'Route 53, RDS), Docker, Kubernetes, Helm, Terraform, GitHub Actions,',
+      'ArgoCD, Jenkins, Cisco networking.',
+    ].join('\n'),
+    '--highschool': ['Shintanjin High School, Class of 2009', 'Daejeon, South Korea'].join('\n'),
+  },
+
+  projects: {
+    '': 'Visit devops.junhanshin.com',
+  },
+
+  skills: {
+    '': [
+      'Technical: Terraform, Kubernetes, AWS, and more.',
+      '--',
+      'Soft: Leadership, Adaptability, Critical Thinking, and more.',
+      '--',
+      'Office: Microsoft Office, Google Workspace, Slack, and more.',
+      '--',
+      'Design: Figma, Canva, DaVinci Resolve, and more.',
+      '--',
+      'Management: Fiscal Planning, Grant Writing, and more.',
+      '--',
+      'Type "skills --technical", "skills --soft", "skills --office",',
+      '"skills --design", or "skills --management" for details.',
+    ].join('\n'),
+    '--technical': [
+      'CI/CD & Source Control: ArgoCD, Blue-Green Deployment, Gitea, Git/GitHub,',
+      'GitHub Actions, Jenkins',
+      '',
+      'Cloud (AWS): ACM, ALB, Auto Scaling Groups, CloudFront, CloudWatch,',
+      'DynamoDB, EC2, ECR, IAM, Lambda, RDS, Route 53, S3, Secrets Manager,',
+      'Session Manager, SQS, VPC',
+      '',
+      'Containers & Orchestration: Docker, EKS, Helm, Karpenter, KEDA, Kubernetes',
+      '',
+      'Databases: DBeaver, MS-SQL Server, PostgreSQL',
+      '',
+      'Dev Tools: Harbor, OpenStack, VMware, VS Code',
+      '',
+      'IaC & Automation: Ansible, Jinja, Terraform',
+      '',
+      'Languages & Scripting: Go, Java, Python, Shell/Bash, YAML',
+      '',
+      'Load Testing: Locust',
+      '',
+      'Monitoring & Observability: AlertManager, Grafana, Loki, Prometheus',
+      '',
+      'Networking & Service Mesh: Cisco networking, Kiali, NAT Gateway/Instance',
+      'cost optimization, Tailscale, VPC design & subnetting',
+      '',
+      'Security Tooling: Bandit (SAST), fail2ban, Nginx rate limiting,',
+      'OWASP ZAP (DAST), Trivy (image scanning)',
+    ].join('\n'),
+    '--soft': [
+      'Active Listening, Adaptability, Attention to Detail, Budget & Vendor',
+      'Negotiation, Business Development, Client Relationship Management,',
+      'Conflict De-escalation, Critical Thinking, Cross-Functional',
+      'Collaboration, Delegation, Leadership, Resilience, Task Management,',
+      'Team Player, Time Management, Works Independently',
+    ].join('\n'),
+    '--office': [
+      'Google Workspace (Forms, Sheets, Docs, Drive, Meet), Microsoft Office',
+      '(Excel, Word, PowerPoint), Notion, Slack',
+    ].join('\n'),
+    '--design': 'CapCut, Canva, DaVinci Resolve, Figma, Miricanvas, Premiere Pro',
+    '--management': [
+      'Curriculum Development, Data Tracking & Reporting, Event & Logistics',
+      'Coordination, Fiscal Planning, Grant Writing & Compliance Documentation,',
+      'Program Budget Management',
+    ].join('\n'),
+  },
+
+  languages: {
+    '': ['English: Fluent', 'Korean: Native', 'Japanese: Intermediate'].join('\n'),
+  },
+
+  certs: {
+    '': 'AWS Certified Solutions Architect, Associate.',
+  },
+
+  contact: {
+    '': [
+      'Email: junhanshin17@gmail.com',
+      'Phone: 999-999-999',
+      'LinkedIn: linkedin.com/in/[placeholder]',
+      'GitHub: github.com/[placeholder]',
+    ].join('\n'),
+  },
+
+  // Handled in runCommand: it clears the log rather than printing anything.
+  clear: {
+    '': '',
+  },
+
+  help: {
+    '': [
+      'whoami      : short intro',
+      'experience  : work history',
+      'education   : degree, program, and school (--college, --latest, --highschool)',
+      'projects    : link to devops.junhanshin.com',
+      'skills      : technical, soft, office, design, and management (--technical, --soft, --office, --design, --management)',
+      'languages   : language proficiency',
+      'certs       : certifications',
+      'contact     : email, phone, LinkedIn, GitHub',
+      'clear       : clear the screen',
+      'help        : this list',
+    ].join('\n'),
+  },
+}
+
+// Flag names contain hyphens, and a line is allowed to break right after one:
+// left alone, a wrapped help row can read "(-" then "-college" on the next
+// line. Every token carrying a flag is held together so that can't happen.
+function renderHelpRow(row) {
+  return row.split(/(\s+)/).map((part, i) =>
+    part.includes('--') ? (
+      <span key={i} style={{ whiteSpace: 'nowrap' }}>
+        {part}
+      </span>
+    ) : (
+      part
+    ),
+  )
+}
+
+// Formats the "that flag doesn't exist" line, listing the ones that do.
+function unknownFlagMessage(name, flag) {
+  const flags = Object.keys(COMMANDS[name]).filter((f) => f)
+  if (!flags.length) return `${name} takes no options.`
+  return `Unknown option "${flag}" for ${name}. Try ${flags.join(', ')}.`
 }
 
 export default function TerminalPopup() {
@@ -31,7 +201,7 @@ export default function TerminalPopup() {
   // slide works from wherever the pointer happens to be.
   const dragControls = useDragControls()
   const [history, setHistory] = useState([
-    { type: 'output', text: 'Type "help" to see available commands.' },
+    { type: 'output', text: START_HINT },
   ])
   const [input, setInput] = useState('')
   const inputRef = useRef(null)
@@ -80,11 +250,35 @@ export default function TerminalPopup() {
   }, [history])
 
   function runCommand(raw) {
-    const cmd = raw.trim().toLowerCase()
-    if (!cmd) return
-    const handler = COMMANDS[cmd]
-    const output = handler ? handler() : `Command not found: ${cmd}. Type "help" for options.`
-    setHistory((h) => [...h, { type: 'input', text: cmd }, { type: 'output', text: output }])
+    const line = raw.trim()
+    if (!line) return
+    const [name, ...args] = line.toLowerCase().split(/\s+/)
+    const command = COMMANDS[name]
+
+    // clear wipes the scrollback and puts the opening hint back, so the panel
+    // is never a blank screen with no way in. Nothing to confirm: like a real
+    // shell, it hides history rather than destroying anything.
+    if (command && name === 'clear' && !args.length) {
+      setHistory([{ type: 'output', text: START_HINT }])
+      return
+    }
+
+    let output
+    if (!command) {
+      output = `Command not found: ${name}. Type "help" for options.`
+    } else if (args.length > 1) {
+      output = `${name} takes one option at a time.`
+    } else {
+      const flag = args[0] || ''
+      output = flag in command ? command[flag] : unknownFlagMessage(name, flag)
+    }
+
+    setHistory((h) => [
+      ...h,
+      { type: 'input', text: line },
+      // help is the one tabular output, so it wraps with a hanging indent.
+      { type: 'output', text: output, hang: name === 'help' },
+    ])
   }
 
   function handleSubmit(e) {
@@ -196,7 +390,18 @@ export default function TerminalPopup() {
         <div className="term-panel__log">
           {history.map((line, i) => (
             <div key={i} style={{ whiteSpace: 'pre-wrap', marginBottom: '6px' }}>
-              {line.type === 'input' ? <span style={{ color: '#4FA88F' }}>$ {line.text}</span> : line.text}
+              {line.type === 'input' ? (
+                <span style={{ color: '#4FA88F' }}>$ {line.text}</span>
+              ) : line.hang ? (
+                // One row per element, so the hanging indent applies to each.
+                line.text.split('\n').map((row, j) => (
+                  <div key={j} className="term-hang">
+                    {renderHelpRow(row)}
+                  </div>
+                ))
+              ) : (
+                line.text
+              )}
             </div>
           ))}
           <div ref={bottomRef} />

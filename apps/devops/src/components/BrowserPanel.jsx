@@ -153,14 +153,20 @@ export default function BrowserPanel({ tabs = [], label, mark, onTabChange, chil
           </div>
         )}
 
+        {/* Two elements, not one. The outer keeps the tinted fill the sub-tab
+            strip above it has, so the band carries on past the baseline; the
+            inner is the white bar, and the outer's padding is what leaves the
+            tint showing all the way around it. */}
         {view.address && (
-          <div className="code__omnibox">
-            {mark ?? <FolderMark />}
-            <span className="code__omnibox-path">
-              <span className="code__omnibox-dir">{dir}</span>
-              <span className="code__omnibox-file">{base}</span>
-            </span>
-            {view.aside && <span className="code__omnibox-aside">{view.aside}</span>}
+          <div className="code__omnibar">
+            <div className="code__omnibox">
+              {mark ?? <FolderMark />}
+              <span className="code__omnibox-path">
+                <span className="code__omnibox-dir">{dir}</span>
+                <span className="code__omnibox-file">{base}</span>
+              </span>
+              {view.aside && <span className="code__omnibox-aside">{view.aside}</span>}
+            </div>
           </div>
         )}
 

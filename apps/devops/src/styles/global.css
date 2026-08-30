@@ -672,10 +672,15 @@ button:focus-visible {
 
 .project__title {
   font-weight: var(--display-weight);
-  font-size: calc(clamp(1.7rem, 1.1rem + 3.2vw, 3.4rem) * var(--display-scale));
+  /* The cap was 3.4rem, which rendered at 57px and cost the two longest
+     titles a third line — the header is already exactly as wide as the
+     sections below it, so the only room left to find was in the type. 3.0rem
+     puts both of them back on two lines and leaves the four short titles
+     where they were. */
+  font-size: calc(clamp(1.7rem, 1.1rem + 3.2vw, 3.0rem) * var(--display-scale));
   letter-spacing: var(--display-track);
   /* Looser than the shared display leading: this is the one heading that
-     regularly wraps, and two stacked lines of 57px need air between them
+     regularly wraps, and two stacked lines of 50px need air between them
      that a single-line section heading does not. */
   line-height: 1.16;
   /* Balanced wrapping, because the title is centred. A centred block wants
@@ -690,6 +695,80 @@ button:focus-visible {
   margin: 0;
   font-family: var(--font-mono);
   font-size: var(--t-tiny);
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+/* ---------- Role: the figures band ---------- */
+
+/* The band and the bento are one column, stacked, so the identity column
+   beside them stays centred against both rather than against the tiles
+   alone. Same gap as the bento's own, so the band reads as the top row of
+   one object instead of a panel parked above it. */
+.role__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+/* Hairlines by gap, not by border: a 1px gap over the border colour draws a
+   rule between whatever cells end up adjacent and nothing at the outer edges,
+   which a per-cell border cannot do once the cells stack.
+
+   One column per figure, whatever the count, rather than `auto-fit`. Auto-fit
+   was the first version and it wrapped three figures onto two columns at
+   laptop width, leaving a fourth cell that existed, held nothing, and read as
+   a grey block. A row of figures should be a row or a stack, never a row with
+   a hole at the end of it. */
+.role-band {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.role-band__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 1.5rem 1.5rem 1.4rem;
+  background: var(--card-bg);
+  /* So the figure can be sized against its own cell rather than the
+     viewport — the cell's width is the constraint that actually matters. */
+  container-type: inline-size;
+}
+
+/* The figures the section is read for. Bigger than the lead tile's own stat
+   was, because out here nothing has to share a tile with a sentence: the
+   number and its label are the whole cell.
+
+   Two limits, and the smaller wins. The clamp is the size the figure wants at
+   a given viewport; the container term is the size its cell can actually hold
+   — the widest figure on the site is `~60`, which sets about 1.65 times its
+   own font size, so a cell carries a figure of its width over 1.75 and keeps
+   a little air at the end. `cqw` is already the cell's content box, so the
+   padding is not subtracted twice. Without this second term a three-cell band
+   overflows at laptop width, where the cells are narrow but the viewport is
+   not, and the clamp only reads the viewport. */
+.role-band .bento__value {
+  display: block;
+  font-size: min(
+    calc(clamp(3.4rem, 1rem + 7vw, 7.6rem) * var(--display-scale)),
+    calc(100cqw / 1.75)
+  );
+  line-height: 0.82;
+}
+
+.role-band__unit {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text-secondary);
 }
@@ -1348,6 +1427,25 @@ button:focus-visible {
   justify-content: flex-start;
 }
 
+/* Above this the wheel is held well under its own 620px maximum purely by an
+   even-ish column split — 503px against a 479px column of notes at a 1440
+   viewport. The wheel is the thing that needs the room: it is a fixed circle
+   whose icons ride a rim, so width it does not get is width its bubble has to
+   claw back by pulling icons inward. Rebalancing to 1.4:1 and closing the gutter
+   by a rem takes it to ~583px and the notes to ~416px — about 46 characters a
+   line, still inside the comfortable band, where 620px for the wheel would have
+   put them at 42 and below it.
+
+   Deliberately gated at 1300 rather than applied at the two-column breakpoint.
+   Between 1101 and 1300 the section is already narrow, and this ratio there
+   would squeeze the notes to around 275px. */
+@media (min-width: 1300px) {
+  .stack-layout {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 3.5rem;
+  }
+}
+
 /* Below the wheel's breakpoint the notes follow the grouped card list instead
    of sitting beside a wheel, so they need their own separation from it. */
 .stack-groups + .stack-notes {
@@ -1461,6 +1559,15 @@ button:focus-visible {
 .wheel {
   display: flex;
   justify-content: center;
+  /* The icon circle's logical size — what it is at rest, and what the node's
+     layout box and hit area are. */
+  --mark-size: clamp(2.55rem, 6vw, 3.2rem);
+  /* And what it is actually DRAWN at. The circle is laid out at the size it
+     magnifies to and scaled back down to rest, so the icon under the cursor
+     sits at scale(1) — its own native resolution — instead of a 32px logo
+     stretched to 60. Must match BUBBLE_MAX in TechStackWheel.jsx; the loop
+     divides its scale by the same number. */
+  --wheel-raster: 1.9;
 }
 
 /* A query container, so the labels inside can be sized as a fraction of the
@@ -1489,10 +1596,12 @@ button:focus-visible {
      same absolute size — measured at a 430px stage the label reached 35px out,
      three past the old boundary, and the top of it was sliced off.
 
-     3.5rem clears the widest case with room to spare and still stops the
-     corners, which escape by 102px. */
+     3.5rem cleared the widest case before the bubble existed. A magnified icon
+     now pushes its own label a further (scale - 1) x half a mark outward —
+     about 15px at the 1.9 ceiling — so the budget goes to 5rem, which still
+     stops the corners escaping by 102px. */
   overflow: clip;
-  overflow-clip-margin: 3.5rem;
+  overflow-clip-margin: 5rem;
 }
 
 .wheel__pie {
@@ -1653,17 +1762,28 @@ button:focus-visible {
    positioning context, which is why the tooltip is inside it rather than a
    sibling: one counter-rotation has to cover both. */
 .wheel__node-spin {
-  display: block;
-  position: relative;
+  position: absolute;
+  inset: 0;
   transform-origin: 50% 50%;
   will-change: transform;
 }
 
+/* No transform and no transition here: the paint loop owns both, the same way
+   it already owns the ring, the dial and the counter-spin. The transition that
+   used to sit here was 0.35s, and a per-frame magnification would have been
+   permanently chasing it — the identical trap the decisions arc was stuck in,
+   only worse for being twice as long.
+
+   Sized explicitly at the LOGICAL circle size rather than by its contents. The
+   circle inside is drawn 1.9x that and overflows it, and keeping the node at
+   the smaller box is what stops the hit area growing with it — otherwise every
+   icon would answer the pointer from 1.9x its visible radius, and neighbouring
+   targets would overlap long before their circles did. */
 .wheel__node {
   position: absolute;
-  transform: translate(-50%, -50%);
+  width: var(--mark-size);
+  height: var(--mark-size);
   cursor: pointer;
-  transition: transform 0.35s ease;
   pointer-events: auto;
 }
 
@@ -1673,7 +1793,12 @@ button:focus-visible {
 .wheel__node-name {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 0.35rem);
+  /* Measured from the node's own centre — 50% — plus the circle's *rendered*
+     radius, which is half the logical size times whatever the loop has scaled
+     it to. At rest that resolves to the 100% it always was; magnified it keeps
+     exactly the same gap from a circle that is now much bigger. Without it a
+     bubbled icon grows straight through its own label. */
+  bottom: calc(50% + var(--node-scale, 1) * 50% + 0.35rem);
   transform: translateX(-50%);
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius-sm);
@@ -1697,7 +1822,7 @@ button:focus-visible {
    icons either side of it. Under it there is always room, at any wheel size and
    any rotation. */
 .wheel__node[data-tip='below'] .wheel__node-name {
-  top: calc(100% + 0.35rem);
+  top: calc(50% + var(--node-scale, 1) * 50% + 0.35rem);
   bottom: auto;
 }
 
@@ -1737,28 +1862,48 @@ button:focus-visible {
   opacity: 1;
 }
 
+/* The 1.15 that used to live here is folded into the scale the loop computes,
+   so the highlight and the bubble multiply instead of overwriting each other.
+   z-index is likewise written per frame, by size. */
 .wheel__node--on {
-  transform: translate(-50%, -50%) scale(1.15);
   z-index: 1;
 }
 
 /* The circular border is the category's colour; it fills in when that
    category is the live one. */
+/* The circle is what grows, not the node. The tooltip is a *sibling* of this
+   element rather than a child, so keeping the scale down here is what stops the
+   label being magnified along with the icon — it stays at its proper size and
+   simply moves out of the way.
+
+   Laid out at --wheel-raster times its logical size and centred over the node,
+   which stays small. Every length scales with it, so the 2px border and the
+   logo inside are drawn large and displayed small rather than the reverse. */
 .wheel__node-mark {
   display: grid;
   place-items: center;
-  width: clamp(2.55rem, 6vw, 3.2rem);
-  height: clamp(2.55rem, 6vw, 3.2rem);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--mark-size) * var(--wheel-raster));
+  height: calc(var(--mark-size) * var(--wheel-raster));
+  margin: calc(var(--mark-size) * var(--wheel-raster) / -2) 0 0
+    calc(var(--mark-size) * var(--wheel-raster) / -2);
+  transform-origin: 50% 50%;
+  will-change: transform;
   border-radius: 50%;
-  border: 2px solid var(--node-tint);
+  border: calc(2px * var(--wheel-raster)) solid var(--node-tint);
   background: var(--card-bg);
-  opacity: 0.45;
+  /* Lifts with the bubble as well as with the category highlight, so an icon
+     the reader is reaching for is not still at 45% while it swells. */
+  opacity: calc(0.45 + 0.55 * var(--node-bell, 0));
   transition: opacity 0.35s ease, box-shadow 0.35s ease;
 }
 
 .wheel__node--on .wheel__node-mark {
   opacity: 1;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--node-tint) 22%, transparent);
+  box-shadow: 0 0 0 calc(4px * var(--wheel-raster))
+    color-mix(in srgb, var(--node-tint) 22%, transparent);
 }
 
 .wheel__node-mark img {
@@ -1767,9 +1912,11 @@ button:focus-visible {
   object-fit: contain;
 }
 
+/* Against the drawn size, like everything else in the circle, so the monogram
+   fallback is rasterised large and displayed small rather than stretched. */
 .wheel__node-initial {
   font-family: var(--font-mono);
-  font-size: var(--t-tiny);
+  font-size: calc(var(--t-tiny) * var(--wheel-raster));
   font-weight: 500;
   color: var(--node-tint);
 }
@@ -1800,6 +1947,12 @@ button:focus-visible {
 .code__browser {
   --code-radius: 0.8rem;
   --code-surface: color-mix(in srgb, var(--accent) 18%, var(--card-bg));
+  /* One step darker than the surface, off the same mix. Every hairline drawn
+     *on* the tinted band — the sub-tab baseline, the address bar's outline —
+     takes this rather than --border: a cool grey rule on a warm tinted ground
+     reads as a seam between two components, and this reads as an edge of the
+     same surface. */
+  --code-edge: color-mix(in srgb, var(--accent) 30%, var(--card-bg));
   align-self: stretch;
   background: var(--code-band);
   border: 1px solid var(--border);
@@ -1907,23 +2060,40 @@ button:focus-visible {
    curve say "top-level tab"; repeating them one level down would make the two
    rows look like peers, which is the exact thing the nesting exists to deny.
    These are flat chips — the relationship a bookmarks bar has to a tab. */
+/* Left-aligned, like the tab strip above it and like every other run of nav on
+   the site: a reader's eye returns to the left edge, and a centred row moves
+   its first item every time the set changes length.
+
+   The baseline is what the active underline is drawn against — it runs the
+   full width so the row reads as a nav rail rather than as loose chips, and
+   the 2px accent below marks which one is open. */
 .code__subtabs {
   display: flex;
   flex-wrap: wrap;
+  justify-content: flex-start;
   gap: 0.3rem;
-  padding: 0.6rem 0.85rem 0.1rem;
+  /* No bottom padding: the chips sit flush on the baseline, which is what
+     lets the active underline straddle it at `bottom: -1px` instead of
+     floating a hairline above it. */
+  padding: 0.6rem 0.85rem 0;
   background: var(--code-surface);
+  border-bottom: 1px solid var(--code-edge);
 }
 
 .code__subtab {
   appearance: none;
+  position: relative;
   padding: 0.28rem 0.62rem;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   background: transparent;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: var(--t-mini);
+  /* 15px exactly. Off the type ladder by half a pixel — `--t-small` is 14.5px
+     and is the nearest rung — but these are the section's primary navigation
+     now that the diagrams live under them, and they were set at metadata size. */
+  font-size: 0.9375rem;
+  font-weight: 500;
   line-height: 1.45;
   color: var(--text-secondary);
   /* Same reasoning as .code__tab: a filename is one unbreakable token, and a
@@ -1941,15 +2111,33 @@ button:focus-visible {
   color: var(--ink);
 }
 
-/* The selected chip goes *lighter* than the band it sits on, not darker and
-   not more accented. The strip is already an accent wash, so the usual
-   accent-tinted selection would have had nothing to lift off — landing on the
-   card's own ground is the one move that reads as raised here. */
+/* The selected chip is marked by an underline against the row's baseline
+   rather than by a fill. It used to take the card's own ground, which read as
+   a tab hanging off the address bar below it — that made sense while the two
+   shared a surface, and stopped making sense once the address bar became a
+   raised bar of its own with a gap above it. A filled chip and an underline
+   would be two answers to the same question.
+
+   The bar is inset to the chip's own horizontal padding, so it sits under the
+   *text* rather than spanning the whole hit area — a highlight, not a full
+   bar — and it is pulled down past the chip's bottom padding to land on the
+   baseline itself, covering the 1px border for exactly its own width. */
 .code__subtab--on,
 .code__subtab--on:hover {
-  background: var(--card-bg);
+  background: transparent;
   color: var(--ink);
   font-weight: 600;
+}
+
+.code__subtab--on::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1958,18 +2146,42 @@ button:focus-visible {
   }
 }
 
-/* The address bar. Same fill as the selected tab, so the two read as one
-   surface and the tab appears to hang off it, exactly as a browser does. */
+/* The address bar is two layers, not one.
+
+   The outer one carries the same tinted fill as the sub-tab strip directly
+   above it, so the band does not stop at the baseline — it continues past it
+   and the two rows read as one piece of chrome. Its padding is the whole
+   point: it is what leaves the tint showing as a margin all the way around
+   the bar inside it, rather than the bar running edge to edge and the tint
+   disappearing under it.
+
+   The inner one is the bar itself — card ground, a hairline in the band's own
+   edge colour, and a shallow shadow, so it reads as a field sitting *on* the
+   chrome. A single flat strip said neither of those things. */
+.code__omnibar {
+  background: var(--code-surface);
+  padding: 14px 28px 20px;
+}
+
 .code__omnibox {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.5rem 0.85rem;
-  background: var(--code-surface);
+  padding: 10px 16px;
+  /* White in light, the card's own dark ground in dark — a literal #FFFFFF
+     here would put light-theme ink on a white bar for a dark-theme reader. */
+  background: var(--card-bg);
+  border: 1px solid var(--code-edge);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(37, 52, 73, 0.06);
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: var(--t-tiny);
   line-height: 1.5;
+}
+
+[data-theme='dark'] .code__omnibox {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .code__omnibox-mark {
@@ -2189,10 +2401,38 @@ button:focus-visible {
    flips with the page. Scrolls sideways on its own so a deep path can never
    widen the page. */
 .tree {
+  position: relative;
   background: var(--terminal-bg);
   border: 1px solid var(--terminal-border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+/* A long tree is capped and opened by the button under the panel, the same
+   contract the README and the source files keep. 441 lines of four
+   repositories is a scroll nobody asked for on arrival; capped, the tab shows
+   where the tree starts and leaves going further to the reader.
+
+   The cap is on the body rather than the frame because the body is also the
+   horizontal scroller — box-drawing characters cannot rewrap, so it has to
+   keep `overflow-x: auto`, and a max-height belongs on the same box. */
+.tree--capped .tree__body {
+  max-height: clamp(420px, 62vh, 780px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Fades the last lines rather than cutting them, so it reads as "more below".
+   Inset by the border so it never paints over the frame, and transparent to
+   the pointer so the scroll underneath still works. */
+.tree--capped::after {
+  content: '';
+  position: absolute;
+  inset: auto 1px 1px 1px;
+  height: 4rem;
+  border-radius: 0 0 var(--radius) var(--radius);
+  background: linear-gradient(to bottom, transparent, var(--terminal-bg));
+  pointer-events: none;
 }
 
 .tree__body {
@@ -2334,145 +2574,290 @@ button:focus-visible {
   flex: none;
 }
 
-/* ---------- Decisions: crescent selector + card ---------- */
+/* ---------- Decisions: keyword bubbles + card ---------- */
 
-/* Not a modal. The card is part of the page — no overlay, no backdrop, no
-   close button, no focus trap — so the reader can scroll straight past it.
-   The crescent picks; the card shows one decision at a time. Four dense
-   trade-offs as four bordered panels competed with each other and with
-   everything below them. */
-/* Same reasoning as `.stack-layout` above, in both directions. The arc's
-   outermost circles are the blank ones placed beyond each end of the numbered
-   run, and their offsets sit deliberately outside 0–100% — that overshoot is
-   what stops the run ending abruptly on whichever number happens to be last.
-   It also puts roughly 23px of circle above the arc's own box, and as much
-   below it. Against a 21.6px heading gap the leading blank reached into the
-   section title whenever a decision near the end of the deck was selected.
-   Both ends, because the trailing blank overshoots by the same amount at the
-   other one — and padding rather than margin, which would collapse against the
-   section heading's own margin and give back only the difference. */
+/* Not a modal. The card is part of the page: no overlay, no backdrop, no
+   close button, and the reader can scroll past it at any moment.
+
+   Three columns: the stepper's gutter, the bubbles, and the stage that holds
+   the card and the argument for it. The bubbles replaced a crescent of
+   numbered circles, which was an index with nothing to index by. Clicking a 9
+   to find out what decision nine was is not a choice the reader can make; a
+   keyword is. */
 .decisions {
   padding-block: 1.6rem;
   display: grid;
-  grid-template-columns: 7rem minmax(0, 1fr);
-  gap: clamp(1rem, 3vw, 2.5rem);
-  align-items: stretch;
+  grid-template-columns: 2.25rem minmax(0, 0.92fr) minmax(0, 1fr);
+  gap: clamp(1rem, 2.6vw, 2.25rem);
+  align-items: start;
 }
 
-/* The circles hang over the section's left boundary at the ends of the arc
-   and lean in at its middle, so the run reads as scalloped tabs rather than
-   as a ring. The negative margin is what lets them sit outside. */
-.arc {
-  position: relative;
-  margin-left: -1.9rem;
-  /* The floor, and the value for any deck of four or fewer. Sized so the arc
-     and the card come out about level: below this the numbers start to crowd,
-     above it the arc, not the content, is what makes the section tall. A
-     longer deck raises it — see arcHeight() in DecisionsSection.jsx.
-
-     Named, because the circles' size is derived from it: the step between
-     numbers is a percentage of this, and `--pip-size` multiplies the same
-     figure rather than measuring the laid-out box. The arc can stretch taller
-     than this when the card does, which only ever gives the circles more room
-     than they asked for. */
-  --arc-h: 28.5rem;
-  /* Overridden inline by DecisionsSection once it knows how many decisions
-     there are. This is the ceiling and the value for four of them. */
-  --pip-size: 3rem;
-  min-height: var(--arc-h);
+/* The stepper. Two arrows in a gutter of their own, and the only control that
+   says the bubbles are a sequence rather than a set of unrelated switches.
+   Sticky, so it stays reachable down a twelve-decision column. */
+.dstep {
+  position: sticky;
+  top: 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-self: center;
 }
 
-.arc__pip {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: var(--pip-size);
-  height: var(--pip-size);
-  margin: calc(var(--pip-size) / -2) 0 0 calc(var(--pip-size) / -2);
+.dstep__arrow {
+  width: 2.1rem;
+  height: 2.1rem;
   padding: 0;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--card-bg);
-  transform: scale(var(--pip-scale, 1));
-  /* The easing lives here; the position is written as inline style, so the
-     resting layout is correct even on a frame that never composites. */
-  transition: top 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
-    left 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
-    transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1),
-    opacity 0.3s ease,
-    border-color 0.18s ease,
-    background-color 0.18s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arc__pip {
-    transition: none;
-  }
-}
-
-/* Spacing made visible. Without them the numbers bunch, and a bare four-dot
-   arc reads as an accident rather than as an instrument. Held to a share of
-   the numbered circles so the pair keeps its proportion as the run tightens. */
-.arc__pip--blank {
-  width: calc(var(--pip-size) * 0.633);
-  height: calc(var(--pip-size) * 0.633);
-  margin: calc(var(--pip-size) * -0.3165) 0 0 calc(var(--pip-size) * -0.3165);
-  border-color: color-mix(in srgb, var(--border) 60%, transparent);
-  background: color-mix(in srgb, var(--bg-alt) 50%, transparent);
-}
-
-.arc__pip--live {
-  cursor: pointer;
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
-  box-shadow: 0 1px 6px -2px rgba(31, 46, 68, 0.18);
-}
-
-.arc__pip--live:hover {
-  border-color: var(--accent);
-}
-
-.arc__pip--on {
-  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
-  border-color: var(--accent);
-}
-
-/* The digit rides the circle rather than sitting at a fixed size: on a run
-   tight enough to shrink the circles, a 15px numeral would touch the border
-   it is centred in. */
-.arc__digit {
-  font-family: var(--font-mono);
-  font-size: min(var(--t-base), calc(var(--pip-size) * 0.42));
-  font-weight: 600;
   color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.18s ease, color 0.18s ease;
 }
 
-.arc__pip--on .arc__digit {
+.dstep__arrow:hover {
+  border-color: var(--accent);
   color: var(--accent);
 }
 
-/* Trading-card proportions, stated rather than left to the content — the
-   shape is the point. The face is absolutely placed so an outgoing card and
-   an incoming one can travel at the same time instead of queueing. */
-/* The card's place in the layout. It does NOT clip — the fanned deck behind
-   needs to show past the live card's edges — so the clipping lives one level
-   in, on .dcard__window. */
+.dstep__arrow svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* ---------- The bubbles ---------- */
+
+.bub {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* The item always spans the column. Sizing it to its content instead measures
+   the collapsed sentence, which is still in the DOM at zero height, so every
+   bubble came out as wide as its description rather than its keyword. */
+/* Both widths are written by DecisionsSection: `--pill-w` is the collapsed
+   keyword, `--bub-w` is the longest balanced line plus the panel's gutters.
+   The item carries them rather than the pill, so opening one is a single
+   outward movement of the whole bubble instead of a box shrinking inward while
+   the pill inside it grows outward.
+
+   Both fall back to the column, which is where this started and is still
+   correct, just roomier. `min()` keeps a long sentence inside the column on a
+   narrow viewport. */
+/* The item paints the whole bubble: one background, one radius, one box. The
+   pill and the panel used to paint their own halves, and their radii met at a
+   seam. The pill's bottom corners animated from 23.5px to 0 over 280ms while
+   the panel's top corners stayed square, so for those 280ms two wedges of the
+   lighter page background showed through the join. A single shape cannot open
+   a seam at any frame, whatever the timings are. */
+.bub__item {
+  position: relative;
+  width: var(--pill-w, 100%);
+  max-width: 100%;
+  background: var(--bg-alt);
+  /* 24px, not 999px, and the difference matters because this value is
+     animated. A radius is clamped to half the box, so 999px renders as a
+     perfect pill but interpolates from 999: it would sit above the clamp for
+     96% of the transition and then collapse to 18.4px in the last few frames,
+     which reads as a snap at the end of the movement. The pills are 45.5 to
+     47.4px tall, so 24px is still at or above half of every one of them and
+     renders identically, while travelling only 5.6px. */
+  border-radius: 1.5rem;
+  transition: width 0.32s cubic-bezier(0.22, 0.75, 0.25, 1),
+    border-radius 0.28s ease;
+}
+
+.bub__item[data-open='true'] {
+  width: min(100%, var(--bub-w, 100%));
+  border-radius: 1.15rem;
+}
+
+/* Held still while the widths are being measured, so a read never lands
+   part-way through a transition. Set by the component for one task. */
+.bub[data-measuring='true'] .bub__item,
+.bub[data-measuring='true'] .bub__btn,
+.bub[data-measuring='true'] .bub__wrap,
+.bub[data-measuring='true'] .bub__inner {
+  transition: none;
+}
+
+/* The one deliberate exception to the page's 2px corners. A pill is what makes
+   the column read as a set of keywords to choose between rather than as a
+   stack of panels, and the shape is doing that job on its own. */
+.bub__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: var(--t-small);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  /* Transparent: the item underneath paints the bubble. What is left here is
+     the hover tint, which rides on top of that background, so a radius that
+     does not match for a frame reveals --bg-alt rather than the page. */
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 1.5rem;
+  padding: 0.62rem 1.15rem 0.62rem 0.62rem;
+  /* The pill fills its item in both states. The item is what carries the
+     width, so there is one box travelling rather than two. */
+  width: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.bub__btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-alt));
+}
+
+.bub__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The mark turns into a close on the open bubble, which is the whole of the
+   affordance: a plus says there is more here, a cross says this is the one. */
+.bub__mark {
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--text-secondary);
+  color: var(--text-secondary);
+  transition: transform 0.32s cubic-bezier(0.22, 0.75, 0.25, 1),
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.bub__mark svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.bub__item[data-open='true'] .bub__btn {
+  /* Only the hover tint's shape. The bubble's own outline is the item's. */
+  border-radius: 1.15rem 1.15rem 0 0;
+  padding-bottom: 0.5rem;
+  color: var(--ink);
+}
+
+.bub__item[data-open='true'] .bub__mark {
+  transform: rotate(45deg);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--card-bg);
+}
+
+/* A pill that hugs its content should never wrap to a second line. */
+.bub__label {
+  white-space: nowrap;
+}
+
+/* The deck is still numbered, quietly. The number is no longer how anyone
+   chooses a decision, but it is how the card and the bubble say they are the
+   same thing. */
+.bub__num {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* On `--current`, not `--open`: a bubble that has been clicked shut still says
+   which card the stage is showing. */
+.bub__item[data-current='true'] .bub__num {
+  color: var(--accent);
+}
+
+/* Rows of 0fr to 1fr. The panel opens on a transition with no height measured
+   anywhere, so it is right at any width and through a font swap. */
+.bub__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.34s cubic-bezier(0.22, 0.75, 0.25, 1);
+}
+
+.bub__item[data-open='true'] .bub__wrap {
+  grid-template-rows: 1fr;
+}
+
+.bub__body {
+  overflow: hidden;
+}
+
+.bub__inner {
+  /* Indented to clear the mark and the numeral above, so the sentence starts
+     on the same axis as the keyword rather than under the icon. */
+  padding: 0 1.4rem 1.05rem 3.1rem;
+  opacity: 0;
+  transform: translateY(-0.25rem);
+  /* Held back until the bubble has nearly finished widening, so the sentence
+     arrives in a box that is already its own size. The box is at 93% of its
+     travel by the time this reaches half opacity. */
+  transition: opacity 0.26s ease 0.16s, transform 0.26s ease 0.16s;
+}
+
+.bub__item[data-open='true'] .bub__inner {
+  opacity: 1;
+  transform: none;
+}
+
+/* The decision stated in one sentence. The card beside it carries what was
+   chosen and what was turned down; this says what the decision is.
+
+   `balance` rather than a hand-tuned sentence length. A two-line sentence
+   otherwise strands one word on the second line, and the width at which that
+   happens moves with the viewport, the zoom and whether the web font has
+   loaded, so no amount of editing the copy fixes it at every width. The
+   browser evens the lines itself and re-runs on every resize. */
+.bub__say {
+  margin: 0.2rem 0 0;
+  font-size: var(--t-tiny);
+  line-height: 1.6;
+  color: var(--text-primary);
+  text-wrap: balance;
+  /* The width of the longest balanced line, measured once by
+     DecisionsSection. The paragraph is laid out at the width it ends at, so it
+     keeps one shape while the box around it travels. Deliberately NO
+     `max-width: 100%`: clamping it to the animating parent is exactly the
+     re-wrap this exists to prevent. The overflow is clipped by .bub__body, and
+     the measurement is redone on resize, so `--say-w` never exceeds the
+     column. */
+  width: var(--say-w, auto);
+}
+
+/* ---------- The stage: the card, then the argument under it ---------- */
+
+.dstage {
+  position: sticky;
+  top: 5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* The card's place in the layout. It does NOT clip, because the fanned deck
+   behind needs to show past the live card's edges, so the clipping lives one
+   level in, on .dcard__window. */
 .dcard {
   position: relative;
-  justify-self: center;
-  /* Not stretched to the row. The arc is taller than the card, and stretching
-     left the ghost layers — which are `inset: 0` on this box — standing a
-     head taller than the card they sit behind. */
-  align-self: center;
-  /* Centred on the *section*, not on its own column. `justify-self: center`
-     alone centres it in the space left after the arc's column, which sits it
-     noticeably right of the page's axis; pulling back half the arc column and
-     half the gap puts it on the section's centre line. There is still clear
-     air between it and the widest point of the crescent. */
-  margin-left: calc(-3.5rem - clamp(0.5rem, 1.5vw, 1.25rem));
-  width: min(24rem, 100%);
-  /* No min-height of its own: the live card sets the box, and the fanned
-     ghosts are `inset: 0` on it. Give this a floor taller than the card and
-     the deck hangs below it like spilled paper. */
+  width: 19rem;
+  max-width: 100%;
 }
 
 /* The rest of the deck, fanned behind. Each layer steps back and rotates a
@@ -2482,89 +2867,131 @@ button:focus-visible {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  /* An explicit context for the sheets, so their z-indexes resolve against
+     each other rather than against the whole card, and so a compositing layer
+     raised by the riffle cannot lift one sheet over the live card. */
+  z-index: 1;
 }
 
-/* Grey filler cards, the same idea as the arc's grey filler circles: they say
-   how many decisions there are without being read. A white ghost at low
-   opacity on a white page was invisible — the fill has to be the grey, not
-   the transparency. */
+/* Grey filler cards. A white ghost at low opacity on a white page was
+   invisible: the fill has to be the grey, not the transparency. */
 .dcard__ghost {
   position: absolute;
-  inset: 0;
-  border: 1px solid var(--border);
+  /* The deck is as deep as the deck really is, one sheet per trade-off behind
+     the one being read, so a seven-decision project shows seven cards in total
+     and a twelve-decision one shows twelve. That count has to survive twelve
+     layers, which is why the stack is in two parts.
+
+     Sheets 1 to 3 SPREAD: right, left, further left, at 16 to 32px, each
+     carrying the card's own inset frame. They are near enough the front to
+     read as cards.
+
+     Sheets 4 and beyond COMPRESS: 2.2px sideways and 3.2px up each, with no
+     frame. At that size a sheet is a 2px edge, and a second line inside a 2px
+     edge is mud rather than detail, so they stop being cards and become the
+     thickness of the deck.
+
+     This block holds the compressed formula; the nth-child rules below
+     override the first three. */
+  --shift: calc(-2rem - (var(--depth) - 3) * 0.1375rem);
+  --lift: calc(-2.375rem - (var(--depth) - 3) * 0.2rem);
+  --sheet-inset: calc(0.375rem + (var(--depth) - 3) * 0.05rem);
+  /* A floor, not a fade to nothing. Fading the tail to zero is what turned an
+     earlier version of this into a halo. */
+  --sheet-opacity: max(0.26, calc(0.62 - (var(--depth) - 3) * 0.05));
+
+  top: 0;
+  bottom: 0;
+  left: var(--sheet-inset);
+  right: var(--sheet-inset);
   border-radius: var(--radius-card);
-  background: var(--bg-alt);
-  /* Fanned from the middle, alternating side to side and stepping further out
-     each layer, so the deck reads as spread rather than as one card's shadow.
-
-     The spread stops widening past the third layer. It was tied straight to
-     depth, so the fan grew with the deck: at seven decisions the outermost
-     ghost sat rotated 19 degrees and shifted 53px, and its corner cleared the
-     page's right gutter and put a horizontal scrollbar on the document. Depth
-     still steps the opacity and the vertical offset, so a longer deck still
-     reads as deeper — it just stops getting wider. */
-  --spread: min(var(--depth), 3);
-  transform-origin: 50% 100%;
-  transform: rotate(calc(var(--spread) * var(--fan, 1) * 3.2deg))
-    translate(calc(var(--spread) * var(--fan, 1) * 0.55rem), calc(var(--depth) * -0.3rem));
-  opacity: calc(1 - var(--depth) * 0.16);
+  /* The page's own accent rather than grey, mixed into the card colour so it
+     follows --accent in both themes with nothing hardcoded. Deliberately pale:
+     twelve sheets of a saturated accent read as a coloured block. */
+  background: color-mix(in srgb, var(--accent) 14%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--card-bg));
+  opacity: var(--sheet-opacity);
+  transform: translate(var(--shift), var(--lift));
+  /* Paint order has to agree with depth. Without this the sheets paint in DOM
+     order, so the deepest paints over the nearest. */
+  z-index: calc(40 - var(--depth));
 }
 
-.dcard__ghost:nth-child(even) {
-  --fan: -1;
+/* The three that still read as cards. Written out rather than derived: the
+   sequence is an editorial choice, not a formula, and tuning the spread should
+   mean editing these numbers and nothing else. */
+.dcard__ghost:nth-child(1) {
+  --shift: 1rem;
+  --lift: -0.8125rem;
+  --sheet-inset: 0.125rem;
+  --sheet-opacity: 0.9;
 }
 
-
-/* The clipping viewport for the travelling cards. A one-cell grid: the hidden
-   sizer and the live card share that cell, so the window is as tall as the
-   tallest decision and every card is that height. */
-.dcard__window {
-  position: relative;
-  display: grid;
-  overflow: hidden;
-  border-radius: var(--radius-card);
+.dcard__ghost:nth-child(2) {
+  --shift: -1.125rem;
+  --lift: -1.625rem;
+  --sheet-inset: 0.25rem;
+  --sheet-opacity: 0.75;
 }
 
-.dcard__window > * {
-  grid-area: 1 / 1;
+.dcard__ghost:nth-child(3) {
+  --shift: -2rem;
+  --lift: -2.375rem;
+  --sheet-inset: 0.375rem;
+  --sheet-opacity: 0.62;
 }
 
-/* Hidden, but still laid out — `visibility` rather than `display`, because a
-   `display: none` child contributes no height and the whole point of this is
-   its height. */
-.dcard__sizer {
-  display: grid;
-  visibility: hidden;
+/* The card's own inset frame, on the three sheets wide enough to show one. */
+.dcard__ghost:nth-child(-n + 3)::before {
+  content: '';
+  position: absolute;
+  inset: 0.42rem;
+  border-radius: calc(var(--radius-card) - 1px);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--card-bg));
   pointer-events: none;
 }
 
-.dcard__sizer > * {
-  grid-area: 1 / 1;
+/* 5 : 7, the proportions of an actual trading card, and the reason the whole
+   section was restructured. The ratio is what gives the window its height, so
+   both faces can be absolute inside it and every card in the deck is the same
+   object. It also means the card never changes size as the deck cycles. */
+.dcard__window {
+  position: relative;
+  aspect-ratio: 5 / 7;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  /* Above every sheet, whatever depth the deck runs to. */
+  z-index: 2;
 }
 
-/* The card itself. Depth comes from the border, not a drop shadow — the
-   window above clips, and a shadow would be sheared off at its edge. */
+/* The card itself. Depth comes from the border, not a drop shadow: the window
+   above clips, and a shadow would be sheared off at its edge. */
 .dcard__face {
-  position: relative;
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  min-height: 22rem;
-  padding: 1.65rem 1.6rem 1.5rem;
+  /* Whatever the art box cannot absorb once it hits its ceiling is shared out
+     between the four blocks rather than left under the last one. On a card
+     that reads as spacing; pooled at the bottom it reads as an unfinished text
+     box. */
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.25rem 1.2rem 1.15rem;
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
 }
 
 /* The trading-card frame: a second rule inset from the border, with the
-   corners opened up in the project accent. The proportions alone stopped
-   reading as a card once the height was allowed to follow the text, so the
-   edge is what carries the idea now. Drawn with a conic gradient rather than
-   four elements — one box, no extra nodes in the markup. */
+   corners opened up in the project accent. Drawn with gradients rather than
+   four elements, so there are no extra nodes in the markup. */
 .dcard__face::before {
   content: '';
   position: absolute;
-  inset: 0.55rem;
+  /* Tracks the card's own padding, or the frame would sit further from the
+     border than the text does and the inset would read as an error. */
+  inset: 0.42rem;
   border-radius: calc(var(--radius-card) - 1px);
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   pointer-events: none;
@@ -2575,100 +3002,76 @@ button:focus-visible {
 .dcard__face::after {
   content: '';
   position: absolute;
-  inset: 0.3rem;
+  inset: 0.22rem;
   border-radius: var(--radius-card);
   pointer-events: none;
   background:
-    linear-gradient(var(--accent), var(--accent)) 0 0 / 1px 1.15rem,
-    linear-gradient(var(--accent), var(--accent)) 0 0 / 1.15rem 1px,
-    linear-gradient(var(--accent), var(--accent)) 100% 0 / 1px 1.15rem,
-    linear-gradient(var(--accent), var(--accent)) 100% 0 / 1.15rem 1px,
-    linear-gradient(var(--accent), var(--accent)) 0 100% / 1px 1.15rem,
-    linear-gradient(var(--accent), var(--accent)) 0 100% / 1.15rem 1px,
-    linear-gradient(var(--accent), var(--accent)) 100% 100% / 1px 1.15rem,
-    linear-gradient(var(--accent), var(--accent)) 100% 100% / 1.15rem 1px;
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 1px 0.9rem,
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 0.9rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 0 / 1px 0.9rem,
+    linear-gradient(var(--accent), var(--accent)) 100% 0 / 0.9rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 1px 0.9rem,
+    linear-gradient(var(--accent), var(--accent)) 0 100% / 0.9rem 1px,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 1px 0.9rem,
+    linear-gradient(var(--accent), var(--accent)) 100% 100% / 0.9rem 1px;
   background-repeat: no-repeat;
   opacity: 0.75;
 }
 
-/* Both live faces fill the cell the sizer sized, so a short decision and a
-   long one occupy exactly the same card. */
-.dcard__face--arriving,
-.dcard__face--leaving {
-  position: absolute;
-  inset: 0;
-  min-height: 0;
-}
-
-/* Both directions travel upward: the card being read leaves through the top
-   while the next rises into its place, so a run through the decisions reads
-   as one continuous movement rather than as a shuffle.
-
-   No `backwards` fill on the arriving card, deliberately. Its resting state
-   is its normal style, so a frame that never composites shows it in the right
-   place rather than stranded at the start of a keyframe — which is exactly
-   how the previous framer-driven version left three faces stacked. */
-/* A shuffle, not a slide. The arriving card is dealt off the deck — it starts
-   offset and turned, the way a card sits in a spread hand, and settles square;
-   the leaving one is flicked away in the other direction. Rotation is what
-   makes it read as cards rather than as a panel changing its contents.
+/* A deal, not a slide. The arriving card starts offset and turned, the way a
+   card sits in a spread hand, and settles square; the leaving one is flicked
+   away in the other direction. Rotation is what makes it read as cards rather
+   than as a panel changing its contents.
 
    No `backwards` fill on the arriving card, deliberately. Its resting state is
    its normal style, so a frame that never composites shows it square and in
    place rather than stranded at the start of a keyframe. */
 @keyframes dcard-deal {
   from {
-    transform: translate(16%, 9%) rotate(6deg) scale(0.95);
-    opacity: 0.3;
+    transform: translate(7%, 4.5%) rotate(2.2deg) scale(0.975);
+    opacity: 0;
   }
 
-  60% {
+  55% {
     opacity: 1;
   }
 }
 
 @keyframes dcard-toss {
   to {
-    transform: translate(-15%, -7%) rotate(-7deg) scale(0.95);
+    transform: translate(-6%, -3.5%) rotate(-2.6deg) scale(0.975);
     opacity: 0;
   }
 }
 
 .dcard__face--arriving {
-  animation: dcard-deal 0.5s cubic-bezier(0.25, 0.8, 0.3, 1);
+  animation: dcard-deal 0.62s cubic-bezier(0.22, 0.75, 0.25, 1);
 }
 
 /* Inert and on top of nothing: the leaving card is decoration, and it is
    removed on a timer rather than on an animation event so it cannot outlive
    its animation. */
 .dcard__face--leaving {
-  animation: dcard-toss 0.5s cubic-bezier(0.4, 0, 0.7, 0.5) forwards;
+  animation: dcard-toss 0.44s cubic-bezier(0.4, 0, 0.7, 0.6) forwards;
   pointer-events: none;
 }
 
 /* The deck riffles as the card is dealt: a short wobble, replayed by keying
-   the stack on the selection so it remounts. Empty spans, so remounting them
-   costs nothing. */
+   the stack on the selection so it remounts. The sheets are empty spans, so
+   remounting them costs nothing.
+
+   Each sheet carries its own --shift through unchanged. Deliberately no extra
+   sideways travel: the deck's reach must be the same mid-animation as at rest,
+   because a frame that overhangs the prose for 300ms is the failure no layout
+   measurement catches. */
 @keyframes deck-riffle {
   40% {
-    transform: rotate(calc(var(--depth) * var(--fan, 1) * 5.4deg))
-      translate(calc(var(--depth) * var(--fan, 1) * 0.85rem), calc(var(--depth) * -0.42rem));
+    transform: translate(var(--shift), calc(var(--lift) - 0.3rem));
   }
 }
 
 .dcard__stack--riffling .dcard__ghost {
   animation: deck-riffle 0.55s cubic-bezier(0.3, 0.7, 0.3, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .dcard__face--arriving,
-  .dcard__stack--riffling .dcard__ghost {
-    animation: none;
-  }
-
-  .dcard__face--leaving {
-    display: none;
-  }
 }
 
 .dcard__head {
@@ -2686,160 +3089,235 @@ button:focus-visible {
   color: color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
-/* The title outranks the explanation. It was set a step *below* the body
-   text, which read as a caption on top of a paragraph rather than as the
-   name of the decision. */
+/* The card is named by the keyword its bubble is labelled with, so the two
+   read as the same object. The sentence form lives in the bubble. Balanced,
+   because the longer keywords wrap to two lines and one word alone on the
+   second is the same fault the bubbles had. */
 .dcard__title {
   margin: 0;
   font-family: var(--font-header);
   font-weight: var(--display-weight);
   font-size: var(--t-lead);
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--ink);
+  text-wrap: balance;
 }
 
-/* Card copy is a step down from page prose: this is a compact object, and the
-   title has to lead it. Scoped to the card so the shared decision classes are
-   not disturbed anywhere else they are used. */
-.dcard .decision__choice {
-  font-size: var(--t-small);
-  line-height: 1.45;
-}
-
-.dcard .decision__why {
-  font-size: var(--t-small);
-  line-height: 1.6;
-}
-
-.dcard__index {
-  font-size: var(--t-lead);
-}
-
-/* The concept mark, between the title and the reasoning. Sized to the space
-   it is given rather than to a fixed px, so it holds the middle of the card
-   at every width. */
-/* The mark's band. `1fr` rather than a fixed floor, so on the cards whose
-   text is shorter than the tallest one's the extra height goes here — the
-   figure breathes instead of the card growing a pocket of dead space at the
-   bottom. */
-.dcard__figure {
+/* The art box. A card has a picture, and the picture sits in a panel of its
+   own. This is the one element that flexes, and that is deliberate: the stat
+   block runs from 63 to 270 characters across the deck, so on a fixed 5:7 face
+   there is always some difference to place. Putting it here means a short
+   decision gets a larger picture rather than a pocket of empty card under its
+   last line. */
+.dcard__art {
+  flex: 1 1 auto;
+  min-height: 3.4rem;
+  max-height: 8rem;
   display: grid;
   place-items: center;
-  flex: 1 1 auto;
-  min-height: 4.5rem;
-  padding: 0.55rem 0;
-  border-block: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
   color: var(--accent);
 }
 
-/* The mark's cap is what actually sets the band's height — not the band's
-   own min-height — so this is the number that decides how much of the card
-   the glyph takes. At 10.5rem it was eating 189px of every card whatever the
-   text needed. */
-.dcard__figure svg {
+.dcard__art svg {
   width: auto;
-  height: 100%;
-  max-height: 6rem;
-  max-width: 100%;
+  height: min(4.4rem, 100%);
+  max-width: 66%;
 }
 
-/* No scroller and no cap: the card is sized by this text, so clipping it
-   would defeat the point. */
-.dcard__body {
+/* The stat block: two named fields, which is what makes the face read as a
+   record of a decision rather than as a short paragraph in a frame. */
+.dcard__stat {
+  margin: 0;
   flex: none;
 }
 
-@media (max-width: 860px) {
-  /* The crescent goes above the card and flattens into a row: a 20rem-tall
-     arc beside a card is a desktop shape, and there is no left edge to hang
-     off once the content column runs the full width. */
-  .decisions {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
-  }
-
-  .arc {
-    position: static;
-    margin-left: 0;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .arc__pip {
-    position: static;
-    margin: 0;
-    /* Framer writes the arc's top/left into inline styles; on this layout
-       they mean nothing and must not apply. */
-    inset: auto;
-    /* Position is neutralised for the flat row; scale is not, so the selected
-       circle still reads as chosen here. */
-    top: auto !important;
-    left: auto !important;
-    opacity: 1 !important;
-  }
-
-  .arc__pip--blank {
-    display: none;
-  }
-
-  .dcard {
-    justify-self: stretch;
-    margin-left: 0;
-    width: 100%;
-    max-width: 24rem;
-    min-height: 0;
-  }
-
-  .dcard__face {
-    min-height: 0;
-  }
-
-  /* A tighter fan: at phone width the card already fills the column, and the
-     full rotation pushed the deck past the section's edge and gave the page a
-     horizontal scroll. Rotating about the centre rather than the bottom edge
-     halves how far the corners swing for the same angle.
-
-     The angle is capped as well as reduced. It was tied straight to depth, so
-     a longer deck still swung further: at seven decisions the outermost layer
-     reached 5.4 degrees, and on a card as tall as this one that is enough
-     corner travel to put two pixels of scroll back on the document. Past the
-     second layer the angle holds and only the step and the fade continue. */
-  .dcard__ghost {
-    transform-origin: 50% 50%;
-    transform: rotate(calc(min(var(--depth), 2) * var(--fan, 1) * 0.9deg))
-      translateY(calc(var(--depth) * -0.25rem));
-  }
-
-  .dcard__figure {
-    min-height: 7rem;
-  }
-}
-
-.decision__choice {
-  margin: 0.5rem 0 0.6rem;
-  font-size: var(--t-base);
-  line-height: 1.5;
-}
-
-.decision__chose {
+.dcard__stat-key {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
   font-weight: 600;
-  color: var(--accent);
-}
-
-.decision__over {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
-.decision__why {
+.dcard__stat-val {
+  margin: 0.1rem 0 0;
+  font-size: var(--t-tiny);
+  line-height: 1.45;
+  color: var(--text-primary);
+  /* `pretty` rather than `balance`: these run to several lines, and all they
+     need is protection from a one-word last line. */
+  text-wrap: pretty;
+}
+
+/* The road not taken is quieter than the road taken, and separated by a rule
+   rather than by the word "over" buried in a sentence. */
+.dcard__stat-val--over {
+  color: var(--text-secondary);
+}
+
+.dcard__stat-key + .dcard__stat-val {
+  margin-bottom: 0.55rem;
+}
+
+.dcard__stat-val + .dcard__stat-key {
+  display: block;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+}
+
+.dcard__stat-val:last-child {
+  margin-bottom: 0;
+}
+
+/* The set number. A card belongs to a deck, and saying so is what tells a
+   reader the column beside it is a way of moving through one. */
+.dcard__foot {
+  flex: none;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--text-muted, var(--text-secondary));
+}
+
+/* ---------- The argument, under the card ---------- */
+
+.dwhy {
+  width: 100%;
+  max-width: 32rem;
+}
+
+.dwhy__label {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Keyed on the selection in the component so it fades in with each deal. The
+   card's own animation is a deal and a toss, and running the same movement on
+   a paragraph would read as the text being thrown rather than replaced. */
+.dwhy__text {
   margin: 0;
   font-size: var(--t-prose);
   line-height: 1.65;
   text-align: justify;
   text-justify: inter-word;
+  text-wrap: pretty;
   hyphens: none;
   color: var(--text-primary);
+  /* Held back a little so the card is already moving when the paragraph
+     starts, and eased out over the same span. The pair reads as one change
+     rather than as two things happening near each other. */
+  animation: dwhy-in 0.5s cubic-bezier(0.22, 0.75, 0.25, 1) 0.09s both;
+}
+
+@keyframes dwhy-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bub__item,
+  .bub__btn,
+  .bub__mark,
+  .bub__wrap,
+  .bub__inner {
+    transition: none;
+  }
+
+  .dcard__face--arriving,
+  .dcard__stack--riffling .dcard__ghost,
+  .dwhy__text {
+    animation: none;
+  }
+
+  .dcard__face--leaving {
+    display: none;
+  }
+}
+
+/* Below this the stage cannot hold a 19rem card beside a column of bubbles
+   with anything readable left over, so it goes under them and runs the full
+   width. Nothing about the card changes: it keeps its 5:7 and its 19rem. */
+@media (max-width: 900px) {
+  .decisions {
+    grid-template-columns: 2.25rem minmax(0, 1fr);
+  }
+
+  .dstep {
+    position: static;
+  }
+
+  .dstage {
+    grid-column: 1 / -1;
+    position: static;
+    margin-top: 1.5rem;
+  }
+}
+
+@media (max-width: 620px) {
+  /* The stepper's gutter is the first thing to go: the bubbles are the
+     control, and the arrows only ever restated what a click already does. */
+  .decisions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .dstep {
+    display: none;
+  }
+
+  .dstage {
+    grid-column: 1;
+    margin-top: 0;
+  }
+
+  /* Full width up to 24rem here rather than the 19rem the desktop card takes:
+     a 288px card in a 400px column reads as a stamp with margins. */
+  .dcard {
+    width: 100%;
+    max-width: 24rem;
+  }
+
+  /* The same two-part deck on roughly half the travel. Here the card fills its
+     column rather than sitting in a gutter, so the desktop spread would push
+     the third sheet past the section's own padding. Only the geometry changes:
+     the accent wash, the frame on the first three, the opacity ramp and the
+     paint order all carry over from the desktop rules. */
+  .dcard__ghost {
+    --shift: calc(-0.6rem - (var(--depth) - 3) * 0.04rem);
+    --lift: calc(-1.05rem - (var(--depth) - 3) * 0.09rem);
+    --sheet-inset: calc(0.15rem + (var(--depth) - 3) * 0.02rem);
+  }
+
+  .dcard__ghost:nth-child(1) {
+    --shift: 0.3rem;
+    --lift: -0.35rem;
+    --sheet-inset: 0.05rem;
+  }
+
+  .dcard__ghost:nth-child(2) {
+    --shift: -0.35rem;
+    --lift: -0.7rem;
+    --sheet-inset: 0.1rem;
+  }
+
+  .dcard__ghost:nth-child(3) {
+    --shift: -0.6rem;
+    --lift: -1.05rem;
+    --sheet-inset: 0.15rem;
+  }
 }
 
 /* ---------- Workspace row: links + At a Glance ---------- */
@@ -3327,6 +3805,12 @@ a.link-tile:hover .link-tile__mark {
   gap: clamp(1.1rem, 2.4vw, 1.75rem);
   margin: 0;
   padding: clamp(0.75rem, 1.6vw, 1.1rem);
+  /* Room past the last slide, so it can still come to rest at the top of the
+     frame and take the notes panel — without it the deck runs out of scroll
+     with the last few slides stranded in the lower half, and their notes can
+     never be reached. Set from SlideDeck.jsx, which is the only place that can
+     measure the frame and the last slide against each other. */
+  padding-bottom: calc(clamp(0.75rem, 1.6vw, 1.1rem) + var(--deck-tail, 0px));
   list-style: none;
 }
 
@@ -3961,30 +4445,97 @@ a.link-tile:hover .link-tile__mark {
   }
 }
 
-/* Three tiers on six columns: a lead at 3x2, two mediums at 3x1 and three
-   smalls at 2x1 fill eighteen cells over three rows exactly. Six equal tiles
-   was the version this replaced — a uniform grid says every duty weighed the
-   same, which is the one thing this section exists to deny.
+/* Six columns, and three arrangements on them — one per project. The tier
+   vocabulary is shared (a lead is the headline duty everywhere); which cells
+   it takes is not, because three pages running the identical mosaic made the
+   section read as a template rather than as a description of the work.
+   The arrangement comes from `role.layout` in the data.
 
-   `grid-auto-rows: auto`, with no floor. The floor was a `minmax(6.5rem, …)`
-   that inflated every short tile to a height its text did not need, which is
-   what put dead space under the sentences at every tier. A row is now as tall
-   as the tallest thing in it and no taller. */
+   The hard constraint is the tile counts, which differ per project: six on
+   EchoChallengers and Lock-N-Lock (lead, 2 medium, 3 small), eight on hailcast
+   (lead, 4 medium, 3 small). Each arrangement's cells have to divide six
+   exactly for both, or the grid ends on a row with holes in it. */
 .bento--role {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   grid-auto-rows: auto;
+  /* Packed, not spread. The shared `.bento` gap opens to 1rem on a wide
+     screen, which reads as a set of separate panels; a bento wants its tiles
+     close enough to be one object. */
+  gap: 0.7rem;
 }
 
-.bento__tile--lead {
+/* ── columns — hailcast ────────────────────────────────────────────────
+   lead 3x2 at the left with two mediums stacked beside it, a row of three
+   smalls under them, and (on eight tiles) a last row of two mediums.
+     6 tiles  6 + 3+3 + 2+2+2               = 18 = 3 rows
+     8 tiles  6 + 3+3 + 2+2+2 + 3+3         = 24 = 4 rows
+   The lead's height is the two mediums plus the gap between them, which is
+   the closest of the three arrangements to its own content — the reason this
+   is the one hailcast uses, where the lead has the least to say relative to
+   its neighbours. */
+.bento--role-columns .bento__tile--lead {
   grid-column: span 3;
   grid-row: span 2;
 }
 
-.bento__tile--medium {
+.bento--role-columns .bento__tile--medium {
   grid-column: span 3;
 }
 
-.bento__tile--small {
+.bento--role-columns .bento__tile--small {
+  grid-column: span 2;
+}
+
+/* ── mosaic — Lock-N-Lock ──────────────────────────────────────────────
+   The lead takes four columns of the first row and a small tile fills the two
+   beside it.
+     7 tiles  4+2 + 3+3 + 2+2+2             = 18 = 3 rows
+   `dense` is what packs it: a three-column medium cannot fit the two columns
+   left beside the lead, so without it the mediums jump to the next clear row
+   and that gap stays open. Dense lets the smalls, which come later in the
+   data, back-fill it. DOM order is untouched, so the reading order is still
+   the order the duties are written in.
+
+   The lead was four columns by three rows while it carried the figures, and
+   that height was the whole problem: a tile as tall as three small tiles
+   holding one sentence. The figures moved up into the band, and the row span
+   went with them. */
+.bento--role-mosaic {
+  grid-auto-flow: row dense;
+}
+
+.bento--role-mosaic .bento__tile--lead {
+  grid-column: span 4;
+}
+
+.bento--role-mosaic .bento__tile--medium {
+  grid-column: span 3;
+}
+
+.bento--role-mosaic .bento__tile--small {
+  grid-column: span 2;
+}
+
+/* ── mirror — EchoChallengers ──────────────────────────────────────────
+   `columns` reflected: the lead is pinned to the right-hand half and the
+   mediums stack to its left. Same cell maths, opposite silhouette — which is
+   enough to stop two of the three pages reading as the same picture.
+   The explicit line is what does it; `dense` then fills the left of rows one
+   and two with the mediums that follow it in the data. */
+.bento--role-mirror {
+  grid-auto-flow: row dense;
+}
+
+.bento--role-mirror .bento__tile--lead {
+  grid-column: 4 / span 3;
+  grid-row: span 2;
+}
+
+.bento--role-mirror .bento__tile--medium {
+  grid-column: span 3;
+}
+
+.bento--role-mirror .bento__tile--small {
   grid-column: span 2;
 }
 
@@ -4023,8 +4574,13 @@ a.link-tile:hover .link-tile__mark {
   margin: 0;
 }
 
+/* Bigger than it was, smaller than it briefly became. It was grown to 7.2rem
+   to fill a three-row tile that had more height than content; the tile is
+   content-height now, so the figure no longer has a hole to plug and can be
+   sized for what it is — the one number in the section meant to be read from
+   across the page, on a tile that is otherwise a line of prose. */
 .bento__tile--lead .bento__value {
-  font-size: calc(clamp(2.6rem, 1.7rem + 3.2vw, 3.9rem) * var(--display-scale));
+  font-size: calc(clamp(3.2rem, 2rem + 4vw, 5rem) * var(--display-scale));
 }
 
 .role-tile__unit {
@@ -4052,27 +4608,28 @@ a.link-tile:hover .link-tile__mark {
   justify-content: space-between;
 }
 
-/* The lead spans two rows, so its height is set by the two tiles beside it
-   rather than by its own content — and whatever those come out at, the
-   difference pooled as dead space under the sentence. Distributing instead of
-   stacking turns that difference into deliberate spacing: the label sits on
-   the top edge, the sentence on the bottom, level with the bottom of the tile
-   next to it, and the figure takes the room between them. The `gap` above
-   stays as the floor, so a tile whose content nearly fills it does not spread
-   any further than it already would.
 
-.bento__tile--lead {
-  grid-column: span 3;
-  grid-row: span 2;
+/* The eyebrow. Named the duty, quietly, so the figure below it is read as a
+   measure of something rather than as a number on its own. */
+.role-tile__eyebrow {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 
-.bento__tile--medium {
-  grid-column: span 3;
-}
+/* The lead spreads, and it can now afford to: it holds three things — the
+   eyebrow, the figure and the sentence — where it used to hold two.
 
-.bento__tile--small {
-  grid-column: span 2;
-}
+   That is the actual fix for the empty space this tile kept growing. A tile
+   spanning rows is as tall as the rows it spans, so there is always some
+   difference between that and its own text; `space-between` across two
+   children put all of it in one gap, which read as a hole. Across three it
+   reads as the structure of a card: a name at the top, a figure, and the
+   claim along the bottom edge, level with the tile beside it. */
 
 /* The figure that earns the lead tile its size, in the same monospace
    treatment the Key Impact Metrics numbers use — this is the same kind of
@@ -4085,8 +4642,13 @@ a.link-tile:hover .link-tile__mark {
   margin: 0.15rem 0 0;
 }
 
+/* Bigger than it was, smaller than it briefly became. It was grown to 7.2rem
+   to fill a three-row tile that had more height than content; the tile is
+   content-height now, so the figure no longer has a hole to plug and can be
+   sized for what it is — the one number in the section meant to be read from
+   across the page, on a tile that is otherwise a line of prose. */
 .bento__tile--lead .bento__value {
-  font-size: calc(clamp(2.6rem, 1.7rem + 3.2vw, 3.9rem) * var(--display-scale));
+  font-size: calc(clamp(3.2rem, 2rem + 4vw, 5rem) * var(--display-scale));
 }
 
 .role-tile__unit {
@@ -4149,14 +4711,19 @@ a.link-tile:hover .link-tile__mark {
     width: clamp(5rem, 12vw, 6.5rem);
     font-size: clamp(1.5rem, 3.4vw, 1.9rem);
   }
-  .bento__tile--lead {
+  /* Scoped to `.bento--role`, not written bare. The per-project arrangements
+     above are `.bento--role-columns .bento__tile--lead` and friends — two
+     classes — so a bare `.bento__tile--lead` here loses on specificity and the
+     grid never collapses: at 420px every tile stayed 1/6th of a six-column
+     grid and the page scrolled sideways. This ties them and wins on order. */
+  .bento--role .bento__tile--lead {
     grid-column: span 6;
     grid-row: span 1;
   }
-  .bento__tile--medium {
+  .bento--role .bento__tile--medium {
     grid-column: span 3;
   }
-  .bento__tile--small {
+  .bento--role .bento__tile--small {
     grid-column: span 2;
   }
 }
@@ -4167,9 +4734,15 @@ a.link-tile:hover .link-tile__mark {
   .bento--role {
     grid-template-columns: minmax(0, 1fr);
   }
-  .bento__tile--lead,
-  .bento__tile--medium,
-  .bento__tile--small {
+  /* The band stacks with them. Three figures across a phone is three columns
+     of about 110px, and a cell that narrow sizes its figure down to the point
+     where it is no longer a figure. */
+  .role-band {
+    grid-auto-flow: row;
+  }
+  .bento--role .bento__tile--lead,
+  .bento--role .bento__tile--medium,
+  .bento--role .bento__tile--small {
     grid-column: span 1;
     grid-row: span 1;
   }
@@ -4836,6 +5409,100 @@ a.link-tile:hover .link-tile__mark {
   color: var(--text-secondary);
 }
 
+/* ---------- Cost: the measured second reading ---------- */
+
+/* Full width under both columns. A project whose chart is a model and whose
+   billing is not has two readings of one system, and the second one cannot sit
+   inside either column without reading as that column's footnote.
+
+   Deliberately not a second chart. Two charts in one section invite the reader
+   to compare bars that are in different units and from different sources,
+   which is the exact misreading this block exists to prevent — so it is a
+   strip of figures, and the unit is printed on every one of them. */
+.cost__measured {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  margin-top: clamp(1.8rem, 3.5vw, 2.6rem);
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--border);
+}
+
+.cost__measured-title {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.cost__measured-lede {
+  margin: 0 0 1.2rem;
+  max-width: 68ch;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.62;
+  color: var(--text-primary);
+}
+
+/* Auto-fit rather than a fixed column count: the block takes however many
+   figures a project has without anyone here knowing the number, and a short
+   run stays at a readable width instead of stretching to fill the row. */
+.cost__figures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+  gap: clamp(0.7rem, 1.4vw, 1rem);
+}
+
+.cost__figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: clamp(0.9rem, 1.8vw, 1.2rem);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow-wrap: anywhere;
+}
+
+.cost__figure-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem);
+  letter-spacing: -0.05em;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.cost__figure-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.cost__figure-note {
+  font-size: var(--t-tiny);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.cost__measured-source {
+  margin: 1.1rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-tiny);
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
 @media (max-width: 900px) {
   .cost {
     grid-template-columns: minmax(0, 1fr);
@@ -4844,7 +5511,8 @@ a.link-tile:hover .link-tile__mark {
   .cost__chart,
   .cost__foot--chart,
   .cost__read,
-  .cost__foot--read {
+  .cost__foot--read,
+  .cost__measured {
     grid-column: 1;
     grid-row: auto;
   }

@@ -29,16 +29,21 @@ import lnlAlertRules from '../content/lock-n-lock/code/monitoring/alert_rules.ya
 // One thing deliberately left in Korean: `teardown_체크리스트.md`, because it is
 // a filename in the repo and not a sentence.
 //
-// The six span all four repositories, so this is not one track's source the way
-// the other two projects' sections are. Two are mine, two are the mechanism the
-// page is about, and two are the infrastructure — which is Miseon Lee's work
-// and is captioned as hers.
+// The eight span all four repositories, so this is not one track's source the
+// way the other two projects' sections are. Two are mine, two are the mechanism
+// the page is about, and four are infrastructure and deployment — which are
+// Miseon Lee's and Yongbin Cho's work and are captioned as theirs.
 import hcLib from '../content/hailcast/code/ops/_lib.sh?raw'
 import hcTeardown from '../content/hailcast/code/ops/teardown.sh?raw'
 import hcDecisionEngine from '../content/hailcast/code/predict/scaling_decision_engine.py?raw'
 import hcScaledObject from '../content/hailcast/code/manifests/scaledobject.yaml?raw'
 import hcSchedule from '../content/hailcast/code/terraform/schedule/main.tf?raw'
 import hcIrsa from '../content/hailcast/code/terraform/eks/irsa.tf?raw'
+// The two the refinement added. `glue.tf` is the CUR chain that turned the cost
+// figure from a list-price estimate into a billed one; `replace_rebuild_values.sh`
+// is the rebuild runbook's §8-1 table executed instead of read.
+import hcGlue from '../content/hailcast/code/terraform/storage/glue.tf?raw'
+import hcReplaceValues from '../content/hailcast/code/manifests/replace_rebuild_values.sh?raw'
 
 // The single source of truth for every project page on this app. Nothing in
 // the page components is per-project — a new project is one entry here plus a
@@ -92,10 +97,16 @@ import hcIrsa from '../content/hailcast/code/terraform/eks/irsa.tf?raw'
 //                 project accent. `caveat` is not fine print — a chart of
 //                 estimates without it is a chart of claims.
 //
-//   decisions     [{ title, glyph, chose, over, why }]
+//   decisions     [{ keyword, title, glyph, chose, over, why }]
 //                 Decisions and trade-offs are one deck, not two sections:
 //                 every entry is both. `over` may be null where the choice was
 //                 a way of working rather than a fork.
+//
+//                 `keyword` is the short name the bubble is labelled with and
+//                 the name on the card, two to four words, and it must not
+//                 wrap: the pill is sized to it. `title` states the same
+//                 decision as one full sentence, which is what the bubble
+//                 opens to reveal.
 //
 // Two documents are discovered rather than declared: README.md and RUNBOOK.md
 // under src/content/<slug>/, each optionally with a `.ko` translation beside
@@ -181,7 +192,7 @@ export const PROJECTS = [
     // reading two write-ups. Rendered beside the workspace links.
     glance: {
       why: 'Unplanned downtime costs money the moment it happens. This project builds infrastructure that detects a failure and repairs itself automatically, without waiting for a human to respond.',
-      how: 'Terraform and Ansible codify the entire stack, Prometheus and AlertManager detect failures, and a custom Recovery Controller runs the fix \u2014 connected across a hybrid VMware/AWS environment over Tailscale.',
+      how: 'Terraform and Ansible codify the entire stack, Prometheus and AlertManager detect failures, and a custom Recovery Controller runs the fix, all connected across a hybrid VMware/AWS environment over Tailscale.',
       result: 'Recovers from failure in **30\u201360 seconds**, validated across **4 automated failure scenarios**, with the full infrastructure deployable from scratch in about **10 minutes**.',
     },
     // My Role as a bento of duties in three tiers, sized by how much of the
@@ -209,11 +220,23 @@ export const PROJECTS = [
       // a short form up here and a "PR Owner" heading down in a tile, which
       // made one job read as two.
       title: 'Infrastructure Build Lead and PR Owner',
+      // `mirror` — `columns` reflected, with the lead pinned to the right-hand
+      // half. Same cell maths as hailcast's, opposite silhouette, which is the
+      // cheapest way to stop two pages reading as one picture.
+      layout: 'mirror',
       tiles: [
         {
           size: 'lead',
           label: 'Infrastructure Build',
-          stat: { value: '41', unit: 'AWS resources' },
+          // Terraform resources, not AWS resources. The `terraform/` directory
+          // holds 41 `resource` blocks and no `count` or `for_each`, so the
+          // figure is exact — but ten of them are not AWS: four generated
+          // local files, three `terraform_data` blocks, two Tailscale objects
+          // and a TLS private key. The deck says it both ways, "41 AWS
+          // resources codified" on the overview slides and "41 resources
+          // codified in total" on the code-structure slide; this is the one
+          // that survives being checked.
+          stat: { value: '41', unit: 'Terraform resources' },
           text: 'Codified every one of them in **Terraform**, and wrote the **Ansible roles** that configure each server automatically.',
         },
         {
@@ -305,7 +328,7 @@ export const PROJECTS = [
         size: 'wide',
         value: '~10 min',
         label: 'Deployment Time',
-        detail: 'for 41 AWS resources',
+        detail: 'for 41 Terraform resources',
       },
       { size: 'square', value: '4', label: 'Scenarios Validated', hint: 'Failure-and-recovery scenarios validated end to end' },
     ],
@@ -354,12 +377,12 @@ export const PROJECTS = [
       {
         tool: 'Why Tailscale?',
         icon: 'Tailscale',
-        text: 'Selected over a traditional site-to-site VPN for connecting on-premises to AWS \u2014 a **mesh VPN** needed almost no manual network configuration to bridge the two environments.',
+        text: 'Selected over a traditional site-to-site VPN for connecting on-premises to AWS, because a **mesh VPN** needed almost no manual network configuration to bridge the two environments.',
       },
       {
         tool: 'Why Flask?',
         icon: 'Flask',
-        text: 'A lightweight framework was enough for a **single-purpose webhook receiver** \u2014 no need for a heavier framework\u2019s overhead.',
+        text: 'A lightweight framework was enough for a **single-purpose webhook receiver**, with no need for a heavier framework\u2019s overhead.',
       },
     ],
     // Only the main.tf — variables.tf and outputs.tf are supporting files,
@@ -399,7 +422,7 @@ export const PROJECTS = [
       {
         tab: 'Hybrid infrastructure',
         caption:
-          'Hybrid infrastructure — the VMware on-premises host and the AWS VPC joined into one addressable network over Tailscale',
+          'Hybrid infrastructure: the VMware on-premises host and the AWS VPC joined into one addressable network over Tailscale',
         alt: 'The on-premises VMware host proj-mgmt, running Terraform and Ansible, joined over a Tailscale VPN to an AWS VPC in ap-northeast-2: an internet-facing load balancer on HTTP 80 spread across two availability zones; aws-web1 and the NAT instance with aws-mgmt in the 10.0.1.0/24 public subnet in AZ 1; aws-web2 in the 10.0.2.0/24 public subnet in AZ 2; aws-db running PostgreSQL 16 in the 10.0.11.0/24 private subnet, reaching the internet through the NAT instance and the internet gateway; and aws-mgmt carrying Prometheus, Grafana, Alertmanager and the Flask recovery controller',
         diagram: {
           width: 1000,
@@ -484,8 +507,8 @@ export const PROJECTS = [
       {
         tab: 'Self-healing flow',
         caption:
-          'Self-healing flow — detection, the webhook decision, the four recovery scenarios, and the result posted back',
-        alt: 'The self-healing pipeline in four phases: detect, where node and nginx exporters are scraped every five seconds by Prometheus and a rule firing for five seconds reaches Alertmanager; decide, where Alertmanager notifies Slack and posts a webhook to the Flask recovery controller on port 5001, which looks the alertname up in recovery_map.yml; recover, where one of four scripts runs over Ansible — restart nginx, restart the nginx exporter, or pkill the CPU and memory load — and is then verified and retried up to its limit; and report, where the outcome is posted to Slack as SUCCESS, FAILED or NO_MAP',
+          'Self-healing flow: detection, the webhook decision, the four recovery scenarios, and the result posted back',
+        alt: 'The self-healing pipeline in four phases: detect, where node and nginx exporters are scraped every five seconds by Prometheus and a rule firing for five seconds reaches Alertmanager; decide, where Alertmanager notifies Slack and posts a webhook to the Flask recovery controller on port 5001, which looks the alertname up in recovery_map.yml; recover, where one of four scripts runs over Ansible (restart nginx, restart the nginx exporter, or pkill the CPU and memory load) and is then verified and retried up to its limit; and report, where the outcome is posted to Slack as SUCCESS, FAILED or NO_MAP',
         diagram: {
           width: 1000,
           height: 680,
@@ -543,7 +566,7 @@ export const PROJECTS = [
               x: 20,
               y: 646,
               tone: 'accent',
-              text: 'Detection to recovery runs unattended — 5–10s to detect, 30–60s to recover, validated across all four scenarios.',
+              text: 'Detection to recovery runs unattended: 5–10s to detect, 30–60s to recover, validated across all four scenarios.',
             },
             {
               x: 20,
@@ -605,7 +628,7 @@ export const PROJECTS = [
         {
           id: 'scenario-1',
           tab: 'Nginx down',
-          label: 'Scenario 1 \u2014 Nginx down',
+          label: 'Scenario 1: Nginx down',
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-before.jpg',
             alt: 'Scenario 1, Nginx down: dashboard and alerts in the failed state',
@@ -618,7 +641,7 @@ export const PROJECTS = [
         {
           id: 'scenario-2',
           tab: 'Exporter down',
-          label: 'Scenario 2 \u2014 Exporter down',
+          label: 'Scenario 2: Exporter down',
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-before.jpg',
             alt: 'Scenario 2, exporter down: dashboard and alerts in the failed state',
@@ -631,7 +654,7 @@ export const PROJECTS = [
         {
           id: 'scenario-3',
           tab: 'High CPU',
-          label: 'Scenario 3 \u2014 High CPU',
+          label: 'Scenario 3: High CPU',
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-before.jpg',
             alt: 'Scenario 3, high CPU: dashboard and alerts in the failed state',
@@ -644,7 +667,7 @@ export const PROJECTS = [
         {
           id: 'scenario-4',
           tab: 'High memory',
-          label: 'Scenario 4 \u2014 High memory',
+          label: 'Scenario 4: High memory',
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-before.jpg',
             alt: 'Scenario 4, high memory: dashboard and alerts in the failed state',
@@ -707,59 +730,68 @@ project1-aws/
     // neutral default rather than pretending to illustrate the decision.
     decisions: [
       {
-        title: 'NAT Instance over NAT Gateway',
+        keyword: 'NAT instance',
+        title: 'Outbound traffic leaves the private subnets through a NAT instance.',
         glyph: 'route',
         chose: 'A **NAT instance** for outbound routing',
-        over: "AWS's managed NAT Gateway",
-        why: '**Lower cost** and **better response time** for this scale of workload.',
+        over: 'AWS’s managed NAT Gateway',
+        why:
+          'The instance costs less to run and answered faster at this scale of workload. A managed gateway prices in throughput and availability sized for production traffic, so the extra cost pays for capacity this environment never reaches.',
       },
       {
-        title: '`pkill -x` over `pkill -f` in recovery scripts',
+        keyword: 'Exact-match pkill',
+        title: 'The recovery scripts match a process name exactly, using `pkill -x`.',
         glyph: 'process',
         chose: '`pkill -x`, exact process-name matching only',
-        over: '`pkill -f`',
+        over: '`pkill -f`, which matches anywhere in the command line',
         why:
-          'The memory-recovery script went through **4 iterations** before we landed on a safe approach. Early versions used `pkill -f stress-ng`, which also matched the Ansible shell command line running the recovery script itself \u2014 causing the recovery process to terminate itself mid-run. Switching to `pkill -x` fixed it. A small shell command difference with a **real operational consequence**.',
+          'The memory-recovery script went through **4 iterations** before we reached a safe approach. Early versions used `pkill -f stress-ng`, which also matched the Ansible shell command line running the recovery script itself, so the recovery process terminated itself mid-run. Switching to `pkill -x` fixed it. One flag on one shell command carried a **real operational consequence**.',
       },
       {
-        title: 'Slack channel separation (`#monitoring` vs. `#recovery`)',
+        keyword: 'Split alert channels',
+        title: 'Detection alerts and recovery results go to two separate Slack channels.',
         glyph: 'channels',
-        chose: 'Two channels, splitting detection alerts from recovery-result alerts',
+        chose: 'Two channels, `#monitoring` for detection and `#recovery` for results',
         over: 'one combined feed',
-        why: "So on-call readability doesn't degrade as alert volume grows.",
+        why:
+          'A single feed stays readable only while the volume is low. Splitting it keeps each channel answering one question, so an engineer on call can separate **what broke** from **what the system already fixed** without reading every message in order.',
       },
       {
-        title: 'Three-tier Git branch strategy with a dedicated PR Owner role',
+        keyword: 'PR Owner role',
+        title: 'A three-tier branch strategy runs through a named PR Owner.',
         glyph: 'branch',
-        chose: '`main \u2190 dev \u2190 feature/*`, with a named **PR Owner**',
+        chose: '`main ← dev ← feature/*`, with a named **PR Owner**',
         // No competing option to name: this was a way of working, not a fork.
         over: null,
         why:
-          'With me responsible for pre-merge security review and conflict resolution \u2014 I caught a **hardcoded Slack webhook URL** before it reached the public repo.',
+          'The PR Owner is answerable for pre-merge security review and for conflict resolution, which puts one named person in front of every merge. In that role I caught a **hardcoded Slack webhook URL** before it reached the public repository.',
       },
       {
-        title: 'Demo stability over CI/CD',
+        keyword: 'Demo over CI/CD',
+        title: 'The team spent its remaining time rehearsing a reliable demonstration.',
         glyph: 'pipeline',
         chose: 'Rehearsing a **reliable demo**',
         over: 'building a CI/CD pipeline',
         why:
-          'The team prioritized rehearsing a reliable demo over building a CI/CD pipeline that would only have run a handful of times before the project ended.',
+          'A pipeline would have run a handful of times before the project ended. The demonstration was the one thing every reviewer would see, so the remaining time went to the deliverable that carried the result.',
       },
       {
-        title: 'Depth over breadth in failure coverage',
+        keyword: 'Depth over breadth',
+        title: 'Four failure scenarios each detect, recover and verify on their own.',
         glyph: 'depth',
         chose: '**Four** failure scenarios, each fully self-healing',
         over: 'more failure types covered shallowly',
         why:
-          'Four failure scenarios were engineered to be fully self-healing rather than covering more failure types shallowly, leaving production concerns like auto-scaling and multi-AZ as clear next steps rather than overlooked gaps.',
+          'Each of the four detects, recovers and then verifies without a person in the loop. Covering more failure types on the same budget would have left every one of them half finished. Production concerns such as auto-scaling and multi-AZ are named in the write-up as **clear next steps**.',
       },
       {
-        title: 'Synthetic failure injection over waiting for real failures',
+        keyword: 'Injected failures',
+        title: 'A chaos script triggers each failure on demand.',
         glyph: 'inject',
         chose: '`chaos/inject.sh`, triggering failures **on demand**',
         over: 'waiting for something to break on its own',
         why:
-          '`chaos/inject.sh` was built to trigger failures on demand, allowing the recovery system to be tested repeatedly and safely instead of being validated only when something happened to break on its own.',
+          '`chaos/inject.sh` triggers each failure on command, so the recovery system can be tested repeatedly and safely. On-demand injection let us rehearse all four scenarios before the demonstration and repeat any of them on request.',
       },
     ],
     // placeholder \u2014 EVERY NUMBER BELOW IS AN ESTIMATE, not billing data.
@@ -787,7 +819,7 @@ project1-aws/
         },
         {
           label: 'Compute',
-          note: '4 instances \u2014 mgmt, web x2, db',
+          note: '4 instances: mgmt, web x2, db',
           typical: 34.0,
           actual: 0.0,
         },
@@ -813,12 +845,12 @@ project1-aws/
       total: { typical: 128.0, actual: 1.2 },
       notes: [
         'The largest single saving is the **NAT instance**: a managed NAT Gateway bills by the hour whether or not anything is routed through it, and at this volume of outbound traffic a `t3.micro` doing the same job costs nothing inside the free tier.',
-        'Running **PostgreSQL and the monitoring stack on instances the project already had** removes two managed-service line items. That is a real trade \u2014 no automated backups, no failover, and patching becomes the team\u2019s job \u2014 and it is the right one for a project that is demonstrated rather than operated around the clock.',
+        'Running **PostgreSQL and the monitoring stack on instances the project already had** removes two managed-service line items. That is a real trade. There are no automated backups, there is no failover, and patching becomes the team\u2019s job. It is the right trade for a project that is demonstrated over four weeks.',
         'Compute reaches zero because the whole fleet fits inside the **750-hour free tier** across four `t3.micro` instances. The same architecture on `t3.small` on-demand is roughly **$34 a month**, which is the honest number for anyone rebuilding this outside a free-tier account.',
         'The only figure that is not zero is **EBS**: four root volumes exceed the 30 GB the free tier covers. Nothing was optimized away here, and pretending otherwise would have made every other row less believable.',
       ],
       caveat:
-        'Estimated figures, based on free-tier AWS usage in `ap-northeast-2` over the project period \u2014 not production billing data. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
+        'Estimated figures, based on free-tier AWS usage in `ap-northeast-2` over the project period. Every figure is an estimate. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
     },
     links: {
       github: 'https://github.com/EchoChallengers/project1-aws',
@@ -830,9 +862,9 @@ project1-aws/
     },
     reflection: {
       learned:
-        'Building for **operations** \u2014 not just deployment \u2014 meant designing for **idempotency** and human-error prevention from the start, not bolting it on afterward. The `pkill -x` vs. `pkill -f` issue in particular taught me that small shell-command differences can have outsized operational consequences, and that some failure modes only show up under real infrastructure conditions \u2014 I couldn\u2019t have predicted the **AWS OOM killer** behavior without testing on actual AWS.',
+        'Building for **operations** meant designing for **idempotency** and human-error prevention from the first Terraform file onward. The `pkill -x` vs. `pkill -f` issue in particular taught me that small shell-command differences can have outsized operational consequences, and that some failure modes only show up under real infrastructure conditions. I could not have predicted the **AWS OOM killer** behavior without testing on actual AWS.',
       differently:
-        'We didn\u2019t build a **CI/CD pipeline** for this iteration \u2014 we prioritized demo stability over pipeline setup given the timeline. I\u2019d also want to add containerization, auto-scaling/multi-AZ high availability, and fully automated Grafana dashboard provisioning. My near-term next steps would be finishing Grafana auto-provisioning, adding GitHub Actions CI/CD, and automating HTTPS renewal; longer-term, containerizing with ECR/ECS and eventually expanding to EKS.',
+        'We did not build a **CI/CD pipeline** for this iteration, because we prioritized demo stability over pipeline setup given the timeline. I\u2019d also want to add containerization, auto-scaling/multi-AZ high availability, and fully automated Grafana dashboard provisioning. My near-term next steps would be finishing Grafana auto-provisioning, adding GitHub Actions CI/CD, and automating HTTPS renewal; longer-term, containerizing with ECR/ECS and eventually expanding to EKS.',
     },
   },
 
@@ -865,7 +897,7 @@ project1-aws/
     // The three sentences a reader who never scrolls should still come away
     // with, drawn from the sections below rather than written separately.
     glance: {
-      why: 'A financial service cannot bolt security on at the end — a brute-force login run or a flood of API calls costs money the moment it lands, in fraud, in downtime, and in regulatory exposure. This platform makes every layer of defense a build step that runs unattended.',
+      why: 'A financial service cannot bolt security on at the end. A brute-force login run or a flood of API calls costs money the moment it lands, in fraud, in downtime, and in regulatory exposure. This platform makes every layer of defense a build step that runs unattended.',
       how: 'Terraform defines a two-AZ AWS stack joined to an on-premise Rocky Linux server over a Tailscale tunnel, GitHub Actions runs Bandit, Trivy, and OWASP ZAP on every push, and a Recovery Controller restarts and re-verifies any container Prometheus reports as failed.',
       result: 'Four independent security layers over **~60 Terraform-defined AWS resources** and **19 running containers**, with **5 attack and failure scenarios** demonstrated live against real attack traffic rather than described.',
     },
@@ -886,12 +918,32 @@ project1-aws/
     // list this track's own deliverables.
     role: {
       title: 'Team Lead and Infrastructure Track Owner',
+      // The three counts this track is measured by, across the top of the
+      // section. They were figures inside the lead tile, which is what made
+      // that tile ask to be three rows tall and then sit half empty; the band
+      // gives them room, and gives every tile below the same job.
+      //
+      // `~60` is the deck's own rounded figure (slides 22 and 56). The
+      // repository has 67 `resource` blocks across 15 `.tf` files, so the
+      // rounding is downward and the unit is Terraform resources rather than
+      // AWS resources: what is counted is what the code declares.
+      figures: [
+        { value: '~60', unit: 'Terraform resources' },
+        { value: '5', unit: 'parallel tracks' },
+        { value: '6', unit: 'commands, whole lifecycle' },
+      ],
+      // `mosaic` — the lead takes four columns of the first row and the smalls
+      // back-fill around it. It was 4x3 while it carried the figures; with the
+      // counting moved to the band above, nothing needs to be three rows tall.
+      layout: 'mosaic',
       tiles: [
         {
           size: 'lead',
           label: 'Team Lead',
-          stat: { value: '~60', unit: 'AWS resources' },
-          text: 'Held **final approval on every merge** to `main` — the last check before anything reached the running platform, on a five-person team working five parallel tracks.',
+          // No figure of its own. The sentence used to end "on a five-person
+          // team working five parallel tracks", which the band above counts
+          // now, and the team size is already in the page header.
+          text: 'Held **final approval on every merge** to `main`, the last check before anything reached the running platform.',
         },
         {
           size: 'medium',
@@ -916,7 +968,17 @@ project1-aws/
         {
           size: 'small',
           label: 'Shared Interface',
-          text: 'Kept `outputs.tf` as the **single contract** the other four tracks consumed — ALB DNS, target-group ARNs, security-group IDs, DB addresses.',
+          text: 'Kept `outputs.tf` as the **single contract** the other four tracks consumed: ALB DNS, target-group ARNs, security-group IDs, DB addresses.',
+        },
+        // The seventh, and the half of this track the section never said out
+        // loud: the deck's team slide calls the role "Infrastructure and
+        // documentation" and lists the project-wide guide as a deliverable.
+        // `docs/guides/` holds one file per track, a-infra-terraform through
+        // e-security, beside the setup guide and the network design.
+        {
+          size: 'small',
+          label: 'Documentation',
+          text: 'Wrote the **setup guide, the network design and a guide per track**, so five people running one infrastructure worked from one set of instructions.',
         },
       ],
     },
@@ -929,37 +991,37 @@ project1-aws/
         {
           size: 'lead',
           label: 'Business Problem',
-          text: 'A financial service cannot treat security as something added at the end: **credential stuffing drains real accounts**, an API flood takes the service down during business hours, and a single container failure at 3am becomes an outage nobody is awake to fix — each of them costing money, customer trust, and regulatory standing the moment it lands.',
+          text: 'A financial service cannot treat security as something added at the end: **credential stuffing drains real accounts**, an API flood takes the service down during business hours, and a single container failure at 3am becomes an outage nobody is awake to fix. Each of them costs money, customer trust and regulatory standing the moment it lands.',
         },
         {
           size: 'support',
           label: 'What We Built',
-          text: 'We built **LockBank**, a demo banking app with login, balance, and transfers, and wrapped it in a security-first cloud platform designed around **three incidents we expected to actually face** — brute-force login attempts, API request flooding, and container failure.',
+          text: 'We built **LockBank**, a demo banking app with login, balance, and transfers, and wrapped it in a security-first cloud platform designed around **three incidents we expected to actually face**: brute-force login attempts, API request flooding, and container failure.',
         },
         {
           size: 'support',
           label: 'Proved, Not Claimed',
-          text: 'We did not stop at building the defenses — we attacked our own platform with **Locust**-generated traffic and read back what the dashboards said, so every control on this page was demonstrated live rather than configured and assumed.',
+          text: 'We attacked our own platform with **Locust**-generated traffic and read back what the dashboards said, so every control on this page was demonstrated live under load.',
         },
         {
           size: 'support',
           label: 'Hybrid by Design',
-          text: 'AWS runs the app tier — **ALB, Auto Scaling Group, Bastion, and the Main DB** — across two Availability Zones, while an on-premise Rocky Linux server holds the Replica DB and the monitoring stack, the two halves meeting over a **Tailscale Layer-3 tunnel with no public port open on either side**.',
+          text: 'AWS runs the app tier across two Availability Zones: the **ALB, Auto Scaling Group, Bastion, and the Main DB**. An on-premise Rocky Linux server holds the Replica DB and the monitoring stack, and the two halves meet over a **Tailscale Layer-3 tunnel with no public port open on either side**.',
         },
         {
           size: 'support',
           label: 'The 4-Layer Lock',
-          text: 'Security runs on four independent layers — **static code analysis, container image scanning, dynamic application testing, and runtime defense** — what we called the **"4-layer lock,"** a deliberate nod to the team name: a vulnerability has to get past four different kinds of scrutiny before it reaches a user.',
+          text: 'Security runs on four independent layers: **static code analysis, container image scanning, dynamic application testing, and runtime defense**. We called it the **"4-layer lock,"** a deliberate nod to the team name, because a vulnerability has to get past four different kinds of scrutiny before it reaches a user.',
         },
         {
           size: 'support',
           label: 'A Real Attacker, Uninvited',
-          text: 'Minutes after the EC2 went public, **automated scans for WordPress and PHP webshell paths** started arriving on their own — unsolicited internet background noise, not our Locust script — and were turned away at Nginx before a request ever reached the application.',
+          text: 'Minutes after the EC2 went public, **automated scans for WordPress and PHP webshell paths** started arriving on their own. That traffic arrived unsolicited from the open internet, and Nginx turned it away before a request ever reached the application.',
         },
         {
           size: 'support',
           label: 'Self-Healing',
-          text: 'When something fails, a **Recovery Controller** detects it through Prometheus, checks a YAML-defined policy, restarts the affected container, re-verifies health, then logs and reports the outcome to **Telegram** — so the 3am failure resolves itself before anyone is paged for it.',
+          text: 'When something fails, a **Recovery Controller** detects it through Prometheus, checks a YAML-defined policy, restarts the affected container, re-verifies health, then logs and reports the outcome to **Telegram**, so the 3am failure resolves itself before anyone is paged for it.',
         },
       ],
     },
@@ -983,7 +1045,7 @@ project1-aws/
         size: 'square',
         value: '~60',
         label: 'AWS Resources',
-        hint: 'VPC, subnets, ALB, Auto Scaling Group, EC2, S3, IAM, CloudWatch — all defined in Terraform',
+        hint: 'VPC, subnets, ALB, Auto Scaling Group, EC2, S3, IAM and CloudWatch, all defined in Terraform',
       },
       {
         size: 'square',
@@ -1001,13 +1063,13 @@ project1-aws/
         size: 'wide',
         value: '5',
         label: 'Scenarios Demonstrated Live',
-        detail: 'Normal operation, login brute-force, API flooding, container failure, and a secure-deploy gate — each triggered and resolved on camera',
+        detail: 'Normal operation, login brute-force, API flooding, container failure, and a secure-deploy gate, each triggered and resolved on camera',
       },
       {
         size: 'square',
         value: '23.24s',
         label: 'Measured Recovery',
-        hint: 'One timed run: the recovery log reads verify success at 23.24s on the first attempt, against a ≤5 min RTO/RPO design target — not a mean across every failure type',
+        hint: 'One timed run: the recovery log reads verify success at 23.24s on the first attempt, against a ≤5 min RTO/RPO design target. The figure covers that single run',
       },
     ],
     // Grouped by what each tool is for, with no `tint` overrides — the
@@ -1035,7 +1097,7 @@ project1-aws/
       {
         tool: 'Why Terraform?',
         icon: 'Terraform',
-        text: 'The whole **~60-resource** footprint had to be reproducible by any of five people — and with the state on an **S3 backend behind a DynamoDB lock**, two of them running `apply` at once is a queue rather than a corruption.',
+        text: 'The whole **~60-resource** footprint had to be reproducible by any of five people. With the state on an **S3 backend behind a DynamoDB lock**, two of them running `apply` at once are serialised into a queue.',
       },
       {
         tool: 'Why Tailscale?',
@@ -1050,12 +1112,12 @@ project1-aws/
       {
         tool: 'Why Locust?',
         icon: 'Locust',
-        text: 'A defense nobody has attacked is a configuration, not a control. Three scripted profiles — **normal traffic, credential brute-force, and API flooding** — made every claim on this page something we could trigger on demand and watch fail or hold.',
+        text: 'A defense nobody has attacked is a configuration, not a control. Three scripted profiles, **normal traffic, credential brute-force, and API flooding**, made every claim on this page something we could trigger on demand and watch fail or hold.',
       },
       {
         tool: 'Why Telegram?',
         icon: 'Telegram',
-        text: 'Alerts had to reach a phone without standing up an on-call platform for a four-week project. Two independent paths end there — **Alertmanager** for anything Prometheus sees, and **CloudWatch → SNS → Lambda** for anything that happens to the instances themselves.',
+        text: 'Alerts had to reach a phone without standing up an on-call platform for a four-week project. Two independent paths end there: **Alertmanager** for anything Prometheus sees, and **CloudWatch → SNS → Lambda** for anything that happens to the instances themselves.',
       },
     ],
     // Drawn from this description rather than pasted in as an export \u2014 see
@@ -1079,7 +1141,7 @@ project1-aws/
         // calls the same view of itself, and it leaves "System Overview" free
         // for the export tab that carries that name inside its own file.
         tab: 'Overall architecture',
-        caption: 'Overall architecture \u2014 AWS, blue/green under one auto scaling group, and the on-premises hosts over Tailscale',
+        caption: 'Overall architecture: AWS, blue/green under one auto scaling group, and the on-premises hosts over Tailscale',
         diagram: {
           width: 1000,
           height: 760,
@@ -1102,8 +1164,8 @@ project1-aws/
             // A NAT instance, not a managed NAT gateway \u2014 the export is
             // explicit about it, and it is the cheaper of the two.
             { id: 'nat', label: 'NAT', sub: 'EC2 instance', glyph: 'cloud', x: 596, y: 248, w: 150, h: 54 },
-            { id: 'blue', label: 'App \u2014 blue', sub: 'live \u00b7 AZ 2a \u00b7 10.0.11.0/24', glyph: 'container', x: 310, y: 352, w: 210, h: 58 },
-            { id: 'green', label: 'App \u2014 green', sub: 'standby \u00b7 AZ 2c \u00b7 10.0.12.0/24', glyph: 'container', x: 550, y: 352, w: 210, h: 58 },
+            { id: 'blue', label: 'App: blue', sub: 'live \u00b7 AZ 2a \u00b7 10.0.11.0/24', glyph: 'container', x: 310, y: 352, w: 210, h: 58 },
+            { id: 'green', label: 'App: green', sub: 'standby \u00b7 AZ 2c \u00b7 10.0.12.0/24', glyph: 'container', x: 550, y: 352, w: 210, h: 58 },
             { id: 'db', label: 'PostgreSQL', sub: 'EC2', glyph: 'database', x: 430, y: 456, w: 190, h: 50 },
             { id: 'cw', label: 'CloudWatch', sub: 'alarms drive the ASG', glyph: 'monitor', x: 850, y: 248, w: 190, h: 54 },
             { id: 'lambda', label: 'Lambda', glyph: 'service', x: 770, y: 352, w: 120, h: 46 },
@@ -1200,13 +1262,23 @@ project1-aws/
       // ---------------------------------------------------------------------
       ...LOCK_N_LOCK_DIAGRAMS,
     ],
-    // The infrastructure track's own tree, as the deck lists it. Only the part
-    // that was mine: the four other tracks have trees of their own on their
-    // own slides, and reproducing all five here would be an inventory of the
-    // repository rather than of the work this page is about.
-    folderStructure: `
+    // Two trees behind one toggle. The whole repository answers "what did the
+    // team build"; the Track A view answers "which of it was mine", and a
+    // 190-line tree buries that answer rather than giving it.
+    //
+    // The full tree is generated from the repository as delivered, `.gitkeep`
+    // placeholders and all — they are load-bearing in `docs/diagrams/`, where
+    // the placeholder is the only entry. Nothing is filtered out, and nothing
+    // needs to be: every file holding a real credential exists here only as an
+    // `.example`.
+    folderStructure: [
+      {
+        id: 'mine',
+        label: 'My track',
+        root: 'project2-security/infra/',
+        tree: `
 project2-security/
-├── setup.sh                      # Rocky 8 toolchain — AWS CLI v2, Terraform, Ansible, Docker
+├── setup.sh                      # Rocky 8 toolchain: AWS CLI v2, Terraform, Ansible, Docker
 ├── check.sh                      # preflight: credentials, Docker, Tailscale reachability
 ├── bootstrap_tailscale.sh        # joins proj-mgmt and advertises 172.16.1.0/24
 ├── Makefile                      # init/plan/apply · deploy-db · build-push · service · destroy
@@ -1214,7 +1286,7 @@ project2-security/
     ├── provider.tf               # aws · tls · local · cloudflare · tailscale + S3 backend
     ├── variables.tf              # instance types, CIDRs, DB credentials, ASG sizing, DNS toggle
     ├── network.tf                # VPC · multi-AZ subnets (public/app/db) · route tables · IGW
-    ├── security_groups.tf        # five groups — alb, app, db, bastion, nat
+    ├── security_groups.tf        # five groups: alb, app, db, bastion, nat
     ├── compute.tf                # NAT instance · Bastion · App ASG (blue/green) · DB EC2
     ├── user_data_app.sh          # ASG boot: pull image, run, join the tailnet
     ├── alb.tf                    # ALB + blue/green target groups + /health listener
@@ -1222,7 +1294,7 @@ project2-security/
     ├── dns.tf                    # Route 53 / Cloudflare / none
     ├── iam.tf                    # DB → S3 backup, Grafana → CloudWatch read
     ├── cloudwatch.tf             # ALB · ASG · target-group alarms + SNS topic
-    ├── storage.tf                # S3 — pg_dump backups and log retention
+    ├── storage.tf                # S3: pg_dump backups and log retention
     ├── outputs.tf                # the interface: ALB DNS · TG ARNs · SG IDs · DB IP · bucket
     ├── ansible.tf                # writes the Ansible inventory after apply
     ├── .terraform.lock.hcl       # provider versions pinned, so five machines agree
@@ -1230,6 +1302,208 @@ project2-security/
         ├── S3_bucket.tf          # remote state
         └── Dynamodb.tf           # state lock
 `,
+      },
+      {
+        id: 'all',
+        label: 'Whole repository',
+        root: 'project2-security/',
+        tree: `
+project2-security/
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug.md
+│   │   ├── chore.md
+│   │   ├── feature.md
+│   │   └── refactor.md
+│   ├── workflows/
+│   │   ├── deploy.yml
+│   │   ├── destroy.yml
+│   │   └── plan.yml
+│   └── PULL_REQUEST_TEMPLATE.md
+├── docker/
+│   ├── app/
+│   │   ├── templates/
+│   │   │   ├── dashboard.html
+│   │   │   ├── login.html
+│   │   │   └── transfer.html
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── bootstrap/
+│   │   └── Dockerfile
+│   ├── fail2ban/
+│   │   ├── filters.d/
+│   │   │   ├── nginx-login.conf
+│   │   │   ├── nginx-rate-limit.conf
+│   │   │   └── nginx-scan.conf
+│   │   ├── Dockerfile
+│   │   ├── jail.local
+│   │   ├── memo.txt
+│   │   └── telegram-alert.sh
+│   ├── nginx/
+│   │   ├── Dockerfile
+│   │   ├── README.md
+│   │   ├── log-format.conf
+│   │   ├── nginx.conf
+│   │   └── rate-limit.conf
+│   └── promtail/
+│       └── promtail-config.yaml
+├── docs/
+│   ├── diagrams/
+│   │   └── .gitkeep
+│   ├── guides/
+│   │   ├── _TEMPLATE.md
+│   │   ├── a-infra-terraform.md
+│   │   ├── b-app.md
+│   │   ├── c-cicd.md
+│   │   ├── d-monitoring.md
+│   │   ├── e-security.md
+│   │   └── setup-guide.md
+│   └── network-design.md
+├── infra/
+│   ├── ansible/
+│   │   ├── group_vars/
+│   │   │   ├── app.yml.example
+│   │   │   └── database.yml.example
+│   │   ├── tasks/
+│   │   │   ├── setup_docker.yml
+│   │   │   └── setup_user1.yml
+│   │   ├── templates/
+│   │   │   └── docker-compose.db.yml.j2
+│   │   ├── .gitkeep
+│   │   ├── bootstrap.yml
+│   │   ├── db-destroy.yml
+│   │   ├── db-site.yml
+│   │   ├── deploy-monitoring.yml
+│   │   ├── docker-compose-postgres-main.yaml
+│   │   ├── docker-compose-postgres-replica.yaml.j2
+│   │   ├── init-replication.sh
+│   │   ├── init.sql
+│   │   ├── lb-postgres-main.yml
+│   │   ├── lb-postgres-replica.yml
+│   │   └── site.yml
+│   └── terraform/
+│       ├── hcl/
+│       │   └── backend.hcl.example
+│       ├── init/
+│       │   ├── .terraform.lock.hcl
+│       │   ├── Dynamodb.tf
+│       │   └── S3_bucket.tf
+│       ├── .gitkeep
+│       ├── .terraform.lock.hcl
+│       ├── alb.tf
+│       ├── ansible.tf
+│       ├── cloudwatch.tf
+│       ├── compute.tf
+│       ├── dns.tf
+│       ├── iam.tf
+│       ├── network.tf
+│       ├── outputs.tf
+│       ├── provider.tf
+│       ├── security_groups.tf
+│       ├── storage.tf
+│       ├── tailscale.tf
+│       ├── terraform.tfvars.example
+│       ├── user_data_app.sh
+│       └── variables.tf
+├── monitoring/
+│   ├── alertmanager/
+│   │   └── alertmanager.yaml
+│   ├── grafana/
+│   │   ├── dashboards/
+│   │   │   ├── lockbank-security-operations-dashboard.json
+│   │   │   └── lockbank-security-operations-dashboard.json.template
+│   │   └── provisioning/
+│   │       ├── dashboards/
+│   │       │   └── dashboard.yaml
+│   │       └── datasources/
+│   │           ├── cloudwatch.yaml
+│   │           ├── datasource.yaml
+│   │           └── loki.yaml
+│   ├── lambda/
+│   │   └── cloudwatch-telegram-notifier/
+│   │       ├── deploy_cloudwatch_telegram_lambda.sh
+│   │       ├── lambda_function.py
+│   │       └── teardown_cloudwatch_telegram_lambda.sh
+│   ├── loki/
+│   │   └── loki-config.yaml
+│   ├── nginx/
+│   │   └── default.conf
+│   ├── prometheus/
+│   │   ├── rules/
+│   │   │   └── alert_rules.yaml
+│   │   └── prometheus.yaml
+│   ├── promtail/
+│   │   └── promtail-config.yaml
+│   ├── recovery/
+│   │   ├── actions/
+│   │   │   ├── aws_app_restart.sh
+│   │   │   ├── docker_restart.sh
+│   │   │   └── runner.py
+│   │   ├── config/
+│   │   │   └── recovery_map.yaml
+│   │   ├── logs/
+│   │   │   ├── .gitkeep
+│   │   │   └── README.md
+│   │   ├── policy/
+│   │   │   └── loader.py
+│   │   ├── utils/
+│   │   │   └── logger.py
+│   │   ├── verify/
+│   │   │   └── http.py
+│   │   ├── .dockerignore
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── scripts/
+│   │   ├── nginx_log_metrics.sh
+│   │   ├── security_event_timeline.sh
+│   │   └── setup_aws_nginx_log_backup.sh
+│   ├── security-center/
+│   │   ├── index.html
+│   │   └── index.html.template
+│   ├── tailscale-sd/
+│   │   ├── Dockerfile
+│   │   └── tailscale_sd.py
+│   ├── telegram-notifier/
+│   │   ├── Dockerfile
+│   │   ├── main.py
+│   │   └── requirements.txt
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── .gitkeep
+│   ├── Makefile
+│   ├── bootstrap_monitoring.sh
+│   └── docker-compose.monitoring.yaml
+├── scripts/
+│   ├── .gitkeep
+│   ├── build-push-image.sh
+│   ├── deploy-app.sh
+│   └── set-fail2ban.sh
+├── security/
+│   ├── locust/
+│   │   ├── flood_attack.py
+│   │   ├── login_attack.py
+│   │   └── normal_user.py
+│   ├── policies/
+│   │   ├── incident-response.md
+│   │   ├── rate-limit-policy.md
+│   │   └── test-checklist.md
+│   ├── scripts/
+│   │   ├── README.md
+│   │   ├── check-nginx-log.sh
+│   │   └── test-rate-limit.sh
+│   ├── .gitkeep
+│   └── EXPLAIN.md
+├── .gitignore
+├── Makefile
+├── README.md
+├── bootstrap_tailscale.sh
+├── check.sh
+└── setup.sh
+`,
+      },
+    ],
     // The calendar pair and the phase list both read from here. Straight from
     // the deck's schedule slide \u2014 including that week three runs eight days
     // (6/10\u20136/17) where the other three run seven, which is what the slide
@@ -1260,7 +1534,7 @@ project2-security/
           range: 'Jun 10\u201317',
           from: '2026-06-10',
           to: '2026-06-17',
-          text: 'With the app service running, the observability stack and the security scenarios were built on top of it \u2014 the layer where detection, blocking, and automated recovery actually became demonstrable.',
+          text: 'With the app service running, the observability stack and the security scenarios were built on top of it. That layer is where detection, blocking and automated recovery became demonstrable.',
         },
         {
           id: 'verify',
@@ -1317,37 +1591,37 @@ project2-security/
         {
           id: 'normal',
           tab: 'Normal operation',
-          label: 'Scenario 1 — Normal operation',
+          label: 'Scenario 1: Normal operation',
           before: {
             src: '/projects/lock-n-lock/normal-operation-console.png',
-            state: 'Baseline — every panel green',
+            state: 'Baseline: every panel green',
             alt: 'The Security Center console on its Normal Operation tab: App Health UP, DB Status UP, zero active alerts, ALB target health HEALTHY, one ASG instance, and CPU and network charts tracking a quiet service',
           },
         },
         {
           id: 'login-bruteforce',
           tab: 'Login brute-force',
-          label: 'Scenario 2 — Credential brute-force',
+          label: 'Scenario 2: Credential brute-force',
           before: {
             src: '/projects/lock-n-lock/login-bruteforce-401-log.png',
-            state: 'Under attack — a 401 logged per failed attempt',
+            state: 'Under attack: a 401 logged per failed attempt',
             alt: 'Application logs during a Locust brute-force run: repeated SECURITY LOGIN_FAILURE warnings naming the source IP and attempted username, each paired with a POST /login returning 401 Unauthorized, interleaved with health checks still returning 200',
           },
         },
         {
           id: 'api-flood',
           tab: 'API flooding',
-          label: 'Scenario 3 — API request flooding',
+          label: 'Scenario 3: API request flooding',
           before: {
             src: '/projects/lock-n-lock/api-flood-locust.png',
-            state: 'Under attack — 99% of requests refused at the rate limit',
+            state: 'Under attack: 99% of requests refused at the rate limit',
             alt: 'The Locust statistics table mid-run: 112 aggregated requests against 111 failures, a 99% failure rate reported in the header, with the GET /transfer row showing 108 requests and 108 failures as the rate limit refuses them',
           },
         },
         {
           id: 'container-recovery',
           tab: 'Container failure',
-          label: 'Scenario 4 — Container failure and self-healing',
+          label: 'Scenario 4: Container failure and self-healing',
           before: {
             src: '/projects/lock-n-lock/container-failure-before.png',
             state: 'Before the failure',
@@ -1362,15 +1636,15 @@ project2-security/
         {
           id: 'secure-deploy',
           tab: 'Secure deploy',
-          label: 'Scenario 5 — The security gate on a deploy',
+          label: 'Scenario 5: The security gate on a deploy',
           before: {
             src: '/projects/lock-n-lock/secure-deploy-bandit-sast.png',
-            state: 'Stage 1 — Bandit, static analysis',
+            state: 'Stage 1: Bandit, static analysis',
             alt: 'Bandit output in the pipeline listing B310 blacklist findings at medium severity and high confidence, each mapped to CWE-22 and pinned to a file and line number in the application source',
           },
           after: {
             src: '/projects/lock-n-lock/secure-deploy-trivy-blocked.png',
-            state: 'Stage 2 — Trivy, and the build stops',
+            state: 'Stage 2: Trivy, and the build stops',
             alt: 'Trivy image-scan output listing three HIGH severity CVEs in Python packages with their installed and fixed versions, followed by the job ending on Error: Process completed with exit code 1',
           },
         },
@@ -1388,47 +1662,53 @@ project2-security/
     // alternative and leave the rest to the sentence.
     decisions: [
       {
-        title: 'HTTP 401 over a silent redirect for failed logins',
+        keyword: 'Real 401 on failure',
+        title: 'A failed login returns a real HTTP 401.',
         glyph: 'process',
         chose: 'A real **401** on login failure, read by both the Nginx log and the app’s own metrics',
         over: 'a **302** redirect the detection pipeline could not see',
         why:
-          'Login failures were returning a 302, so no 401 ever reached the Nginx access log and the detection pipeline read **zero failed logins during a live brute-force run**. Switching the failure response to a real 401, and pointing both the log and the metrics at it, made the attempts visible to `fail2ban` and to the dashboard at the same moment.',
+          'Login failures were returning a 302, so no 401 ever reached the Nginx access log and the detection pipeline reported **zero failed logins during a live brute-force run**. Switching the failure response to a real 401, and pointing both the log and the metrics at it, made the attempts visible to `fail2ban` and to the dashboard at the same moment.',
       },
       {
-        title: 'Blackbox Exporter over container-status health checks',
+        keyword: 'Blackbox probing',
+        title: 'Health is measured by probing the path a real user takes through Nginx.',
         glyph: 'process',
         chose: '**Blackbox Exporter**, probing the path a real user takes through Nginx',
         over: 'a container-level health check, blind to the proxy in front of it',
         why:
-          'After the Nginx reverse proxy went in, Prometheus could see that a container was running but not whether the app was reachable through it. Probing end to end defines a failure by **what a user experiences**, not by whether a process is alive.',
+          'After the Nginx reverse proxy went in, Prometheus could see that a container was running but not whether the app was reachable through it. An end-to-end probe defines a failure as **a request a user cannot complete**.',
       },
       {
-        title: 'Repo-isolated Docker credentials over the host’s global login',
+        keyword: 'Repo-local Docker login',
+        title: 'Docker credentials are pinned to a repository-local config folder.',
         glyph: 'note',
         chose: '`DOCKER_CONFIG` pinned to a repo-local folder in the Makefile',
         over: 'the host’s global Docker login',
         why:
-          'Docker Hub credentials collided with whatever was already logged in on the host, so a build that worked on one machine **failed silently on another**. Pinning the config to the repo, and parsing the login ID out of it, made the build reproducible on any machine.',
+          'Docker Hub credentials collided with whatever was already logged in on the host, so a build that worked on one machine **failed silently on another**. Pinning the config to the repository, and parsing the login ID out of it, made the build reproducible on any machine.',
       },
       {
-        title: 'Tailscale node-to-node L3 over a VXLAN overlay',
+        keyword: 'Tailscale L3 tunnel',
+        title: 'The on-premise server reaches AWS over a Tailscale Layer 3 tunnel.',
         glyph: 'channels',
         chose: 'A pure **Tailscale Layer-3** tunnel with `accept-routes=false`, brought up by originating traffic from inside the network',
         over: 'a **VXLAN** L2 overlay, and an inbound firewall rule to go with it',
         why:
-          'Connecting the on-premise server to AWS needed a tunnel that would not fight the rest of our remote-access tooling: the L3 route avoided the routing conflicts that kept breaking **VS Code Remote-SSH**, at the cost of the flat L2 segment VXLAN would have given. Getting it up was its own problem — behind NAT the tunnel never initialised, and the login page rendered while logins hung. Pinging out from the replica host **created the state the firewall needed** to pass the return path, so the peers connected directly with nothing opened inbound.',
+          'Connecting the on-premise server to AWS needed a tunnel that would not fight the rest of our remote-access tooling. The Layer 3 route avoided the routing conflicts that kept breaking **VS Code Remote-SSH**, at the cost of the flat Layer 2 segment VXLAN would have given. Bringing it up was its own problem. Behind NAT the tunnel never initialised, and the login page rendered while logins hung. Pinging out from the replica host **created the state the firewall needed** to pass the return path, so the peers connected directly with nothing opened inbound.',
       },
       {
-        title: 'ZAP as an observation stage, not a merge gate',
+        keyword: 'ZAP after deploy',
+        title: 'OWASP ZAP scans the live application after every deployment.',
         glyph: 'note',
         chose: '**OWASP ZAP** scanning the live app after deployment and filing a GitHub issue with what it finds',
         over: 'blocking every deploy on any ZAP finding',
         why:
-          'Bandit and Trivy both block the pipeline on Critical and High findings **before an image ships**. ZAP runs after deployment instead, closer to a standing report than a hard gate — promoting it to a blocking check is the next step, once it is reliable enough not to fail a demo app that is meant to look attackable.',
+          'Bandit and Trivy both block the pipeline on Critical and High findings **before an image ships**. ZAP runs after deployment and produces a standing report on the running system. Promoting it to a blocking check is the next step, once it is reliable enough not to fail a demonstration app that is meant to look attackable.',
       },
       {
-        title: 'A single `outputs.tf` as the interface between tracks',
+        keyword: 'One outputs.tf contract',
+        title: 'A single `outputs.tf` is the interface between the five tracks.',
         glyph: 'branch',
         chose: '`outputs.tf` as the **one contract** the other four tracks consumed',
         over: 'each track reading and editing the infrastructure code directly',
@@ -1436,13 +1716,14 @@ project2-security/
           'Five people working five tracks against one Terraform state is where a project usually starts breaking, because a small edit inside someone else’s module quietly moves the resource everyone depends on. Publishing IDs and endpoints through `outputs.tf` gave every other track a **stable name to build against** and left exactly one person answerable for what those names pointed at.',
       },
       {
-        title: 'Recovery that checks its dependencies, not just its own container',
+        keyword: 'Recovery checks dependencies',
+        title: 'A recovery succeeds only once the database connectivity and the network path both answer.',
         glyph: 'process',
         chose: 'Verifying **Main and Replica DB connectivity and the network path** before declaring a recovery successful',
         over: 'restarting the app container and calling it done',
         why:
-          'The first version of the controller restarted the failed container and stopped there, so the service came back **still broken** — the app was alive but its database dependencies were not. Adding connectivity checks, replica correction, and a closing health check turned “the container is running again” into “a user can log in again,” which are not the same claim.',
-        },
+          'The first version of the controller restarted the failed container and stopped there, so the service came back **still broken**. The container was running while its database dependencies were still unreachable. Adding connectivity checks, replica correction and a closing health check turned “the container is running again” into “a user can log in again”, which is the claim that matters.',
+      },
     ],
     // EVERY NUMBER BELOW IS AN ESTIMATE, not billing data — same basis as
     // EchoChallengers. They model the decisions this project actually made (a
@@ -1480,8 +1761,8 @@ project2-security/
           actual: 0.0,
         },
         {
-          label: 'Compute — app tier',
-          note: 'Auto Scaling Group, Bastion, NAT — free-tier instances vs. on-demand',
+          label: 'Compute: app tier',
+          note: 'Auto Scaling Group, Bastion, NAT: free-tier instances against on-demand',
           typical: 34.0,
           actual: 0.0,
         },
@@ -1493,20 +1774,20 @@ project2-security/
         },
         {
           label: 'Load balancer',
-          note: 'ALB with ACM termination and two target groups — no cheaper equivalent',
+          note: 'ALB with ACM termination and two target groups, with no cheaper equivalent',
           typical: 18.0,
           actual: 18.0,
         },
       ],
       total: { typical: 197.0, actual: 20.5 },
       notes: [
-        'The two largest savings are the same decision made twice: **the replica database and the entire observability stack run on an on-premise machine the team already owned**, which removes two managed line items outright. That is a real trade and not a free one — no managed backups, no failover, patching becomes somebody’s job, and a **Tailscale tunnel becomes a thing that has to stay up** for either of them to be reachable.',
-        'The **NAT instance** is the single clearest cloud saving. A managed NAT Gateway bills by the hour whether or not anything routes through it, and at this volume of outbound traffic a `t3.micro` doing the same job costs nothing inside the free tier — at the price of an instance the team patches and a single point of failure that **a second NAT instance is the stated fix for**.',
+        'The two largest savings are the same decision made twice: **the replica database and the entire observability stack run on an on-premise machine the team already owned**, which removes two managed line items outright. That is a real trade and not a free one. There are no managed backups and no failover, patching becomes somebody’s job, and a **Tailscale tunnel becomes a thing that has to stay up** for either of them to be reachable.',
+        'The **NAT instance** is the single clearest cloud saving. A managed NAT Gateway bills by the hour whether or not anything routes through it, and at this volume of outbound traffic a `t3.micro` doing the same job costs nothing inside the free tier. The price is an instance the team patches and a single point of failure, and **a second NAT instance is the stated fix for it**.',
         'Compute reaches zero because the whole fleet fits inside the **750-hour free tier**. The honest number for anyone rebuilding this outside a free-tier account is roughly **$34 a month**, and that figure is what the comparison column prices.',
         'The **load balancer is the row that does not move**, and it is here for that reason. The ALB terminates HTTPS, health-checks two target groups, and is the entry point every demo scenario runs through; there is no cheaper equivalent that does those three things. A table where every line saved money would be less believable, not more.',
       ],
       caveat:
-        'Estimated figures for `ap-northeast-2` over the four-week project period, on a free-tier account — not production billing data. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
+        'Estimated figures for `ap-northeast-2` over the four-week project period, on a free-tier account. Every figure is an estimate. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
     },
     links: {
       github: null, // placeholder
@@ -1516,23 +1797,31 @@ project2-security/
     },
     reflection: {
       learned:
-        'Building LockBank moved security from something I added at the end to the **default from the first Terraform file** — public and private subnets split before a single EC2 instance exists, a security group scoped per tier before the app is written, a CI pipeline that scans before it builds. The four-layer lock was never really about Bandit, Trivy, ZAP, and `fail2ban` individually; it was about forcing a vulnerability past **four different kinds of scrutiny** before it could reach a real user. The most useful lesson came from a bug rather than a feature: our login-failure detection reported zero attacks during a live brute-force run because the app returned a redirect instead of a 401. Nothing in the dashboards was wrong — the pipeline was watching the wrong thing. I check for that pattern by default now: **"configured" and "actually working" are two different claims**, and the only way to close the gap is to attack your own system and read what the monitoring says back.',
+        'Building LockBank moved security from something I added at the end to the **default from the first Terraform file**. Public and private subnets are split before a single EC2 instance exists, a security group is scoped per tier before the app is written, and a CI pipeline scans before it builds. The four-layer lock was never really about Bandit, Trivy, ZAP, and `fail2ban` individually; it was about forcing a vulnerability past **four different kinds of scrutiny** before it could reach a real user. The most useful lesson came from a bug rather than a feature: our login-failure detection reported zero attacks during a live brute-force run because the app returned a redirect instead of a 401. Every dashboard reported correctly on the signal it was given. The pipeline was watching the wrong signal. I check for that pattern by default now: **"configured" and "actually working" are two different claims**, and the only way to close the gap is to attack your own system and read what the monitoring says back.',
       differently:
-        'I would promote **OWASP ZAP** from an observation stage to a blocking gate once its findings are tuned against a demo app built to look attackable, and finish the **Blue-Green** stabilization testing that ran out of runway inside four weeks. Three more sit behind those: failure and recovery scenarios for the **database** rather than only the app tier, a **second NAT instance** so the cheap outbound path stops being the single point of failure I made it, and **L7/WAF filtering** in front of the rate limit. I would also start reading across the other tracks earlier. Holding final approval on every merge to `main` for a five-person, five-track project meant being the last check before anything shipped, which meant learning enough of **every track** to know what I was approving rather than only my own — a job I grew into partway through instead of starting there.',
+        'I would promote **OWASP ZAP** from an observation stage to a blocking gate once its findings are tuned against a demo app built to look attackable, and finish the **Blue-Green** stabilization testing that ran out of runway inside four weeks. Three more sit behind those: failure and recovery scenarios for the **database** rather than only the app tier, a **second NAT instance** so the cheap outbound path stops being the single point of failure I made it, and **L7/WAF filtering** in front of the rate limit. I would also start reading across the other tracks earlier. Holding final approval on every merge to `main` for a five-person, five-track project meant being the last check before anything shipped, which meant learning enough of **every track** to know what I was approving rather than only my own. I grew into that job partway through the project.',
     },
   },
 
   {
     slug: 'hailcast',
     group: 'team',
-    title: 'hailcast',
+    // The team's own name, which is also the GitHub org the four repositories
+    // live under, so the sidebar and the eyebrow read the same way they do on
+    // the other two team projects. `hailcast` is what the team built, not what
+    // the team was called, and it stays the product name everywhere below.
+    title: 'ThisPod-ThatPod',
+    // The product, which the page header shows above the title instead of
+    // repeating the sidebar entry. The other projects have no second name, so
+    // they leave this off and the eyebrow falls back to `title`.
+    eyebrow: 'hailcast',
     // The descriptive page heading. `title` above stays the short name the
-    // sidebar shows and the eyebrow repeats. The name is a portmanteau the
-    // team made themselves — *hail* a taxi, *fore-cast* the weather — which
-    // Problem & Context says once so the lower-case `hailcast` everywhere
-    // else reads as a product name rather than a typo.
+    // sidebar shows and the eyebrow repeats. The product's name is a
+    // portmanteau the team made themselves, *hail* a taxi and *fore-cast* the
+    // weather, which Problem & Context says once so the lower-case `hailcast`
+    // everywhere else reads as a product name rather than a typo.
     fullTitle:
-      'AI Demand-Forecast Autoscaling and FinOps Cloud Infrastructure',
+      'Autoscaling and FinOps Cloud Infrastructure Driven by AI Demand Forecasting',
     accent: 'orange',
     // Two spans, not one. Build ran to the first presentation in early
     // August; the refinement stretch that follows ran in parallel with the
@@ -1560,9 +1849,9 @@ project2-security/
     // out to be a simulation two screens later is the thing this project
     // spent a whole slide refusing to do.
     glance: {
-      why: 'A taxi platform sized for its own peak pays for that peak around the clock — the service never falls over, and the bill never falls either. Reactive autoscaling only narrows the gap, because capacity still arrives after the traffic that called for it.',
+      why: 'A taxi platform sized for its own peak pays for that peak around the clock. The service never falls over, and the bill never falls either. Reactive autoscaling only narrows the gap, because capacity still arrives after the traffic that called for it.',
       how: 'A LightGBM model trained on New York taxi calls and Open-Meteo weather forecasts the next four hours of demand; the predict pod turns that into a floor and patches it onto a KEDA `ScaledObject` every 60 seconds, so pods exist before the load does and Karpenter supplies Spot nodes underneath them. When the forecast is wrong, KEDA’s own queue-length trigger catches it.',
-      result: 'A **26.5% reduction in worker pod-hours** against a peak-sized fixed fleet — **216 pod-hours a day down to 158.8** — across **4 repositories**, **16 ArgoCD applications** and **10 IRSA roles**. Simulated from eight days of recorded scaling decisions, not read off an AWS bill.',
+      result: 'A **26.5% reduction in worker pod-hours** against a peak-sized fixed fleet, **216 pod-hours a day down to 158.8**, across **4 repositories**, **16 ArgoCD applications** and **12 IRSA roles**. That figure is simulated from eight days of recorded scaling decisions rather than read off a bill; a later refinement wired the **Cost and Usage Report** through Glue and Athena into OpenCost, so what the cluster itself cost is now measured even though what it saved is still modelled.',
     },
     // My Role as a bento of duties sized by how much of the project each one
     // was. Eight tiles rather than the six the other two projects use: one
@@ -1579,17 +1868,22 @@ project2-security/
     // and are credited to her in Problem & Context rather than absorbed here.
     role: {
       title: 'Team Lead and Operations Track Owner',
+      // `columns` — lead 3x2 with two mediums stacked beside it. The one of the
+      // three arrangements whose lead is closest to its own content height,
+      // which is what this project needs: eight tiles, and a lead whose
+      // sentence is no longer than the two duties sitting next to it.
+      layout: 'columns',
       tiles: [
         {
           size: 'lead',
           label: 'Team Lead',
           stat: { value: '4', unit: 'repos, one console' },
-          text: 'Led **six people across four repositories** that deploy four different ways — `terraform apply`, `docker build`, an ArgoCD pull, and local `make`. The fourth repo is mine: an operations layer that gives the other three **one command surface** and the guardrails that surface is worth having.',
+          text: 'Led **six people across four repositories** that deploy four different ways: `terraform apply`, `docker build`, an ArgoCD pull, and local `make`. The fourth repo is mine: an operations layer that gives the other three **one command surface** and the guardrails that surface is worth having.',
         },
         {
           size: 'medium',
           label: 'Account Guard',
-          text: 'Every credentialed command compares `sts get-caller-identity` against `PROJECT_ACCOUNT_ID` and **stops dead on a mismatch**. The earlier script printed the account and compared nothing, so a session sitting in the wrong account went **green on every check** — we finished with zero wrong-account incidents.',
+          text: 'Every credentialed command compares `sts get-caller-identity` against `PROJECT_ACCOUNT_ID` and **stops dead on a mismatch**. The earlier script printed the account and compared nothing, so a session sitting in the wrong account went **green on every check**. We finished with zero wrong-account incidents.',
         },
         {
           size: 'medium',
@@ -1604,7 +1898,7 @@ project2-security/
         {
           size: 'small',
           label: 'Contract Checking',
-          text: 'Hosted the naming-contract verifier as `make check-contract`, run **daily rather than the night before a demo** — static against the Terraform source, runtime against `aws describe`.',
+          text: 'Hosted the naming-contract verifier as `make check-contract`, run **daily rather than the night before a demo**. It checks statically against the Terraform source and at runtime against `aws describe`, and the refinement extended it to compare a **value** across two repositories rather than only a name.',
         },
         {
           size: 'small',
@@ -1614,26 +1908,30 @@ project2-security/
         {
           size: 'medium',
           label: 'Runbooks as Deliverables',
-          text: 'Wrote and revised the **teardown and rebuild checklists seven times**, folding measured numbers back in each pass — CloudFront’s teardown was estimated at "over ten minutes" and measured at **3 minutes 14 seconds**, and an estimate left standing next to a measurement is the thing a runbook exists to prevent.',
+          text: 'Wrote and revised the **teardown and rebuild checklists seven times**, folding measured numbers back in each pass. CloudFront’s teardown was estimated at "over ten minutes" and measured at **3 minutes 14 seconds**. Then had someone who had not written the rebuild document **execute it while I stayed out of it**: it stopped in three places, all of them steps I was doing without noticing.',
         },
         {
           size: 'medium',
           label: 'Blast-Radius Discipline',
-          text: '`CONFIRM=yes` is injected by the orchestrator so a real destroy is deliberate; `FORCE=yes` is **never injected** and has to be typed by a person. Review is gated by `CODEOWNERS` on the teardown files alone — the whole repo behind approval would have cost more speed than it bought safety.',
+          text: '`CONFIRM=yes` is injected by the orchestrator so a real destroy is deliberate; `FORCE=yes` is **never injected** and has to be typed by a person. Review is gated by `CODEOWNERS` on the teardown files alone, because putting the whole repository behind approval would have cost more speed than it bought safety.',
         },
       ],
     },
-    // An idea board rather than a paragraph. Ten notes over three rows of the
-    // four-column grid: two leads spanning two columns each and eight
+    // An idea board rather than a paragraph. Thirteen notes over four rows of
+    // the four-column grid: three leads spanning two columns each and ten
     // supports. Every note is a complete sentence that stands on its own —
     // the format invites fragments, and a fragment only works for someone who
     // already knows the project.
+    //
+    // The counts have to divide the rows, which the board's CSS is explicit
+    // about — so the refinement's three notes are one lead plus two supports,
+    // filling row four exactly rather than leaving a note beside empty columns.
     context: {
       notes: [
         {
           size: 'lead',
           label: 'The Bill Nobody Notices',
-          text: 'A taxi app almost never falls over, and that is precisely the problem: the infrastructure behind it is **sized for its busiest hour and runs at that size all twenty-four**, so at four in the morning the platform is paying peak prices to serve almost nobody. Nothing shows up as an incident, and nothing shows up in a dashboard — it shows up as a bill that is quietly larger than the service it bought.',
+          text: 'A taxi app almost never falls over, and that is precisely the problem: the infrastructure behind it is **sized for its busiest hour and runs at that size all twenty-four**, so at four in the morning the platform is paying peak prices to serve almost nobody. Nothing shows up as an incident, and nothing shows up in a dashboard. It shows up as a bill that is quietly larger than the service it bought.',
         },
         {
           size: 'support',
@@ -1643,12 +1941,12 @@ project2-security/
         {
           size: 'support',
           label: 'Where the Name Comes From',
-          text: 'The team named it **hailcast** — “hail,” as in hailing a taxi, joined to the “cast” of “forecast” — because the whole system is one sentence: **use the weather forecast to decide how many taxi calls are coming**, and have the capacity waiting when they arrive.',
+          text: 'The team is **ThisPod-ThatPod**, and it named the app **hailcast**, joining “hail,” as in hailing a taxi, to the “cast” of “forecast,” because the whole system is one sentence: **use the weather forecast to decide how many taxi calls are coming**, and have the capacity waiting when they arrive.',
         },
         {
           size: 'support',
           label: 'Prediction Sets the Floor',
-          text: 'A LightGBM model trained on New York taxi trips and Open-Meteo weather learns patterns like “a rainy Friday evening spikes,” and every four hours it writes a demand figure for the next four hours; a scheduler turns that into a pod count — **demand ÷ 500, plus one for headroom** — and patches it onto KEDA as a minimum.',
+          text: 'A LightGBM model trained on New York taxi trips and Open-Meteo weather learns patterns like “a rainy Friday evening spikes,” and every four hours it writes a demand figure for the next four hours; a scheduler turns that into a pod count of **demand ÷ 500, plus one for headroom**, and patches it onto KEDA as a minimum.',
         },
         {
           size: 'support',
@@ -1658,7 +1956,7 @@ project2-security/
         {
           size: 'lead',
           label: 'Four Repos, One Contract',
-          text: 'Six people split across **four repositories that deploy four different ways**, and the seams between them are all strings: a role name, a ServiceAccount name, a metric key, an image tag. One character out of place in any of them fails **silently** — no error, just "permission denied" against a policy that is perfectly correct — so a single naming document became the source of truth, revised **before** the code rather than after it, with a verifier checking the code against it daily.',
+          text: 'Six people split across **four repositories that deploy four different ways**, and the seams between them are all strings: a role name, a ServiceAccount name, a metric key, an image tag. One character out of place in any of them fails **silently**, producing no error and only a "permission denied" against a policy that is perfectly correct. So a single naming document became the source of truth, revised **before** the code rather than after it, with a verifier checking the code against it daily.',
         },
         {
           size: 'support',
@@ -1678,14 +1976,30 @@ project2-security/
         {
           size: 'support',
           label: 'Whose Idea It Was',
-          text: 'The topic was **Miseon Lee’s**, and the team chose it over the alternatives on the strength of the pitch; she went on to build the entire Terraform estate, the ten IRSA roles, the naming convention, and the verifier that enforces it — the foundation the rest of this page is standing on.',
+          text: 'The topic was **Miseon Lee’s**, and the team chose it over the alternatives on the strength of the pitch; she went on to build the entire Terraform estate, the IRSA roles, the naming convention, and the verifier that enforces it. That work is the foundation the rest of this page stands on.',
+        },
+        {
+          size: 'lead',
+          label: 'The Refinement: Guesswork Into Measurement',
+          text: 'The project was presented once in early August and then given a second stretch, and the six tasks that came out of it turn out to be one task: **everything the first version asserted, the second version had to measure**. The cost figure stopped being a list-price estimate and became a bill. The rebuild procedure stopped being a document someone had read and became a command someone had run. The prediction stopped being checked by eye and started recording its own misses. **Every one of them replaced a claim with evidence**, which is the only kind of improvement a system already working can honestly make.',
+        },
+        {
+          size: 'support',
+          label: 'The Runbook Someone Else Ran',
+          text: 'A runbook checked by its own author is checked against the memory that wrote it, so this one was validated by giving it to a **teammate who had not written a line of it** and watching where they stopped: three places, all of them steps the author did without noticing. They are now one command, and the document was reorganised into a normal path and a manual-recovery path rather than one undifferentiated list.',
+        },
+        {
+          size: 'support',
+          label: 'The Limit That Caused the Outage',
+          text: 'A CPU **limit** throttles a container that reaches it; a throttled container answers its health check late; a pod that answers late is restarted; and a restarted pod loses the in-memory state it was holding. So the refinement **removed the CPU limits entirely** across all six services and kept the requests. The request is what guarantees the floor, and the limit was only ever guaranteeing the crash.',
         },
       ],
     },
-    // `size` drives the bento layout. On the 5-column grid these nine tile it
-    // exactly over three rows: the big tile (2x2) plus three squares fills the
+    // `size` drives the bento layout. On the 5-column grid these twelve tile it
+    // exactly over four rows: the big tile (2x2) plus three squares fills the
     // first, the big tile's second row plus a wide (2) and a square fills the
-    // second, and two wides with a square between them fills the third.
+    // second, two wides with a square between them fills the third, and the
+    // fourth row — the three the refinement produced — repeats that shape.
     //
     // The big tile is the pod-hour saving because it is the number the whole
     // project was built to produce. It is labelled as a simulation in its own
@@ -1697,13 +2011,13 @@ project2-security/
         size: 'big',
         value: '26.5%',
         label: 'Worker Pod-Hours Saved',
-        detail: '216 pod-hours a day down to 158.8, against a fleet held at peak size — simulated from eight days of recorded scaling decisions, not measured billing',
+        detail: '216 pod-hours a day down to 158.8, against a fleet held at peak size, simulated from eight days of recorded scaling decisions rather than measured billing',
       },
       {
         size: 'square',
-        value: '10',
+        value: '12',
         label: 'IRSA Roles',
-        hint: 'One per ServiceAccount, mapped 1:1 — with S3 permissions split by prefix so the model path is read-only',
+        hint: 'One per ServiceAccount, mapped 1:1, with S3 permissions split by prefix so the model path is read-only. Ten at the first presentation; the refinement added OpenCost and the retraining job',
       },
       {
         size: 'square',
@@ -1715,13 +2029,13 @@ project2-security/
         size: 'square',
         value: '6',
         label: 'Always-On Pods',
-        hint: 'call-api, worker, predict, weather-cron, simulator, frontend — worker is the only one KEDA scales',
+        hint: 'call-api, worker, predict, weather-cron, simulator and frontend, of which worker is the only one KEDA scales',
       },
       {
         size: 'wide',
         value: '4',
         label: 'Repos, One Console',
-        detail: 'infra, app, manifests and ops — four deployment methods reached through a single delegating Makefile',
+        detail: 'infra, app, manifests and ops: four deployment methods reached through a single delegating Makefile',
       },
       {
         size: 'square',
@@ -1733,19 +2047,40 @@ project2-security/
         size: 'wide',
         value: '140',
         label: 'Resources Torn Down',
-        detail: '21 minutes 40 seconds, zero errors and zero warnings — the measured run the teardown runbook was rewritten around',
+        detail: '21 minutes 40 seconds, zero errors and zero warnings, the measured run the teardown runbook was rewritten around',
       },
       {
         size: 'square',
-        value: '4',
+        value: '5',
         label: 'Schedulers',
-        hint: 'Forecast every 4h, scaling every 60s, traffic every 2s, backup hourly — all four inside the predict pod',
+        hint: 'Forecast every 4h, scaling every 60s, traffic every 2s, backup hourly, and the accuracy check on the hour at :59, all five inside the predict pod',
       },
       {
         size: 'wide',
         value: '1',
         label: 'NAT Gateway, Not Two',
         detail: 'One in 2a rather than one per AZ: roughly $43 a month against $86 at Seoul list price, traded against 2a becoming a single point of failure',
+      },
+      // The refinement's own row. The first of these is the only figure on the
+      // page that is money rather than a proxy for it, which is the whole point
+      // of the stretch that produced it.
+      {
+        size: 'wide',
+        value: '$8.71',
+        label: 'Measured AWS Cost / Day',
+        detail: 'The last fully-billed day of the period, with real Cost and Usage Report data reaching OpenCost through a Glue crawler and Athena rather than a list-price estimate',
+      },
+      {
+        size: 'square',
+        value: '19,038',
+        label: 'CUR Rows Catalogued',
+        hint: 'Up from 8,146 five days earlier. The daily 03:00 UTC crawl growing the Glue table is what proved the billing pipeline was running rather than merely configured',
+      },
+      {
+        size: 'wide',
+        value: '3',
+        label: 'Runbook Blockers Found',
+        detail: 'Found by handing the rebuild runbook to someone who had not written it and watching where they stopped. All three are now absorbed into one `make bootstrap-all`',
       },
     ],
     // Grouped by what each tool is for, with no `tint` overrides — the
@@ -1760,9 +2095,9 @@ project2-security/
       // one another. The split is not cosmetic either: the first group is what
       // the application runs on and stores state in, the second is what sits
       // in front of it and what operates it.
-      { category: 'AWS — Platform & Data', items: ['EKS', 'EC2', 'VPC', 'RDS', 'S3', 'DynamoDB', 'SQS', 'ECR'] },
+      { category: 'AWS: Platform & Data', items: ['EKS', 'EC2', 'VPC', 'RDS', 'S3', 'DynamoDB', 'SQS', 'ECR'] },
       {
-        category: 'AWS — Edge & Operations',
+        category: 'AWS: Edge & Operations',
         items: ['CloudFront', 'Route 53', 'CloudWatch', 'EventBridge', 'Secrets Manager'],
       },
       { category: 'IaC & GitOps', items: ['Terraform', 'ArgoCD', 'Helm', 'GitHub Actions', 'Docker', 'Git'] },
@@ -1780,12 +2115,12 @@ project2-security/
       {
         tool: 'Why KEDA and Karpenter, both?',
         icon: 'KEDA',
-        text: 'They scale different things and neither substitutes for the other. **KEDA decides how many pods** — taking a predicted floor from the predict pod and a reactive ceiling from the SQS queue depth — and **Karpenter decides whether there is anywhere to put them**, supplying Spot nodes for pods that would otherwise sit `Pending` and reclaiming them when they do not.',
+        text: 'They scale different things and neither substitutes for the other. **KEDA decides how many pods**, taking a predicted floor from the predict pod and a reactive ceiling from the SQS queue depth. **Karpenter decides whether there is anywhere to put them**, supplying Spot nodes for pods that would otherwise sit `Pending` and reclaiming them when they do not.',
       },
       {
         tool: 'Why LightGBM?',
         icon: 'Python',
-        text: 'The features are **hour, weekday, weekend flag, humidity, temperature and rainfall** — small, tabular, and exactly what gradient boosting is best at. A model that trains in seconds and loads out of an S3 pickle inside a pod was worth more here than accuracy we could not have used: the output is a pod count, and a pod count is an integer.',
+        text: 'The features are **hour, weekday, weekend flag, humidity, temperature and rainfall**, which are small, tabular and exactly what gradient boosting is best at. A model that trains in seconds and loads out of an S3 pickle inside a pod was worth more here than accuracy we could not have used: the output is a pod count, and a pod count is an integer.',
       },
       {
         tool: 'Why ArgoCD over Terraform?',
@@ -1795,12 +2130,12 @@ project2-security/
       {
         tool: 'Why OpenCost?',
         icon: 'Prometheus',
-        text: 'AWS bills by resource and Kubernetes spends by workload, and neither view answers **"what did the worker deployment cost?"** on its own. OpenCost reads node pricing through Prometheus and splits it by namespace and pod — which is what makes worker-only cost separable from cluster cost, and is also where the honest limit sits: it prices from the **list price**, because the CUR integration never got wired up.',
+        text: 'AWS bills by resource and Kubernetes spends by workload, and neither view answers **"what did the worker deployment cost?"** on its own. OpenCost reads node pricing through Prometheus and splits it by namespace and pod, which is what makes worker-only cost separable from cluster cost. It priced from the **list price** until the refinement, when the Cost and Usage Report was wired through a **Glue crawler and Athena** into OpenCost’s Cloud Costs, so the same split now reads against the actual bill rather than against a rate card.',
       },
       {
         tool: 'Why Telegram?',
         icon: 'Telegram',
-        text: 'Eight alert rules had to reach a phone without standing up an on-call platform for a summer project. The thresholds are deliberately offset from the scaling ones — **a queue alert at 1,000 is twice the KEDA trigger at 500**, so the page fires when scaling has failed to absorb the load, not every time it starts working.',
+        text: 'Alert rules had to reach a phone without standing up an on-call platform for a summer project. The thresholds are deliberately offset from the scaling ones. **A queue alert at 1,000 is twice the KEDA trigger at 500**, so the page fires when scaling has failed to absorb the load rather than every time it starts working. The refinement took the eight rules to **ten and rewrote what each one says**: every alert now carries what it affects and where to look next, because a notification naming only the symptom leaves the reader to work out the other two on a phone.',
       },
     ],
     // Eight views of the same system, a tab each: the whole AWS layout, then
@@ -1823,13 +2158,13 @@ project2-security/
     architecture: [
       {
         tab: 'Overall architecture',
-        caption: 'Overall architecture — VPC, EKS, and the managed services around them',
+        caption: 'Overall architecture: VPC, EKS, and the managed services around them',
         alt: 'Full AWS layout in ap-northeast-2: a passenger app and the external Open-Meteo API reaching a 10.0.0.0/16 VPC through Route 53, CloudFront and an internet gateway; an EKS cluster spanning availability zones 2a and 2c behind an ALB ingress, with a fixed system node group and Karpenter nodes that scale from zero; a single NAT gateway in 2a and a VPC gateway endpoint that carries S3 and DynamoDB traffic past it; and RDS, SQS, S3, DynamoDB and the management services alongside',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-01-overall.svg',
-          caption: 'Overall architecture, original export \u2014 every managed service, add-on and pod named',
+          caption: 'Overall architecture, original export: every managed service, add-on and pod named',
           alt: 'Original draw.io export of the full hailcast layout in the Seoul region: a passenger app and the external Open-Meteo API outside AWS; a 10.0.0.0/16 VPC with public and private subnets in availability zones 2a and 2c, a single NAT gateway in 2a, and a VPC gateway endpoint that bypasses it for S3 and DynamoDB; an EKS cluster running the call-api, worker, predict, weather-cron, simulator and frontend pods on Karpenter-provisioned nodes beside a fixed system node group; RDS single-AZ, SQS, S3, ECR, CloudWatch, Secrets Manager and SSM Session Manager alongside; and the GitHub infra, app and manifest repositories feeding GitHub Actions and a Terraform S3 backend',
         },
         diagram: {
@@ -1899,20 +2234,20 @@ project2-security/
             {
               x: 150,
               y: 590,
-              text: 'Only the call API is spread across both zones. RDS and the NAT gateway are fixed to 2a — a cost choice, not a resilience one.',
+              text: 'Only the call API is spread across both zones. RDS and the NAT gateway are fixed to 2a, which is a cost choice.',
             },
           ],
         },
       },
       {
         tab: 'Request flow',
-        caption: 'Flow 1 — a ride request, from the app to the queue',
+        caption: 'Flow 1: a ride request, from the app to the queue',
         alt: 'A ride request travelling from the passenger app through Route 53, CloudFront and the load balancer to the call API pod, which queues the job on SQS and answers the passenger immediately; below the line, a worker pod consumes the job from the queue and records the call to RDS while the passenger waits for none of it',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-02-request-flow.svg',
-          caption: 'Flow 1, original export \u2014 the synchronous half above the divider, the asynchronous half below',
+          caption: 'Flow 1, original export: the synchronous half above the divider, the asynchronous half below',
           alt: 'Original draw.io export of flow 1, a taxi call: the passenger enters origin and destination, Route 53 resolves the domain, CloudFront accelerates the HTTPS transfer, and the ALB distributes to healthy pods, where the call-processing API pod accepts the call, enqueues it to SQS and immediately answers "received"; below a divider marking the boundary, the worker pod consumes the call from SQS and records it to RDS asynchronously, with the passenger waiting for none of it',
         },
         diagram: {
@@ -1939,7 +2274,7 @@ project2-security/
             {
               from: 'api',
               to: 'app',
-              label: '202 accepted — returned immediately',
+              label: '202 accepted, returned immediately',
               labelAt: [440, 268],
               dash: true,
               via: [[770, 274], [110, 274]],
@@ -1958,14 +2293,14 @@ project2-security/
       },
       {
         tab: 'Weather ingest',
-        caption: 'Flow 2 — scheduled weather collection into S3',
+        caption: 'Flow 2: scheduled weather collection into S3',
         alt: 'The weather-cron CronJob calling the Open-Meteo forecast API for New York out through the NAT gateway, checking the response is valid, logging the error and waiting for the next cycle if it is not, and otherwise overwriting the forecast CSV in S3 for the prediction pods to read',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-04-weather-ingest.svg',
-          caption: 'Flow 2, original export \u2014 the collection job and its failure branch',
-          alt: 'Original draw.io export of flow 2, weather collection: at the scheduled time the weather CronJob starts and calls Open-Meteo through the NAT gateway for the New York forecast, then branches on the response \u2014 logging the error and waiting for the next cycle if it failed, or overwriting weather/nyc-forecast.csv in S3 if it succeeded, ready for the prediction pod to read',
+          caption: 'Flow 2, original export: the collection job and its failure branch',
+          alt: 'Original draw.io export of flow 2, weather collection: at the scheduled time the weather CronJob starts and calls Open-Meteo through the NAT gateway for the New York forecast, then branches on the response, logging the error and waiting for the next cycle if it failed, or overwriting weather/nyc-forecast.csv in S3 if it succeeded, ready for the prediction pod to read',
         },
         diagram: {
           width: 1000,
@@ -1982,7 +2317,7 @@ project2-security/
             { from: 'job', to: 'nat' },
             { from: 'nat', to: 'api', label: 'egress' },
             { from: 'api', to: 'check' },
-            { from: 'check', to: 's3', label: 'yes — overwrite' },
+            { from: 'check', to: 's3', label: 'yes, overwrite' },
             {
               from: 'check',
               to: 'retry',
@@ -1997,13 +2332,13 @@ project2-security/
       },
       {
         tab: 'Prediction pipeline',
-        caption: 'Flow 3 — the collection loop that feeds the four-hourly forecast',
+        caption: 'Flow 3: the collection loop that feeds the four-hourly forecast',
         alt: 'Two phases side by side: the continuous collection loop, where the simulator generates calls that the call API enqueues to SQS and a worker records to RDS, and the four-hourly prediction phase, where the forecast scheduler in the predict pod loads its model from S3, reads the stored weather and traffic data, computes demand with LightGBM and writes the result to the prediction table',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-03-prediction-pipeline.svg',
-          caption: 'Flow 3, original export \u2014 the call-collection loop and the four-hourly prediction phase side by side',
+          caption: 'Flow 3, original export: the call-collection loop and the four-hourly prediction phase side by side',
           alt: 'Original draw.io export of flow 3, call collection and prediction: the simulator generates virtual taxi calls that the API pod enqueues to SQS and a worker pod records to RDS, while every four hours the predict pod ForecastScheduler loads its model from S3 over the gateway endpoint, prepares the latest weather CSV and the summed traffic shards, computes demand with LightGBM, and writes to the RDS prediction table, which the sixty-second ScalingScheduler then reads to patch the KEDA scaled object',
         },
         diagram: {
@@ -2039,20 +2374,20 @@ project2-security/
               x: 60,
               y: 424,
               tone: 'accent',
-              text: 'A separate sixty-second scheduler reads the prediction table and patches KEDA — see the Predictive scaling tab.',
+              text: 'A separate sixty-second scheduler reads the prediction table and patches KEDA. See the Predictive scaling tab.',
             },
           ],
         },
       },
       {
         tab: 'Predictive scaling',
-        caption: 'Flow 4 — the forecast ahead of the traffic, and the safety net behind it',
+        caption: 'Flow 4: the forecast ahead of the traffic, and the safety net behind it',
         alt: 'Predicted demand becoming capacity: the forecast scheduler writing to the prediction table every four hours, a scaling scheduler patching the KEDA scaled object minimum replica count every sixty seconds, KEDA also reacting to SQS queue length, Karpenter provisioning a node when the existing ones have no room, and the HPA that KEDA creates catching whatever the forecast missed',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-05-predictive-scaling.svg',
-          caption: 'Flow 4, original export \u2014 the proactive path and the reactive safety net',
+          caption: 'Flow 4, original export: the proactive path and the reactive safety net',
           alt: 'Original draw.io export of flow 4, prediction-based proactive scaling: the ForecastScheduler writes predictions to RDS every four hours and the ScalingScheduler patches the KEDA scaled object minimum replica count every sixty seconds; where predicted demand clears the threshold KEDA scales pods up ahead of the traffic and Karpenter creates an EC2 node when no existing one has room, and where the prediction missed, the HPA that KEDA created as a safety net catches the SQS queue spike and scales reactively before KEDA scales back down once things settle',
         },
         diagram: {
@@ -2092,14 +2427,14 @@ project2-security/
       },
       {
         tab: 'GitOps flow',
-        caption: 'GitOps — three repositories, from pull request to cluster sync',
+        caption: 'GitOps: three repositories, from pull request to cluster sync',
         alt: 'The three-repository GitOps path: a feature branch reaching dev through a pull request approved by one peer, then splitting to the infra repo, which plans on every pull request and applies only after the infra-apply environment is approved, the app repo, which builds an image tagged with the commit SHA and writes that tag into the manifests repo, and ArgoCD, which watches the manifests repo, syncs to the cluster and reverts any drift back to Git',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-06-gitops-flow.svg',
-          caption: 'GitOps, original export \u2014 the approval gates and the drift check in full',
-          alt: 'Original draw.io export of the three-repository GitOps flow: a feature branch becomes a pull request approved by one peer and merges to dev, then branches by repository \u2014 the infra repo plans on every pull request and applies only after an infra-apply environment approval, creating the EKS, RDS, S3, ECR and SQS infrastructure; the app repo builds a Docker image, pushes it to ECR tagged with the commit SHA, and updates that tag in the manifests repo; and ArgoCD watches the manifests repo, syncs to EKS, and self-heals any cluster that has drifted from Git',
+          caption: 'GitOps, original export: the approval gates and the drift check in full',
+          alt: 'Original draw.io export of the three-repository GitOps flow: a feature branch becomes a pull request approved by one peer and merges to dev, then branches by repository: the infra repo plans on every pull request and applies only after an infra-apply environment approval, creating the EKS, RDS, S3, ECR and SQS infrastructure; the app repo builds a Docker image, pushes it to ECR tagged with the commit SHA, and updates that tag in the manifests repo; and ArgoCD watches the manifests repo, syncs to EKS, and self-heals any cluster that has drifted from Git',
         },
         diagram: {
           width: 1000,
@@ -2132,20 +2467,20 @@ project2-security/
               x: 60,
               y: 404,
               tone: 'accent',
-              text: 'Terraform applies only once the infra-apply environment has been approved — the plan runs unattended, the apply does not.',
+              text: 'Terraform applies only once the infra-apply environment has been approved. The plan runs unattended, and the apply waits for a person.',
             },
           ],
         },
       },
       {
         tab: 'Cluster topology',
-        caption: 'Cluster topology — control plane, node groups, and the networking around them',
+        caption: 'Cluster topology: control plane, node groups, and the networking around them',
         alt: 'Cluster topology: the AWS-managed EKS control plane outside the user VPC, system node groups and Karpenter-managed EC2 nodes in availability zones 2a and 2c, an ALB with a network interface in each public subnet, one NAT gateway in 2a that the 2c private subnet shares by routing, and a VPC gateway endpoint carrying S3 and DynamoDB traffic past it',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-07-cluster-topology.svg',
-          caption: 'Cluster configuration, original export \u2014 node groups, subnets, and the FinOps notes underneath',
+          caption: 'Cluster configuration, original export: node groups, subnets, and the FinOps notes underneath',
           alt: 'Original draw.io export of the cluster node configuration: the AWS-managed EKS control plane sitting outside the user VPC, a 10.0.0.0/16 VPC across availability zones 2a and 2c, an ALB with a network interface in each public subnet targeting all zones, a single NAT gateway in 2a that the 2c private subnet shares by routing, a VPC gateway endpoint carrying S3 and DynamoDB traffic past that NAT, managed system node groups in both zones running CoreDNS, Karpenter, KEDA, ArgoCD, Prometheus, Grafana, OpenCost, the ALB controller and the External Secrets Operator, and Karpenter app nodes provisioned dynamically from zero',
         },
         diagram: {
@@ -2209,13 +2544,13 @@ project2-security/
       },
       {
         tab: 'Pod architecture',
-        caption: 'Pod architecture — the service layer, the workers, and what they scale on',
+        caption: 'Pod architecture: the service layer, the workers, and what they scale on',
         alt: 'Pod-level view: Route 53 and the ALB forwarding into ClusterIP services in front of the call API, worker, predict and simulator pods; the call API publishing to SQS and a KEDA-scaled worker deployment consuming from it and writing to RDS; Karpenter provisioning a node for a pending worker pod; the weather-cron pod fetching from the external Open-Meteo API into S3; and Prometheus, Grafana and Alertmanager watching the cluster with alerts leaving for Telegram',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
           src: '/projects/hailcast/architecture-08-pod-architecture.svg',
-          caption: 'Pod architecture, original export \u2014 the ClusterIP service layer and the monitoring stack',
+          caption: 'Pod architecture, original export: the ClusterIP service layer and the monitoring stack',
           alt: 'Original draw.io export of the pod-level view: Route 53 and the ALB forwarding into the call-api, simulator and predict ClusterIP services and the pods behind each; the call-api publishing to the SQS call queue and a KEDA-scaled worker deployment consuming from it and saving results to RDS PostgreSQL; a pending worker pod triggering Karpenter to provision a new EC2 worker node; the weather pod collecting from the external Open-Meteo API into S3; and Prometheus, Alertmanager, Grafana and OpenCost watching the cluster with alerts leaving for Telegram',
         },
         diagram: {
@@ -2290,36 +2625,988 @@ project2-security/
         },
       },
     ],
-    // The local basket, not one repository. On the other two projects this
-    // slot holds the tree of the repo the work lived in; here the work *is*
-    // the arrangement of four of them, so the tree shows the layout every
-    // teammate had to clone into and the ops repo's own contents inside it.
+    // One tab per repository, because hailcast is not one repository — it is
+    // four, and the work *is* the arrangement of them. A single 441-line tree
+    // showed that faithfully and read as a wall; split, each repo is a view
+    // you can actually take in, and the four-repo shape becomes the first
+    // thing the panel says rather than something buried in its scroll.
     //
-    // The layout is a hard requirement rather than a preference: `make -C
-    // ../project3-hailcast-infra` and the `cd`-triggered Docker credential
-    // swap both resolve by relative path, so a repo cloned somewhere else or
-    // under another name silently takes the delegation with it.
-    folderStructure: `
-~/project3-hailcast/                  # the basket — not a git repo, deliberately
-├── project3-hailcast-infra           # terraform apply · the AWS foundation
-│   └── docs/네이밍규약서.md            ★ the naming contract — every repo's SSOT
-├── project3-hailcast-app             # docker build → ECR · six pod images + LightGBM
-├── project3-hailcast-manifests       # ArgoCD pulls · 16 Applications, apps and add-ons
-└── project3-hailcast-ops             ★ this repo — operations, mine
-    ├── Makefile                      # the console: every command delegates via make -C
-    ├── .env.example                  # PROJECT_ACCOUNT_ID only — the real .env is gitignored
-    ├── .github/CODEOWNERS            # review requested on the teardown files, nothing else
+    // Ops opens first because it is mine. Its tree is the annotated basket
+    // rather than a bare listing: the ops repo is the one that reaches into
+    // the other three, and the layout is a hard requirement rather than a
+    // preference — `make -C ../project3-hailcast-infra` and the `cd`-triggered
+    // Docker credential swap both resolve by relative path, so a repo cloned
+    // somewhere else or under another name silently takes the delegation with
+    // it. That fact has nowhere to live in a per-repo listing, so it lives here.
+    //
+    // The other three run in pipeline order after it: infra lays the
+    // foundation, app builds the images, manifests deploy them. Alphabetical
+    // would have put app first, which reads as though the application came
+    // before the cluster it runs on.
+    //
+    // Credit where the deck puts it: the Terraform estate and its IRSA roles
+    // in `infra` are Miseon Lee's, not mine. It is here as the team's work.
+    //
+    // The comment column in the ops tree is reached by a TAB, not by spaces,
+    // and the tab is load-bearing. Three of these paths end in Korean
+    // filenames, and in Chivo Mono a Hangul glyph advances 11.68px against the
+    // 8.09px space: 1.44 cells, not 2. No whole number of spaces can put those
+    // three lines on the same column as the other fourteen, and padding them
+    // by eye leaves the drift the reader actually sees. A tab stop is an
+    // absolute grid measured from the start of the line, so it ignores what
+    // came before it. Each line is space-padded to land inside the last stop's
+    // window and one tab snaps it to 36 cells exactly.
+    //
+    // Two consequences if you edit this tree. Re-padding a line means keeping
+    // its width inside that window, so measure the rendered text rather than
+    // counting characters. And `tab-size` on `.tree__body` has to stay 2 or 4;
+    // 36 cells is a multiple of both, which is why the column sits there.
+    folderStructure: [
+      {
+        id: 'ops',
+        label: 'ops/My Track',
+        root: '~/project3-hailcast/',
+        tree: `
+~/project3-hailcast/              	# a plain folder, not a git repo. The four repos sit here as siblings.
+├── project3-hailcast-infra       	# builds the AWS foundation with Terraform: VPC, EKS, RDS, IAM roles.
+│   └── docs/네이밍규약서.md          	# the naming contract. Every AWS name the other repos use is fixed here.
+├── project3-hailcast-app         	# builds the six pod images and the LightGBM model, pushes them to ECR.
+├── project3-hailcast-manifests   	# holds what ArgoCD syncs: 16 Applications, the apps and the add-ons.
+└── project3-hailcast-ops         	# this repo, my track. It drives the other three from one place.
+    ├── Makefile                   	# one command surface. Each target delegates to a repo with make -C.
+    ├── .env.example              	# template for the gitignored .env. One value, PROJECT_ACCOUNT_ID.
+    ├── .github/CODEOWNERS        	# requests a review when a teardown or account-guard file changes.
     ├── docs/
-    │   ├── teardown_체크리스트.md      # destroy order, gates, and the measured 21m40s run
-    │   └── 재구축_체크리스트.md         # rebuild from zero — split out once the two diverged
+    │   ├── teardown_체크리스트.md   	# the destroy procedure: delete order, the five gates, measured timings.
+    │   └── 재구축_체크리스트.md       	# how to rebuild after a destroy, and which values change when you do.
     └── scripts/
-        ├── _lib.sh                   # the guard function and the account constant, once
-        ├── guard_account.sh          # sts get-caller-identity vs PROJECT_ACCOUNT_ID
-        ├── setup.sh                  # toolchain, credentials, kubeconfig, Docker isolation
-        ├── check.sh                  # environment and EKS reachability preflight
-        ├── check_contract.sh         # naming contract — static on source, runtime on AWS
-        └── teardown.sh               # conducts manifests → infra → app, y/N per stage
+        ├── _lib.sh               	# shared constants and the account check every other script sources.
+        ├── guard_account.sh      	# stops a make target when the AWS credentials are the wrong account.
+        ├── setup.sh              	# installs the tools, logs in to AWS and Docker Hub, writes kubeconfig.
+        ├── check.sh              	# checks the tools, the credentials, and that the EKS cluster answers.
+        ├── check_contract.sh     	# compares the naming contract to the Terraform source, then to AWS.
+        └── teardown.sh           	# destroys in order: manifests, then infra, then app. Confirms each stage.
 `,
+      },
+      {
+        id: 'infra',
+        label: 'Infra',
+        root: 'project3-hailcast-infra/Terraform',
+        tree: `
+project3-hailcast-infra/
+├── .github/
+│   └── workflows/
+│       └── terraform.yml
+├── docs/
+│   ├── images/
+│   │   ├── architecture.png
+│   │   ├── cluster-topology.png
+│   │   ├── pod-architecture.png
+│   │   └── scaling-flow.png
+│   ├── 네이밍규약서.md
+│   └── 비용관리.md
+├── envs/
+│   └── dev/
+│       ├── .terraform.lock.hcl
+│       ├── backend.tf
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── providers.tf
+│       ├── terraform.tfvars.example
+│       ├── variables.tf
+│       └── versions.tf
+├── modules/
+│   ├── cicd/
+│   │   ├── gha_tf.tf
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   ├── data/
+│   │   ├── rds/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── dynamodb.tf
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── rds_ingress.tf
+│   │   ├── sqs.tf
+│   │   ├── sqs_karpenter.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   ├── edge/
+│   │   ├── acm.tf
+│   │   ├── cloudfront.tf
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   ├── route53.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   ├── eks/
+│   │   ├── policies/
+│   │   │   ├── aws-load-balancer-controller.json
+│   │   │   ├── karpenter-eks-integration.json.tftpl
+│   │   │   ├── karpenter-iam-integration.json.tftpl
+│   │   │   ├── karpenter-interruption.json.tftpl
+│   │   │   ├── karpenter-node-lifecycle.json.tftpl
+│   │   │   ├── karpenter-resource-discovery.json.tftpl
+│   │   │   └── karpenter-zonal-shift.json.tftpl
+│   │   ├── access.tf
+│   │   ├── cluster.tf
+│   │   ├── iam.tf
+│   │   ├── irsa.tf
+│   │   ├── main.tf
+│   │   ├── nodegroup.tf
+│   │   ├── outputs.tf
+│   │   ├── sg_alb_cloudfront.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   ├── network/
+│   │   ├── endpoints.tf
+│   │   ├── main.tf
+│   │   ├── nat.tf
+│   │   ├── outputs.tf
+│   │   ├── variables.tf
+│   │   └── versions.tf
+│   ├── schedule/
+│   │   ├── main.tf
+│   │   └── variables.tf
+│   └── storage/
+│       ├── athena.tf
+│       ├── cur.tf
+│       ├── glue.tf
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── s3.tf
+│       ├── variables.tf
+│       └── versions.tf
+├── scripts/
+│   └── teardown_infra.sh
+├── .gitignore
+├── Makefile
+└── README.md
+`,
+      },
+      {
+        id: 'app',
+        label: 'App',
+        root: 'project3-hailcast-app/Kubernetes & LightGBM',
+        tree: `
+project3-hailcast-app/
+├── .github/
+│   └── workflows/
+│       ├── build.yml
+│       └── image tag 갱신 자동화.md
+├── backend/
+│   ├── call-api/
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   └── call_router.py
+│   │   ├── schedulers/
+│   │   │   ├── __init__.py
+│   │   │   └── traffic_flush_scheduler.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── call_service.py
+│   │   │   └── traffic_counter.py
+│   │   ├── Dockerfile
+│   │   ├── app.py
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   └── requirements.txt
+│   ├── common/
+│   │   ├── aws/
+│   │   │   ├── __init__.py
+│   │   │   ├── client_factory.py
+│   │   │   ├── dynamodb_adapter.py
+│   │   │   ├── s3_adapter.py
+│   │   │   └── sqs_adapter.py
+│   │   ├── core/
+│   │   │   ├── __init__.py
+│   │   │   ├── constants.py
+│   │   │   ├── cors.py
+│   │   │   ├── exception_handlers.py
+│   │   │   ├── exceptions.py
+│   │   │   ├── logger.py
+│   │   │   ├── metrics.py
+│   │   │   ├── scheduler.py
+│   │   │   ├── settings.py
+│   │   │   └── store.py
+│   │   ├── db/
+│   │   │   ├── __init__.py
+│   │   │   ├── base_repository.py
+│   │   │   ├── call_repository.py
+│   │   │   ├── database.py
+│   │   │   └── entities.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── call.py
+│   │   │   ├── dashboard.py
+│   │   │   ├── prediction.py
+│   │   │   ├── scaling.py
+│   │   │   ├── status.py
+│   │   │   └── weather.py
+│   │   └── __init__.py
+│   ├── frontend-contract/
+│   │   └── README.md
+│   ├── predict/
+│   │   ├── adapters/
+│   │   │   ├── __init__.py
+│   │   │   ├── inmemory_keda_adapter.py
+│   │   │   ├── inmemory_node_adapter.py
+│   │   │   ├── keda_adapter.py
+│   │   │   ├── kubernetes_keda_adapter.py
+│   │   │   ├── kubernetes_node_adapter.py
+│   │   │   └── node_adapter.py
+│   │   ├── ml_runtime/
+│   │   │   ├── __init__.py
+│   │   │   └── model_loader.py
+│   │   ├── repositories/
+│   │   │   ├── __init__.py
+│   │   │   ├── call_repository.py
+│   │   │   ├── pod_replica_repository.py
+│   │   │   ├── prediction_repository.py
+│   │   │   └── scaling_repository.py
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   ├── dashboard_router.py
+│   │   │   ├── health_router.py
+│   │   │   ├── prediction_router.py
+│   │   │   └── scaling_router.py
+│   │   ├── schedulers/
+│   │   │   ├── __init__.py
+│   │   │   ├── accuracy_check_scheduler.py
+│   │   │   ├── backup_scheduler.py
+│   │   │   ├── forecast_scheduler.py
+│   │   │   ├── scaling_scheduler.py
+│   │   │   └── traffic_scheduler.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── accuracy_check_service.py
+│   │   │   ├── dashboard_service.py
+│   │   │   ├── health_service.py
+│   │   │   ├── pod_forecast_service.py
+│   │   │   ├── prediction_accuracy_logger.py
+│   │   │   ├── prediction_reader.py
+│   │   │   ├── prediction_service.py
+│   │   │   ├── scaler_service.py
+│   │   │   ├── scaling_decision_engine.py
+│   │   │   └── traffic_aggregator_service.py
+│   │   ├── Dockerfile
+│   │   ├── app.py
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   └── requirements.txt
+│   ├── simulator/
+│   │   ├── k6/
+│   │   │   └── call_load.js
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   └── simulator_router.py
+│   │   ├── schedulers/
+│   │   │   ├── __init__.py
+│   │   │   └── status_scheduler.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── k6_runner.py
+│   │   │   ├── simulator_service.py
+│   │   │   └── traffic_state.py
+│   │   ├── Dockerfile
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   ├── requirements.txt
+│   │   └── simulator.py
+│   ├── weather-cron/
+│   │   ├── adapters/
+│   │   │   ├── __init__.py
+│   │   │   ├── open_meteo_adapter.py
+│   │   │   └── weather_adapter.py
+│   │   ├── routers/
+│   │   │   ├── __init__.py
+│   │   │   └── weather_router.py
+│   │   ├── schedulers/
+│   │   │   ├── __init__.py
+│   │   │   └── weather_scheduler.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   └── weather_service.py
+│   │   ├── Dockerfile
+│   │   ├── config.py
+│   │   ├── dependencies.py
+│   │   ├── fetch.py
+│   │   └── requirements.txt
+│   └── worker/
+│       ├── services/
+│       │   ├── __init__.py
+│       │   ├── state_manager.py
+│       │   └── worker_service.py
+│       ├── Dockerfile
+│       ├── config.py
+│       ├── dependencies.py
+│       ├── requirements.txt
+│       └── worker.py
+├── frontend/
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── icons.svg
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── PodForecastChart.tsx
+│   │   │   ├── RdsTableViewer.tsx
+│   │   │   ├── TrafficHistoryChart.tsx
+│   │   │   └── WeatherStrip.tsx
+│   │   ├── lib/
+│   │   │   └── time.ts
+│   │   ├── pages/
+│   │   │   ├── DashboardPage.tsx
+│   │   │   └── ServicePage.tsx
+│   │   ├── App.tsx
+│   │   ├── index.css
+│   │   └── main.tsx
+│   ├── .gitignore
+│   ├── .oxlintrc.json
+│   ├── Dockerfile
+│   ├── README.md
+│   ├── index.html
+│   ├── nginx.conf
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   ├── tsconfig.node.json
+│   └── vite.config.ts
+├── k8s/
+│   ├── 00-namespace.yaml
+│   ├── 01-serviceaccounts.yaml
+│   ├── 02-configmap.yaml
+│   ├── 02b-externalsecret.yaml
+│   ├── README.md
+│   ├── call-api-deployment.yaml
+│   ├── frontend-deployment.yaml
+│   ├── keda-triggerauthentication.yaml
+│   ├── predict-deployment.yaml
+│   ├── predict-rbac.yaml
+│   ├── simulator-deployment.yaml
+│   ├── weather-cron-deployment.yaml
+│   ├── worker-deployment.yaml
+│   └── worker-scaledobject.yaml
+├── ml/
+│   ├── __init__.py
+│   ├── features.py
+│   ├── learning_curve8.png
+│   ├── predict_batch.py
+│   ├── preprocess.py
+│   ├── requirements.txt
+│   ├── retrain_trigger.py
+│   └── train.py
+├── scripts/
+│   ├── README.md
+│   ├── _lib.sh
+│   ├── build_push.sh
+│   ├── deploy_infra.sh
+│   ├── dev_local.sh
+│   ├── teardown_app.sh
+│   └── teardown_infra.sh
+├── .dockerignore
+├── .env.example
+├── .gitignore
+├── Makefile
+├── README.md
+└── docker-compose.yml
+`,
+      },
+      {
+        id: 'manifests',
+        label: 'Manifests',
+        root: 'project3-hailcast-manifests/ArgoCD',
+        tree: `
+project3-hailcast-manifests/
+├── .github/
+│   └── CODEOWNERS
+├── addons/
+│   ├── argocd/
+│   │   └── values.yaml
+│   ├── aws-load-balancer-controller/
+│   │   ├── .gitkeep
+│   │   └── values.yaml
+│   ├── external-secrets/
+│   │   └── values.yaml
+│   ├── grafana-dashboards/
+│   │   ├── 01-predict-scaling.json
+│   │   ├── 02-queue-keda.json
+│   │   ├── 03-worker-kubernetes.json
+│   │   ├── 04-cost-finops.json
+│   │   ├── 99-closed-loop-executive.json
+│   │   └── kustomization.yaml
+│   ├── karpenter/
+│   │   ├── .gitkeep
+│   │   ├── ec2nodeclass.yaml
+│   │   ├── nodepool.yaml
+│   │   └── values.yaml
+│   ├── keda/
+│   │   ├── .gitkeep
+│   │   └── values.yaml
+│   ├── kube-prometheus-stack/
+│   │   ├── .gitkeep
+│   │   └── values.yaml
+│   ├── metrics-server/
+│   │   └── values.yaml
+│   ├── opencost/
+│   │   ├── .gitkeep
+│   │   └── values.yaml
+│   └── .gitkeep
+├── apps/
+│   ├── call-api/
+│   │   ├── deployment.yaml
+│   │   ├── ingress.yaml
+│   │   ├── service.yaml
+│   │   ├── serviceaccount.yaml
+│   │   └── servicemonitor.yaml
+│   ├── frontend/
+│   │   ├── deployment.yaml
+│   │   ├── ingress.yaml
+│   │   └── service.yaml
+│   ├── predict/
+│   │   ├── .gitkeep
+│   │   ├── deployment.yaml
+│   │   ├── ingress.yaml
+│   │   ├── rbac.yaml
+│   │   ├── retraining-cronjob.yaml
+│   │   ├── retraining-serviceaccount.yaml
+│   │   ├── service.yaml
+│   │   ├── serviceaccount.yaml
+│   │   └── servicemonitor.yaml
+│   ├── simulator/
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   │   └── serviceaccount.yaml
+│   ├── weather-cron/
+│   │   ├── .gitkeep
+│   │   ├── deployment.yaml
+│   │   ├── service.yaml
+│   │   └── serviceaccount.yaml
+│   ├── worker/
+│   │   ├── .gitkeep
+│   │   ├── deployment.yaml
+│   │   ├── scaledobject.yaml
+│   │   ├── serviceaccount.yaml
+│   │   └── triggerauthentication.yaml
+│   └── .gitkeep
+├── argocd/
+│   ├── applications/
+│   │   ├── .gitkeep
+│   │   ├── aws-load-balancer-controller-app.yaml
+│   │   ├── call-api-app.yaml
+│   │   ├── external-secrets-app.yaml
+│   │   ├── frontend-app.yaml
+│   │   ├── grafana-dashboards.yaml
+│   │   ├── karpenter.yaml
+│   │   ├── keda.yaml
+│   │   ├── kube-prometheus-stack.yaml
+│   │   ├── metrics-server.yaml
+│   │   ├── opencost.yaml
+│   │   ├── platform-monitoring.yaml
+│   │   ├── platform-secrets-app.yaml
+│   │   ├── predict-app.yaml
+│   │   ├── simulator-app.yaml
+│   │   ├── weather-cron-app.yaml
+│   │   └── worker-app.yaml
+│   ├── .gitkeep
+│   └── app-of-apps.yaml
+├── platform/
+│   ├── external-secrets/
+│   │   ├── externalsecret-rds-credentials.yaml
+│   │   ├── externalsecret-rds-endpoint.yaml
+│   │   ├── secret-rds-placeholder.yaml
+│   │   └── secretstore.yaml
+│   └── monitoring/
+│       ├── rules/
+│       │   └── hailcast-alerts.yaml
+│       └── kustomization.yaml
+├── scripts/
+│   ├── keda/
+│   │   ├── _lib.sh
+│   │   └── verify.sh
+│   ├── morning/
+│   │   ├── README.md
+│   │   ├── _lib.sh
+│   │   └── verify.sh
+│   ├── bootstrap_all.sh
+│   ├── deploy.sh
+│   ├── install_argocd.sh
+│   ├── replace_rebuild_values.sh
+│   ├── status.sh
+│   ├── teardown_manifest.sh
+│   └── validate.sh
+├── .gitignore
+├── Makefile
+└── README.md
+`,
+      },
+      {
+        id: 'whole',
+        label: 'Whole structure',
+        root: '~/project3-hailcast/',
+        tree: `
+~/project3-hailcast/
+├── project3-hailcast-infra/
+│   ├── .github/
+│   │   └── workflows/
+│   │       └── terraform.yml
+│   ├── docs/
+│   │   ├── images/
+│   │   │   ├── architecture.png
+│   │   │   ├── cluster-topology.png
+│   │   │   ├── pod-architecture.png
+│   │   │   └── scaling-flow.png
+│   │   ├── 네이밍규약서.md
+│   │   └── 비용관리.md
+│   ├── envs/
+│   │   └── dev/
+│   │       ├── .terraform.lock.hcl
+│   │       ├── backend.tf
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── providers.tf
+│   │       ├── terraform.tfvars.example
+│   │       ├── variables.tf
+│   │       └── versions.tf
+│   ├── modules/
+│   │   ├── cicd/
+│   │   │   ├── gha_tf.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── data/
+│   │   │   ├── rds/
+│   │   │   │   ├── main.tf
+│   │   │   │   ├── outputs.tf
+│   │   │   │   ├── variables.tf
+│   │   │   │   └── versions.tf
+│   │   │   ├── dynamodb.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── rds_ingress.tf
+│   │   │   ├── sqs.tf
+│   │   │   ├── sqs_karpenter.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── edge/
+│   │   │   ├── acm.tf
+│   │   │   ├── cloudfront.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── route53.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── eks/
+│   │   │   ├── policies/
+│   │   │   │   ├── aws-load-balancer-controller.json
+│   │   │   │   ├── karpenter-eks-integration.json.tftpl
+│   │   │   │   ├── karpenter-iam-integration.json.tftpl
+│   │   │   │   ├── karpenter-interruption.json.tftpl
+│   │   │   │   ├── karpenter-node-lifecycle.json.tftpl
+│   │   │   │   ├── karpenter-resource-discovery.json.tftpl
+│   │   │   │   └── karpenter-zonal-shift.json.tftpl
+│   │   │   ├── access.tf
+│   │   │   ├── cluster.tf
+│   │   │   ├── iam.tf
+│   │   │   ├── irsa.tf
+│   │   │   ├── main.tf
+│   │   │   ├── nodegroup.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── sg_alb_cloudfront.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── network/
+│   │   │   ├── endpoints.tf
+│   │   │   ├── main.tf
+│   │   │   ├── nat.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── schedule/
+│   │   │   ├── main.tf
+│   │   │   └── variables.tf
+│   │   └── storage/
+│   │       ├── athena.tf
+│   │       ├── cur.tf
+│   │       ├── glue.tf
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── s3.tf
+│   │       ├── variables.tf
+│   │       └── versions.tf
+│   ├── scripts/
+│   │   └── teardown_infra.sh
+│   ├── .gitignore
+│   ├── Makefile
+│   └── README.md
+├── project3-hailcast-app/
+│   ├── .github/
+│   │   └── workflows/
+│   │       ├── build.yml
+│   │       └── image tag 갱신 자동화.md
+│   ├── backend/
+│   │   ├── call-api/
+│   │   │   ├── routers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── call_router.py
+│   │   │   ├── schedulers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── traffic_flush_scheduler.py
+│   │   │   ├── services/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── call_service.py
+│   │   │   │   └── traffic_counter.py
+│   │   │   ├── Dockerfile
+│   │   │   ├── app.py
+│   │   │   ├── config.py
+│   │   │   ├── dependencies.py
+│   │   │   └── requirements.txt
+│   │   ├── common/
+│   │   │   ├── aws/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── client_factory.py
+│   │   │   │   ├── dynamodb_adapter.py
+│   │   │   │   ├── s3_adapter.py
+│   │   │   │   └── sqs_adapter.py
+│   │   │   ├── core/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── constants.py
+│   │   │   │   ├── cors.py
+│   │   │   │   ├── exception_handlers.py
+│   │   │   │   ├── exceptions.py
+│   │   │   │   ├── logger.py
+│   │   │   │   ├── metrics.py
+│   │   │   │   ├── scheduler.py
+│   │   │   │   ├── settings.py
+│   │   │   │   └── store.py
+│   │   │   ├── db/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── base_repository.py
+│   │   │   │   ├── call_repository.py
+│   │   │   │   ├── database.py
+│   │   │   │   └── entities.py
+│   │   │   ├── models/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── call.py
+│   │   │   │   ├── dashboard.py
+│   │   │   │   ├── prediction.py
+│   │   │   │   ├── scaling.py
+│   │   │   │   ├── status.py
+│   │   │   │   └── weather.py
+│   │   │   └── __init__.py
+│   │   ├── frontend-contract/
+│   │   │   └── README.md
+│   │   ├── predict/
+│   │   │   ├── adapters/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── inmemory_keda_adapter.py
+│   │   │   │   ├── inmemory_node_adapter.py
+│   │   │   │   ├── keda_adapter.py
+│   │   │   │   ├── kubernetes_keda_adapter.py
+│   │   │   │   ├── kubernetes_node_adapter.py
+│   │   │   │   └── node_adapter.py
+│   │   │   ├── ml_runtime/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── model_loader.py
+│   │   │   ├── repositories/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── call_repository.py
+│   │   │   │   ├── pod_replica_repository.py
+│   │   │   │   ├── prediction_repository.py
+│   │   │   │   └── scaling_repository.py
+│   │   │   ├── routers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── dashboard_router.py
+│   │   │   │   ├── health_router.py
+│   │   │   │   ├── prediction_router.py
+│   │   │   │   └── scaling_router.py
+│   │   │   ├── schedulers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── accuracy_check_scheduler.py
+│   │   │   │   ├── backup_scheduler.py
+│   │   │   │   ├── forecast_scheduler.py
+│   │   │   │   ├── scaling_scheduler.py
+│   │   │   │   └── traffic_scheduler.py
+│   │   │   ├── services/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── accuracy_check_service.py
+│   │   │   │   ├── dashboard_service.py
+│   │   │   │   ├── health_service.py
+│   │   │   │   ├── pod_forecast_service.py
+│   │   │   │   ├── prediction_accuracy_logger.py
+│   │   │   │   ├── prediction_reader.py
+│   │   │   │   ├── prediction_service.py
+│   │   │   │   ├── scaler_service.py
+│   │   │   │   ├── scaling_decision_engine.py
+│   │   │   │   └── traffic_aggregator_service.py
+│   │   │   ├── Dockerfile
+│   │   │   ├── app.py
+│   │   │   ├── config.py
+│   │   │   ├── dependencies.py
+│   │   │   └── requirements.txt
+│   │   ├── simulator/
+│   │   │   ├── k6/
+│   │   │   │   └── call_load.js
+│   │   │   ├── routers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── simulator_router.py
+│   │   │   ├── schedulers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── status_scheduler.py
+│   │   │   ├── services/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── k6_runner.py
+│   │   │   │   ├── simulator_service.py
+│   │   │   │   └── traffic_state.py
+│   │   │   ├── Dockerfile
+│   │   │   ├── config.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── requirements.txt
+│   │   │   └── simulator.py
+│   │   ├── weather-cron/
+│   │   │   ├── adapters/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── open_meteo_adapter.py
+│   │   │   │   └── weather_adapter.py
+│   │   │   ├── routers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── weather_router.py
+│   │   │   ├── schedulers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── weather_scheduler.py
+│   │   │   ├── services/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── weather_service.py
+│   │   │   ├── Dockerfile
+│   │   │   ├── config.py
+│   │   │   ├── dependencies.py
+│   │   │   ├── fetch.py
+│   │   │   └── requirements.txt
+│   │   └── worker/
+│   │       ├── services/
+│   │       │   ├── __init__.py
+│   │       │   ├── state_manager.py
+│   │       │   └── worker_service.py
+│   │       ├── Dockerfile
+│   │       ├── config.py
+│   │       ├── dependencies.py
+│   │       ├── requirements.txt
+│   │       └── worker.py
+│   ├── frontend/
+│   │   ├── public/
+│   │   │   ├── favicon.svg
+│   │   │   └── icons.svg
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── PodForecastChart.tsx
+│   │   │   │   ├── RdsTableViewer.tsx
+│   │   │   │   ├── TrafficHistoryChart.tsx
+│   │   │   │   └── WeatherStrip.tsx
+│   │   │   ├── lib/
+│   │   │   │   └── time.ts
+│   │   │   ├── pages/
+│   │   │   │   ├── DashboardPage.tsx
+│   │   │   │   └── ServicePage.tsx
+│   │   │   ├── App.tsx
+│   │   │   ├── index.css
+│   │   │   └── main.tsx
+│   │   ├── .gitignore
+│   │   ├── .oxlintrc.json
+│   │   ├── Dockerfile
+│   │   ├── README.md
+│   │   ├── index.html
+│   │   ├── nginx.conf
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── tsconfig.app.json
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.node.json
+│   │   └── vite.config.ts
+│   ├── k8s/
+│   │   ├── 00-namespace.yaml
+│   │   ├── 01-serviceaccounts.yaml
+│   │   ├── 02-configmap.yaml
+│   │   ├── 02b-externalsecret.yaml
+│   │   ├── README.md
+│   │   ├── call-api-deployment.yaml
+│   │   ├── frontend-deployment.yaml
+│   │   ├── keda-triggerauthentication.yaml
+│   │   ├── predict-deployment.yaml
+│   │   ├── predict-rbac.yaml
+│   │   ├── simulator-deployment.yaml
+│   │   ├── weather-cron-deployment.yaml
+│   │   ├── worker-deployment.yaml
+│   │   └── worker-scaledobject.yaml
+│   ├── ml/
+│   │   ├── __init__.py
+│   │   ├── features.py
+│   │   ├── learning_curve8.png
+│   │   ├── predict_batch.py
+│   │   ├── preprocess.py
+│   │   ├── requirements.txt
+│   │   ├── retrain_trigger.py
+│   │   └── train.py
+│   ├── scripts/
+│   │   ├── README.md
+│   │   ├── _lib.sh
+│   │   ├── build_push.sh
+│   │   ├── deploy_infra.sh
+│   │   ├── dev_local.sh
+│   │   ├── teardown_app.sh
+│   │   └── teardown_infra.sh
+│   ├── .dockerignore
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── Makefile
+│   ├── README.md
+│   └── docker-compose.yml
+├── project3-hailcast-manifests/
+│   ├── .github/
+│   │   └── CODEOWNERS
+│   ├── addons/
+│   │   ├── argocd/
+│   │   │   └── values.yaml
+│   │   ├── aws-load-balancer-controller/
+│   │   │   ├── .gitkeep
+│   │   │   └── values.yaml
+│   │   ├── external-secrets/
+│   │   │   └── values.yaml
+│   │   ├── grafana-dashboards/
+│   │   │   ├── 01-predict-scaling.json
+│   │   │   ├── 02-queue-keda.json
+│   │   │   ├── 03-worker-kubernetes.json
+│   │   │   ├── 04-cost-finops.json
+│   │   │   ├── 99-closed-loop-executive.json
+│   │   │   └── kustomization.yaml
+│   │   ├── karpenter/
+│   │   │   ├── .gitkeep
+│   │   │   ├── ec2nodeclass.yaml
+│   │   │   ├── nodepool.yaml
+│   │   │   └── values.yaml
+│   │   ├── keda/
+│   │   │   ├── .gitkeep
+│   │   │   └── values.yaml
+│   │   ├── kube-prometheus-stack/
+│   │   │   ├── .gitkeep
+│   │   │   └── values.yaml
+│   │   ├── metrics-server/
+│   │   │   └── values.yaml
+│   │   ├── opencost/
+│   │   │   ├── .gitkeep
+│   │   │   └── values.yaml
+│   │   └── .gitkeep
+│   ├── apps/
+│   │   ├── call-api/
+│   │   │   ├── deployment.yaml
+│   │   │   ├── ingress.yaml
+│   │   │   ├── service.yaml
+│   │   │   ├── serviceaccount.yaml
+│   │   │   └── servicemonitor.yaml
+│   │   ├── frontend/
+│   │   │   ├── deployment.yaml
+│   │   │   ├── ingress.yaml
+│   │   │   └── service.yaml
+│   │   ├── predict/
+│   │   │   ├── .gitkeep
+│   │   │   ├── deployment.yaml
+│   │   │   ├── ingress.yaml
+│   │   │   ├── rbac.yaml
+│   │   │   ├── retraining-cronjob.yaml
+│   │   │   ├── retraining-serviceaccount.yaml
+│   │   │   ├── service.yaml
+│   │   │   ├── serviceaccount.yaml
+│   │   │   └── servicemonitor.yaml
+│   │   ├── simulator/
+│   │   │   ├── deployment.yaml
+│   │   │   ├── service.yaml
+│   │   │   └── serviceaccount.yaml
+│   │   ├── weather-cron/
+│   │   │   ├── .gitkeep
+│   │   │   ├── deployment.yaml
+│   │   │   ├── service.yaml
+│   │   │   └── serviceaccount.yaml
+│   │   ├── worker/
+│   │   │   ├── .gitkeep
+│   │   │   ├── deployment.yaml
+│   │   │   ├── scaledobject.yaml
+│   │   │   ├── serviceaccount.yaml
+│   │   │   └── triggerauthentication.yaml
+│   │   └── .gitkeep
+│   ├── argocd/
+│   │   ├── applications/
+│   │   │   ├── .gitkeep
+│   │   │   ├── aws-load-balancer-controller-app.yaml
+│   │   │   ├── call-api-app.yaml
+│   │   │   ├── external-secrets-app.yaml
+│   │   │   ├── frontend-app.yaml
+│   │   │   ├── grafana-dashboards.yaml
+│   │   │   ├── karpenter.yaml
+│   │   │   ├── keda.yaml
+│   │   │   ├── kube-prometheus-stack.yaml
+│   │   │   ├── metrics-server.yaml
+│   │   │   ├── opencost.yaml
+│   │   │   ├── platform-monitoring.yaml
+│   │   │   ├── platform-secrets-app.yaml
+│   │   │   ├── predict-app.yaml
+│   │   │   ├── simulator-app.yaml
+│   │   │   ├── weather-cron-app.yaml
+│   │   │   └── worker-app.yaml
+│   │   ├── .gitkeep
+│   │   └── app-of-apps.yaml
+│   ├── platform/
+│   │   ├── external-secrets/
+│   │   │   ├── externalsecret-rds-credentials.yaml
+│   │   │   ├── externalsecret-rds-endpoint.yaml
+│   │   │   ├── secret-rds-placeholder.yaml
+│   │   │   └── secretstore.yaml
+│   │   └── monitoring/
+│   │       ├── rules/
+│   │       │   └── hailcast-alerts.yaml
+│   │       └── kustomization.yaml
+│   ├── scripts/
+│   │   ├── keda/
+│   │   │   ├── _lib.sh
+│   │   │   └── verify.sh
+│   │   ├── morning/
+│   │   │   ├── README.md
+│   │   │   ├── _lib.sh
+│   │   │   └── verify.sh
+│   │   ├── bootstrap_all.sh
+│   │   ├── deploy.sh
+│   │   ├── install_argocd.sh
+│   │   ├── replace_rebuild_values.sh
+│   │   ├── status.sh
+│   │   ├── teardown_manifest.sh
+│   │   └── validate.sh
+│   ├── .gitignore
+│   ├── Makefile
+│   └── README.md
+└── project3-hailcast-ops/
+    ├── .github/
+    │   └── CODEOWNERS
+    ├── docs/
+    │   ├── teardown_체크리스트.md
+    │   └── 재구축_체크리스트.md
+    ├── scripts/
+    │   ├── _lib.sh
+    │   ├── check.sh
+    │   ├── check_contract.sh
+    │   ├── guard_account.sh
+    │   ├── setup.sh
+    │   └── teardown.sh
+    ├── .env.example
+    ├── .gitignore
+    ├── Makefile
+    └── README.md
+`,
+      },
+    ],
     // The calendar pair and the phase list both read from here. Four phases
     // over three months: the build ran to the first presentation in early
     // August, and the last phase is the refinement stretch that ran in
@@ -2348,7 +3635,7 @@ project2-security/
           range: 'Jun 29 – Jul 12',
           from: '2026-06-29',
           to: '2026-07-12',
-          text: 'The team started by looking back at the previous two projects rather than forward at this one, and three decisions came out of it: verify by simulation and say so, split six people across four repositories, and treat a naming document as the single source of truth for every seam between them. The original goal — stopping latency under a traffic surge — was dropped here, once looking at how taxi hailing actually works showed the bottleneck was drivers rather than servers.',
+          text: 'The team started by looking back at the previous two projects rather than forward at this one, and three decisions came out of it: verify by simulation and say so, split six people across four repositories, and treat a naming document as the single source of truth for every seam between them. The original goal, stopping latency under a traffic surge, was dropped here once looking at how taxi hailing actually works showed the bottleneck was drivers rather than servers.',
         },
         {
           id: 'foundation',
@@ -2356,7 +3643,7 @@ project2-security/
           range: 'Jul 13 – Jul 27',
           from: '2026-07-13',
           to: '2026-07-27',
-          text: 'The AWS estate went up: VPC and EKS, the ten IRSA roles that everything else waited on, the data tier, and the CI roles. Terraform state locking moved to S3’s native lock rather than a DynamoDB table, IRSA was folded into the EKS module to settle the OIDC ordering problem, and the account guard went in before the first `apply` did — the safety rail arriving ahead of the thing it guards was the point, not an accident of ordering.',
+          text: 'The AWS estate went up: VPC and EKS, the ten IRSA roles that everything else waited on, the data tier, and the CI roles. Terraform state locking moved to S3’s native lock rather than a DynamoDB table, IRSA was folded into the EKS module to settle the OIDC ordering problem, and the account guard went in before the first `apply` did. The safety rail arriving ahead of the thing it guards was the point.',
         },
         {
           id: 'rails',
@@ -2364,7 +3651,7 @@ project2-security/
           range: 'Jul 28 – Aug 4',
           from: '2026-07-28',
           to: '2026-08-04',
-          text: 'The naming verifier started running daily, cost-allocation tags were switched on, and the teardown checklist was rewritten around real runbooks instead of a practice incident. On August 3 the whole estate was destroyed for real: **140 resources, 21 minutes 40 seconds, no errors** — with one S3 bucket accounting for 20 of those 21 minutes. The first presentation followed the next day.',
+          text: 'The naming verifier started running daily, cost-allocation tags were switched on, and the teardown checklist was rewritten around real runbooks instead of a practice incident. On August 3 the whole estate was destroyed for real: **140 resources, 21 minutes 40 seconds, no errors**, with one S3 bucket accounting for 20 of those 21 minutes. The first presentation followed the next day.',
         },
         {
           id: 'refine',
@@ -2372,13 +3659,14 @@ project2-security/
           range: 'Aug 13 – Aug 27',
           from: '2026-08-13',
           to: '2026-08-27',
-          text: 'The fourth project started on August 5 and had the week to itself; from the 13th the two ran **side by side**. The estate was rebuilt from zero to prove the runbook worked, which is where its real gaps surfaced — a secret that synced with one key empty, an ECR repository left without an image, a CUR bucket that had to be migrated. The teardown document was split in two, the pod-hour simulation was worked up from eight days of recorded scaling decisions, and the project was presented again on August 27.',
+          text: 'The fourth project started on August 5 and had the week to itself; from the 13th the two ran **side by side**. The estate was rebuilt from zero to prove the runbook worked, which is where its real gaps surfaced: a secret that synced with one key empty, an ECR repository left without an image, and a CUR bucket that had to be migrated. What that exposed set the agenda for the rest of the stretch. The six tasks it produced are all the same task, **replacing an assertion with a measurement**: CPU limits came out of all six services, the Cost and Usage Report went through Glue and Athena into OpenCost so the cost figure became a bill, the three points where the runbook had stalled were absorbed into one `make bootstrap-all`, the dashboards were rebuilt around a notice–identify–assess–trace read with FinOps split out as a fifth, the prediction started recording its own misses and continuing training on them nightly, and the ALB was closed to everything but CloudFront. The project was presented again on **August 27**.',
         },
       ],
     },
-    // Six files, in the order the page argues them rather than the order the
+    // Eight files, in the order the page argues them rather than the order the
     // system runs them: the two that are mine, then the two that make the
-    // prediction move a pod, then the two underneath both.
+    // prediction move a pod, then the two underneath both, then the two the
+    // refinement added.
     //
     // The key is called `terraform` for historical reasons and no longer means
     // only Terraform — SourceSection labels each tab by the file's own basename
@@ -2414,6 +3702,14 @@ project2-security/
         path: 'infra/modules/eks/irsa.tf',
         content: hcIrsa,
       },
+      {
+        path: 'infra/modules/storage/glue.tf',
+        content: hcGlue,
+      },
+      {
+        path: 'manifests/scripts/replace_rebuild_values.sh',
+        content: hcReplaceValues,
+      },
     ],
     // No recovery controller on this project, and none intended: hailcast's
     // answer to a failed pod is Kubernetes restarting it and KEDA re-reading
@@ -2421,8 +3717,10 @@ project2-security/
     // than a missing key so the section disappears instead of standing empty
     // forever waiting for a file that is never going to arrive.
     recoveryPolicy: null,
-    // Three Grafana captures from the demo and the simulation chart the whole
-    // cost claim rests on, taken from the deck rather than restaged.
+    // Five Grafana captures and the simulation chart the pod-hour claim rests
+    // on, all taken from the decks rather than restaged. The first three and
+    // the chart are the August 4 presentation; the last two are the refinement,
+    // and they are the only screens on this page carrying real money.
     //
     // The dashboards are in Korean and are left that way. Retitling someone
     // else's console in a screenshot would make it a mock-up of evidence
@@ -2439,27 +3737,27 @@ project2-security/
         {
           id: 'predictive-scaling',
           tab: 'Predictive scaling',
-          label: 'Demo 1 — The forecast raising the floor',
+          label: 'Demo 1: The forecast raising the floor',
           before: {
             src: '/projects/hailcast/demo-01-predictive-scaling.png',
-            state: 'Runtime summary — a scaling floor of 3 applied, 10 workers Ready, headroom satisfied',
+            state: 'Runtime summary: a scaling floor of 3 applied, 10 workers Ready, headroom satisfied',
             alt: 'The hailcast Grafana dashboard "01 예측 기반 스케일링" showing a runtime summary row: prediction collection available, one predict pod Ready, an applied scaling threshold of 3, ten worker pods Ready, and a Ready-versus-threshold panel reading satisfied, above a five-minute chart of predict container restarts holding flat at zero',
           },
         },
         {
           id: 'keda-queue',
           tab: 'KEDA queue trigger',
-          label: 'Demo 2 — The reactive layer catching the overflow',
+          label: 'Demo 2: The reactive layer catching the overflow',
           before: {
             src: '/projects/hailcast/demo-02-keda-queue.png',
-            state: 'Queue at 107 messages, HPA ceiling 20, KEDA operator available — replicas already lifted 5 → 6',
+            state: 'Queue at 107 messages, HPA ceiling 20, KEDA operator available, with replicas already lifted 5 → 6',
             alt: 'The hailcast Grafana dashboard "02 처리 대기열 및 KEDA" showing a visible queue depth of 107, a maximum HPA replica count of 20, and the KEDA operator reported available; a timeline panel plots queue depth against the applied threshold and the HPA target and current replicas, all converging on 6, beside a second panel showing zero Pending worker pods against 3 Ready nodes',
           },
         },
         {
           id: 'worker-runtime',
           tab: 'Worker runtime',
-          label: 'Demo 3 — What the scaled workers were actually doing',
+          label: 'Demo 3: What the scaled workers were actually doing',
           before: {
             src: '/projects/hailcast/demo-03-worker-runtime.png',
             state: 'Six workers running, none Pending, 100% Ready, CPU at 32.3% of request',
@@ -2472,8 +3770,32 @@ project2-security/
           label: 'The 26.5% figure, and what it is made of',
           before: {
             src: '/projects/hailcast/pod-hour-savings.png',
-            state: 'Not a screenshot — the simulation chart itself, 216 pod-hours against 158.8',
-            alt: 'A chart titled "예측형 스케일링 절감 시뮬레이션 — 하루 워커 파드시간": a dashed horizontal line at nine worker pods marks peak-sized fixed capacity, and a solid line traces the predicted replica count by New York hour, dropping to a minimum of two pods at 5am and climbing back to nine by early afternoon; the area between the two lines is shaded as the saving, a grey band from 14:00 to 20:00 is annotated as unobserved and filled with the peak value, and the subtitle reads 216 pod-hours against 158.8, a 26.5 percent difference',
+            state: 'Not a screenshot: the simulation chart itself, 216 pod-hours against 158.8',
+            alt: 'A chart whose Korean title reads "예측형 스케일링 절감 시뮬레이션", subtitled "하루 워커 파드시간": a dashed horizontal line at nine worker pods marks peak-sized fixed capacity, and a solid line traces the predicted replica count by New York hour, dropping to a minimum of two pods at 5am and climbing back to nine by early afternoon; the area between the two lines is shaded as the saving, a grey band from 14:00 to 20:00 is annotated as unobserved and filled with the peak value, and the subtitle reads 216 pod-hours against 158.8, a 26.5 percent difference',
+          },
+        },
+        // The two the refinement produced. The FinOps board is the evidence
+        // for the correction this page's cost section now makes — it is the
+        // first screen on the project showing money rather than a proxy for
+        // it — and the summary board is the closed loop in one frame.
+        {
+          id: 'finops-cost',
+          tab: 'FinOps: real billing',
+          label: 'The refinement: cost measured rather than modelled',
+          before: {
+            src: '/projects/hailcast/demo-04-finops-cost.png',
+            state: 'Billed AWS net cost $8.71 for the last settled day, against OpenCost’s Kubernetes split: $70.12 of nodes, $26.44 of it hailcast, $9.28 of that worker',
+            alt: 'The hailcast Grafana dashboard "04 Hailcast 비용 / FinOps", split into an AWS section reading from the Cost and Usage Report and a Kubernetes section reading from OpenCost: a headline of $8.71 as the most recent settled daily net cost, a daily trend line holding near $16 from August 19 to 23 and falling away on the 24th, a per-service bar chart led by EC2 with EKS, S3, RDS, ELB and smaller services beneath it, and a category doughnut at 58.64 percent compute; below, three seven-day totals of $70.12 for nodes, $26.44 for the hailcast namespace and $9.28 for worker, then per-node and per-namespace breakdowns and a chart plotting worker cost against worker Ready count across five daily cycles',
+          },
+        },
+        {
+          id: 'closed-loop',
+          tab: 'Closed-loop summary',
+          label: 'The rebuilt summary board: the whole loop on one screen',
+          before: {
+            src: '/projects/hailcast/demo-05-closed-loop.png',
+            state: 'Prediction available, HPA asking for 8 and 8 workers Ready, queue at 0, zero Pending pods and zero restarts',
+            alt: 'The hailcast Grafana dashboard "99 Hailcast 전체 운영 상태 요약" after its rebuild: a status row reading prediction available, HPA desired 8, Worker Ready 8, a replica-fulfilment gauge at 100 percent, a current queue of 0 and the KEDA operator available; a scaling-flow chart below traces the applied HPA minimum, HPA desired and Worker Ready as one stepped line falling to two pods in the early afternoon and climbing back past eight overnight, with queue depth flat against it; and a stability row of four panels reading zero Pending workers, zero worker restarts in five minutes, zero not-Ready nodes and predict metrics collectable',
           },
         },
       ],
@@ -2492,83 +3814,127 @@ project2-security/
     // something, which is what this section is for.
     decisions: [
       {
-        title: 'One NAT gateway, in one availability zone',
+        keyword: 'Single NAT gateway',
+        title: 'The environment runs one NAT gateway in a single availability zone.',
         glyph: 'route',
-        chose: 'A **single NAT gateway in 2a**, with a free VPC gateway endpoint carrying S3 and DynamoDB traffic past it',
-        over: 'one NAT gateway per AZ, the configuration a production account would use',
+        chose: 'One NAT gateway in zone **2a**, with free VPC gateway endpoints carrying S3 and DynamoDB traffic around it',
+        over: 'one NAT gateway per availability zone, the configuration a production account would use',
         why:
-          'A NAT gateway bills by the hour whether or not anything routes through it, so the second one doubles a fixed cost to buy redundancy a four-week dev environment will probably never call on — roughly **$86 a month against $43** at Seoul list price. The trade is real and we wrote it down as such: **an outage in 2a takes outbound connectivity away from the entire private tier**, and the same architecture built for production gets a NAT per zone and a Multi-AZ database with it.',
+          'A NAT gateway bills by the hour whether or not traffic passes through it. A second gateway therefore doubles a fixed cost to buy redundancy that a four-week development environment is unlikely to need, roughly **$86 a month against $43** at Seoul list price. The trade is real and we recorded it as such. An outage in zone 2a removes outbound connectivity from the entire private tier. The same architecture built for production would use one NAT gateway per zone and a Multi-AZ database.',
       },
       {
-        title: 'Add-ons installed by ArgoCD, never by Terraform',
+        keyword: 'Add-ons via ArgoCD',
+        title: 'ArgoCD owns every cluster add-on, and Terraform owns the AWS resources underneath.',
         glyph: 'branch',
-        chose: 'KEDA, Karpenter, the ALB controller and the monitoring stack **declared in the manifests repo** and pulled by ArgoCD',
-        over: 'installing them with `helm_release` from the infrastructure Terraform, which is one less repository',
+        chose: 'KEDA, Karpenter, the ALB controller and the monitoring stack **declared in the manifests repository** and pulled by ArgoCD',
+        over: 'installing them with `helm_release` from the infrastructure Terraform, which would remove one repository',
         why:
-          'A `helm_release` in Terraform gives the same Kubernetes object **two owners**: Terraform reconciles it toward the state file, ArgoCD reconciles it toward Git, and each reports success while undoing the other. The boundary we drew is by **who creates the thing** rather than by convenience — **Terraform owns AWS, ArgoCD owns the cluster** — and it is what makes `selfHeal` a safe thing to turn on rather than a fight.',
+          'A `helm_release` in Terraform gives the same Kubernetes object **two owners**. Terraform reconciles it toward the state file while ArgoCD reconciles it toward Git, and each one reports success while undoing the other. We drew the boundary by who creates the resource, so **Terraform owns AWS and ArgoCD owns the cluster**. That rule is what makes `selfHeal` safe to enable.',
       },
       {
-        title: 'Guard on the account identity, not the profile name',
+        keyword: 'Account ID guard',
+        title: 'The safety guard checks which AWS account the caller is standing in.',
         glyph: 'inject',
-        chose: 'Comparing `sts get-caller-identity` against `PROJECT_ACCOUNT_ID`, leaving the credential chain alone',
-        over: 'forcing `AWS_PROFILE=hailcast`, which is how the script started',
+        chose: 'A comparison of `sts get-caller-identity` against `PROJECT_ACCOUNT_ID`, leaving the credential chain untouched',
+        over: 'forcing `AWS_PROFILE=hailcast`, which is how the script was first written',
         why:
-          'Forcing a profile name protected a personal `[default]` back when the project account and the owner’s personal account were different, and once they were the same it protected nothing while **breaking both a server that uses the default profile and CI**, which authenticates through OIDC environment variables. The safety net is **which account you are standing in**, not what the profile is called — so the guard reads the identity and the chain stays untouched.',
+          'Forcing a profile name protected a personal `[default]` profile while the project account and the owner’s personal account were separate. Once they became the same account, the check protected nothing and **broke two valid setups**: a server that uses the default profile, and CI, which authenticates through OIDC environment variables. The question that matters is **which account you are operating in**. The guard reads that identity directly, and the credential chain stays as the caller configured it.',
       },
       {
-        title: 'The .env file is read as one value, never sourced',
-        glyph: 'stroke',
-        chose: 'Parsing exactly one line, `PROJECT_ACCOUNT_ID`, out of the file',
-        over: '`source .env`, which is what a shell script normally does and would let the file carry anything',
+        keyword: 'Single-value .env',
+        title: 'The setup script parses exactly one value out of the .env file.',
+        glyph: 'note',
+        chose: 'A parser that reads exactly one line, `PROJECT_ACCOUNT_ID`, out of the file',
+        over: '`source .env`, the usual shell approach, which would let the file define anything',
         why:
-          'Sourcing it opens two holes we demonstrated rather than argued. A single `export AWS_PROFILE=…` line **splits the credentials the guard inspects from the ones Terraform then uses** — `make infra-destroy` runs the guard and the delegation in different shells, so the guard clears account A while Terraform destroys account B. And sourcing is arbitrary code execution: a redefined `aws()` function defeats the guard entirely. Anyone who wants a profile exports it **in their shell**, where both halves see the same thing.',
+          'We demonstrated both of the holes that sourcing the file opens. A single `export AWS_PROFILE` line **separates the credentials the guard inspects from the credentials Terraform later uses**, because `make infra-destroy` runs the guard and the delegated command in different shells. The guard can then approve account A while Terraform destroys account B. Sourcing is also arbitrary code execution, so a redefined `aws()` function defeats the guard completely. Anyone who needs a specific profile exports it **in their own shell**, where both halves of the command see the same value.',
       },
       {
-        title: 'Teardown ordered by who created the resource',
+        keyword: 'Ordered teardown',
+        title: 'Teardown runs in the order the resources were created.',
         glyph: 'pipeline',
-        chose: '**manifests → infra → app**, with a y/N gate between stages and no automatic continue on failure',
-        over: 'running `terraform destroy` first, which is the command that sounds like it removes everything',
+        chose: '**Manifests, then infrastructure, then application**, with a y/N gate between stages and no automatic continue after a failure',
+        over: 'running `terraform destroy` first, the command that sounds like it removes everything',
         why:
-          '`terraform destroy` only removes what is **in the state file**, and the ALBs, ENIs and Karpenter nodes that Kubernetes created are not — they survive, they keep billing, and they block the VPC from being deleted for hours. Deleting the Kubernetes objects first lets the finalizers clean up their own AWS resources while the cluster is still alive to run them. The measured run was **140 resources in 21 minutes 40 seconds with zero errors**; before the ordering existed, a practice teardown failed after 20 minutes on orphans.',
+          '`terraform destroy` removes only what the **state file** records. The ALBs, ENIs and Karpenter nodes that Kubernetes created are not in that file, so they survive the command, keep billing, and block the VPC from being deleted for hours. Deleting the Kubernetes objects first lets each finalizer clean up its own AWS resources while the cluster is still running. The measured teardown removed **140 resources in 21 minutes and 40 seconds** with no errors. An earlier practice run, before the ordering existed, failed after 20 minutes on orphaned resources.',
       },
       {
-        title: 'IRSA and RBAC kept as two separate systems',
+        keyword: 'Separate IRSA and RBAC',
+        title: 'IRSA and Kubernetes RBAC are treated as two separate systems.',
         glyph: 'channels',
-        chose: 'IRSA for anything outside the cluster, Kubernetes RBAC for anything inside it, with **no attempt to bridge them**',
+        chose: 'IRSA for access to anything outside the cluster and RBAC for anything inside it, with **no attempt to bridge the two**',
         over: null,
         why:
-          'The predict pod needs S3 and RDS, which are AWS resources reached through an IAM role assumed by its ServiceAccount; it also needs to patch a KEDA `ScaledObject`, which is a Kubernetes API object no IAM policy can reach. **Neither system can substitute for the other**, and treating them as one is how a team spends an afternoon in IAM debugging an RBAC failure. Both fail the same way when a ServiceAccount name is one character off: a plain "access denied" against a policy that is entirely correct.',
+          'The predict pod needs S3 and RDS, which are AWS resources reached through an IAM role assumed by its ServiceAccount. The same pod also patches a KEDA `ScaledObject`, which is a Kubernetes API object that no IAM policy can reach. **Neither system can substitute for the other**, and treating them as one is how a team spends an afternoon in IAM while debugging an RBAC failure. Both fail identically when a ServiceAccount name is one character wrong, returning a plain access denied against a policy that is entirely correct.',
       },
       {
-        title: 'Controllers pinned to fixed nodes, workloads on Spot',
+        keyword: 'Controllers off Spot',
+        title: 'Controllers run on fixed nodes while application workloads run on Spot capacity.',
         glyph: 'depth',
-        chose: 'A **managed node group of two fixed instances** for CoreDNS, Karpenter, KEDA, ArgoCD, Prometheus and the ALB controller, with application pods on Karpenter Spot nodes that scale to zero',
-        over: 'running everything on Spot, which is cheaper by exactly the amount that matters least',
+        chose: 'A **managed node group of two fixed instances** for the controllers, with application pods on Karpenter Spot nodes that scale to zero',
+        over: 'running everything on Spot, which is cheaper by the amount that matters least',
         why:
-          'If Karpenter and KEDA sit on Spot capacity, a reclamation event removes **the thing that responds to reclamation events**. The controllers go on stable ground and the workloads take the cheap, interruptible capacity — which is where the saving actually is, because application nodes drop to zero on a quiet night and the two system nodes were going to run either way.',
+          'If Karpenter and KEDA run on Spot capacity, a reclamation event can remove **the components that respond to reclamation events**. The controllers therefore sit on stable capacity and the workloads take the cheap interruptible capacity. That is also where the saving actually is, because application nodes drop to zero on a quiet night while the two system nodes would have run either way.',
       },
       {
-        title: 'A night shutdown built without a Lambda',
+        keyword: 'Scheduler without Lambda',
+        title: 'EventBridge Scheduler drives the nightly shutdown by calling the AWS API directly.',
         glyph: 'process',
         chose: '**EventBridge Scheduler calling the AWS API directly** to stop the node group and the database at 02:00 KST and start them again at 10:00',
-        over: 'a Lambda function triggered on a schedule, the usual shape of this pattern',
+        over: 'a Lambda function on a schedule, the usual shape of this pattern',
         why:
-          'A Lambda here would be a function, a role, a package and a deployment path to maintain in order to make **two API calls a day**. The scheduler makes them itself, against a role scoped to that one node group and that one database instance. What it cost us was a lesson: **a schedule does not fail when you create it, it fails at 02:00 when it runs** — ours retried twice and dropped the event with no DLQ, so the failure was invisible until someone checked the node count the next morning. We added that check to the routine.',
+          'A Lambda here would add a function, a role, a package and a deployment path to maintain, all to make **two API calls a day**. The scheduler makes those calls itself, using a role scoped to one node group and one database instance. The approach also taught us something. **A schedule does not fail when you create it; it fails at 02:00 when it runs.** Ours retried twice and then dropped the event with no dead letter queue, so the failure stayed invisible until someone checked the node count the next morning. That check is now part of the routine.',
       },
       {
-        title: 'The naming document is corrected before the code is',
+        keyword: 'No CPU limits',
+        title: 'CPU limits came out of every service, and CPU requests stayed.',
+        glyph: 'process',
+        chose: '`limits.cpu` deleted from **all six services** with `requests.cpu` kept, and memory pinned request to limit',
+        over: 'raising each limit to a value high enough to avoid throttling, the fix the load test appeared to ask for',
+        why:
+          'A CPU limit **throttles the container that reaches it**, and a throttled process answers its liveness probe late, gets restarted, and loses its in-memory state. That is the exact failure the load test produced, and raising the number only moves the load at which it happens. **The request is what reserves the floor**, and the scheduler already prevents the node from being oversubscribed, so the limit cost a restart and bought nothing. Memory keeps its limit because memory pressure kills a neighbouring pod. The reverse cost is stated plainly: **a runaway pod can now consume a whole node’s CPU**, and only the scheduler stands in its way.',
+      },
+      {
+        keyword: 'Separate retraining role',
+        title: 'The retraining job runs under a ServiceAccount of its own.',
+        glyph: 'channels',
+        chose: 'A separate `retraining-sa` and IRSA role, scoped to `models/latest/` and to `Scan` and `UpdateItem` on the accuracy table',
+        over: 'reusing `predict-sa`, which already reads the model and writes accuracy records',
+        why:
+          'The inference pod runs at several replicas and **KEDA adds more of them**, so a permission granted to that pod is granted to every copy. One misbehaving copy overwriting `models/latest/model.pkl` would leave every other pod predicting from a corrupted model. **Only the nightly CronJob needs to write a model**, so that permission lives on its own identity, narrowed further than predict’s own read scope of `models/*`. `PutItem` stays with predict, since the retraining job creates no records and only reads them and marks them used.',
+      },
+      {
+        keyword: 'Independent runbook test',
+        title: 'The rebuild runbook was validated by someone who did not write it.',
+        glyph: 'note',
+        chose: 'A **teammate from another track** running the document while we watched where they got stuck, with no author present to explain',
+        over: 'the author walking through their own runbook, which is what testing a runbook usually means',
+        why:
+          'An author reading their own procedure supplies from memory every step they forgot to write down, A self-check therefore confirms the document the author meant to write. Run by someone else, the procedure **stopped three times**: a CRD that had to be rendered from the chart rather than pulled from a tag, a secret whose first reconcile fails and then waits an hour to retry, and an install ordering that nobody had written out. All three are now covered by a single `make bootstrap-all`, and the document was split into a normal path and a manual recovery path so the recovery steps no longer read as required work. One thing the exercise does not prove is the original goal. The reader was on the team, so the claim that a third party can reproduce the build is **still unmeasured**.',
+      },
+      {
+        keyword: 'Naming doc first',
+        title: 'The naming document is corrected before the code is.',
         glyph: 'note',
         chose: 'One naming convention as the source of truth, revised **first**, with a verifier checking the code against it daily',
         over: null,
         why:
-          'Four repositories reference each other entirely through strings — role names, ServiceAccount names, a metric key, an image tag — and a one-character mismatch fails **without an error**. So the document leads and the code follows, and when reality is right and the document is wrong we amend the document with the evidence attached rather than bending the code to a stale line. The cost is honest: **the verifier checks names, not values**, and a collection interval documented as 2 hours and coded as 4 sat there unnoticed the whole project.',
+          'Four repositories reference each other entirely through strings, including role names, ServiceAccount names, a metric key and an image tag. A mismatch of one character **fails without producing an error**. The document therefore leads and the code follows. When reality is correct and the document is wrong, we amend the document and attach the evidence. The cost is stated honestly: **the verifier checks names only**, so a collection interval documented as two hours and coded as four went unnoticed for the whole project.',
       },
     ],
-    // NOT DOLLARS. Every other cost table on this site prices resources; this
-    // one measures **worker pod-hours a day**, which is the unit the project's
-    // own claim is made in and the only one it can support — OpenCost was
-    // pricing from the AWS list price with the CUR integration unfinished, so
-    // converting to money here would have dressed an estimate as a bill.
+    // NOT DOLLARS — the chart, at least. Every other cost table on this site
+    // prices resources; this one measures **worker pod-hours a day**, which is
+    // the unit the project's own saving claim is made in and the only one that
+    // claim can support: the comparison column is a fleet that was never
+    // actually run, so there is no bill for it and never will be.
+    //
+    // The refinement did finish the CUR integration, and the real billing it
+    // produced is in `measured` below rather than in the chart. Keeping them
+    // apart is the point. Folding measured dollars into a modelled comparison
+    // would produce a saving figure in money that no invoice supports; side by
+    // side, the chart says what the design is worth in pods and the strip says
+    // what the cluster actually cost, and neither borrows the other's
+    // authority.
     //
     // The rows are the same twenty-four hours the simulation chart plots,
     // banded and summed. Ordered by the size of the gap, largest first, except
@@ -2578,49 +3944,82 @@ project2-security/
       unit: 'worker pod-hours / day',
       series: [
         { id: 'fixed', label: 'Peak-sized fixed capacity' },
-        { id: 'actual', label: 'hailcast — predicted floor' },
+        { id: 'actual', label: 'hailcast: predicted floor' },
       ],
       items: [
         {
           label: '00:00 – 05:59',
-          note: 'The quiet half of the night — the floor falls to two pods at 5am, its lowest point in the day',
+          note: 'The quiet half of the night, where the floor falls to two pods at 5am, its lowest point in the day',
           fixed: 54.0,
           actual: 23.05,
         },
         {
           label: '06:00 – 11:59',
-          note: 'Morning ramp — the floor climbs from two back through six as demand returns',
+          note: 'Morning ramp, where the floor climbs from two back through six as demand returns',
           fixed: 54.0,
           actual: 29.55,
         },
         {
           label: '12:00 – 13:59',
-          note: 'Midday — within one pod of peak, and correctly so',
+          note: 'Midday, within one pod of peak and correctly so',
           fixed: 18.0,
           actual: 16.65,
         },
         {
           label: '21:00 – 23:59',
-          note: 'Late evening — at peak until the last hour of the day',
+          note: 'Late evening, at peak until the last hour of the day',
           fixed: 27.0,
           actual: 26.5,
         },
         {
           label: '14:00 – 20:59',
-          note: 'Seven hours with no observation at all — filled with the peak value rather than estimated',
+          note: 'Seven hours with no observation at all, filled with the peak value rather than estimated',
           fixed: 63.0,
           actual: 63.0,
         },
       ],
       total: { fixed: 216.0, actual: 158.75 },
       notes: [
-        'The entire saving is **the quiet hours**, and that is the whole thesis rather than a footnote: between midnight and noon a peak-sized fleet spends 108 pod-hours where the forecast asks for 52.6. Around the middle of the day the two lines sit **within one pod of each other**, which is the result you want — a predictor that undercut peak demand at 1pm would be saving money by dropping calls.',
-        'The **14:00–20:59 row does not move, because there is nothing in it**. Those seven New York hours are 03:00–10:00 KST, exactly when the night shutdown had the cluster switched off, so no scaling decision was ever recorded for them. They are filled with the **peak value of nine pods** — the most pessimistic choice available — rather than interpolated from the hours either side, which would have invented a saving out of a gap in the data.',
+        'The entire saving is **the quiet hours**, and that is the whole thesis rather than a footnote: between midnight and noon a peak-sized fleet spends 108 pod-hours where the forecast asks for 52.6. Around the middle of the day the two lines sit **within one pod of each other**, which is the result you want. A predictor that undercut peak demand at 1pm would be saving money by dropping calls.',
+        'The **14:00–20:59 row does not move, because there is nothing in it**. Those seven New York hours are 03:00–10:00 KST, exactly when the night shutdown had the cluster switched off, so no scaling decision was ever recorded for them. They are filled with the **peak value of nine pods**, the most pessimistic choice available. Interpolating from the hours either side would have invented a saving out of a gap in the data.',
         'The basis is **107 hourly snapshots** written to `dashboard/pod-history.json` in S3 between 2026-07-21 and 07-28, with `predicted_replicas` averaged by New York hour. The comparison column is a **fixed fleet held at the observed peak of nine pods**, which is what "size it for the busy hour and leave it" actually costs over a day.',
-        'Pod-hours are a proxy for money, not money. Converting them would need OpenCost reading real billing through the **CUR integration, which was scoped and never finished** — so the figure that reached the presentation is the one the data supports, and the conversion is stated as the next task rather than performed on the slide.',
+        'Pod-hours are a proxy for money. At the first presentation that was the end of it, because OpenCost was pricing from the AWS list price with **the CUR integration scoped and unfinished**. The refinement finished it, and the measured cost is below. It does not convert this chart: the comparison column is a fleet that was never run, so **no invoice exists for the thing being saved against**, and a percentage in dollars would be arithmetic on one real number and one imaginary one.',
       ],
       caveat:
-        'Simulated expected effect for a development environment in `ap-northeast-2` — not production billing data, and not a live service. Both columns are pod-hours derived from recorded scaling decisions over eight days; the fixed-capacity column is a modelled baseline that was never actually run.',
+        'Simulated expected effect for a development environment in `ap-northeast-2`. Every figure is modelled, and no invoice underlies any of them. Both columns are pod-hours derived from recorded scaling decisions over eight days; the fixed-capacity column is a modelled baseline that was never actually run.',
+      // The refinement's own numbers, and the only real money on this page.
+      // A strip rather than a second chart, for the reason the section comment
+      // above gives: these do not compare with the bars, and a second set of
+      // bars would invite exactly that comparison.
+      measured: {
+        label: 'Measured: what the cluster actually cost',
+        lede:
+          'The August 4 version of this page said the CUR integration was never wired up. The refinement wired it: the **Cost and Usage Report** lands in S3, a **Glue crawler** catalogues it every morning at 03:00 UTC, **Athena** queries it, and OpenCost’s Cloud Costs reads the result, so the same namespace-and-pod split that used to run on the list price now runs on the invoice. These are dev-environment figures for a cluster that was deliberately switched off overnight, not a production bill.',
+        figures: [
+          {
+            value: '$8.71',
+            label: 'AWS net cost / day',
+            note: 'The last fully-settled day; the days before it ran near $16 with the cluster up for longer',
+          },
+          {
+            value: '$70.12',
+            label: 'Node cost / 7 days',
+            note: 'The whole cluster, priced by OpenCost against the billed rate rather than the rate card',
+          },
+          {
+            value: '$26.44',
+            label: 'hailcast namespace / 7 days',
+            note: '38% of the cluster; kube-system is $5.84, KEDA $1.90, monitoring $1.29',
+          },
+          {
+            value: '$9.28',
+            label: 'Worker deployment / 7 days',
+            note: 'The one workload KEDA scales, and the deployment the pod-hour chart above is about',
+          },
+        ],
+        source:
+          'OpenCost Cloud Costs (Level 2) reading CUR through Glue and Athena, captured 2026-08-25. Closing this took three permission failures found only by running it: `s3:ListBucket` missing from the crawler role on 8/18, `glue:BatchGetPartition` on 8/19, and on 8/21 an S3 condition too narrow to read the CUR path plus no permission to look up Spot prices at all.',
+      },
     },
     // Pending, not absent. The four repositories are public under the
     // `ThisPod-ThatPod` org and the deck exists; which of them this page
@@ -2634,9 +4033,9 @@ project2-security/
     },
     reflection: {
       learned:
-        'This was the first project where I owned **nothing that runs in production and everything that stops it going wrong**, and that turned out to be a real job rather than a consolation prize. The lesson underneath all of it: **a safety check that reports without comparing is worse than no check at all**. Our setup script printed the AWS account ID and compared it to nothing, so a session sitting in the wrong account went green on every single check — the output looked like verification and was decoration. Fixing it taught me to ask of any guard **what input would make this fail?** — and if I cannot answer, it is not a guard. The same pattern kept surfacing everywhere: a schedule that fails at 02:00 rather than at `apply`, a verifier that reads names and never reads values, a 200 OK from a path that does not exist. **Every expensive failure on this project was silent**, and the work that mattered was making failure loud.',
+        'This was the first project where I owned **nothing that runs in production and everything that stops it going wrong**, and that turned out to be a real job rather than a consolation prize. The lesson underneath all of it: **a safety check that reports without comparing is worse than no check at all**. Our setup script printed the AWS account ID and compared it to nothing, so a session sitting in the wrong account went green on every single check. The output looked like verification and was decoration. Fixing it taught me to ask of any guard **what input would make this fail?** If I cannot answer, it is not a guard. The same pattern kept surfacing everywhere: a schedule that fails at 02:00 rather than at `apply`, a verifier that reads names and never reads values, a 200 OK from a path that does not exist. **Every expensive failure on this project was silent**, and the work that mattered was making failure loud.',
       differently:
-        'I would put **resource policy into the naming contract on day one**. We got names right and left CPU limits to each team, which is how a load test ended up restarting pods and how the verifier passed a collection interval documented as 2 hours and coded as 4 — it checks names, not values, and extending it to parameters is a smaller job than the day we spent finding that out. I would also **rebuild from zero much earlier**: doing it in the last stretch is what exposed the empty secret key, the imageless ECR repository and the CUR bucket migration, and every one of those was a gap in a runbook I believed was finished. Two more sit behind those — **wiring OpenCost to the CUR** so the cost figure stops being an estimate, and **parallelising around the IRSA bottleneck** I could see coming and scheduled around anyway, leaving three tracks waiting on one. Leading six people across four repositories meant the fastest thing I could do for the project was usually not to write anything, which took me longer to accept than it should have.',
+        'I would put **resource policy into the naming contract on day one**. We got names right and left CPU limits to each team, which is how a load test ended up restarting pods and how the verifier passed a collection interval documented as 2 hours and coded as 4, because it checks names rather than values. The refinement closed both ends of that: limits came out of all six services, and the verifier now compares two numbers across repositories as well as two names. I would also **rebuild from zero much earlier**. Doing it in the last stretch is what exposed the empty secret key, the imageless ECR repository and the CUR bucket migration, and every one of those was a gap in a runbook I believed was finished. The fix was to stop being the person who checked it, and the three places a teammate got stuck were all steps I had been doing without noticing I was doing them. **Wiring OpenCost to the CUR** got done too, and it is the one I would most like the time back on: it took three separate permission failures, none of which a plan or a review could have found, because each one only appeared when something actually ran. That is the same lesson as the account guard in a different costume, and I had already learnt it once. What is still open is **parallelising around the IRSA bottleneck** I could see coming and scheduled around anyway, leaving three tracks waiting on one. Leading six people across four repositories meant the fastest thing I could do for the project was usually not to write anything, which took me longer to accept than it should have.',
     },
   },
 
@@ -2661,11 +4060,11 @@ project2-security/
     // Whole entry is placeholder: this project's context and role are still placeholder too.
     glance: {
       why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built — the stack and the shape of it, in one sentence.',
+      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
       result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
     },
     // placeholder
-    role: 'Placeholder for the contribution line — one or two sentences on the part of this build that was mine.',
+    role: 'Placeholder for the contribution line: one or two sentences on the part of this build that was mine.',
     // placeholder
     context:
       'Placeholder for the problem this project set out to solve, and why it was worth solving. Two or three sentences, written for someone who has not seen the repo. Replace once the scope settles.',
@@ -2684,7 +4083,8 @@ project2-security/
     decisions: [
       {
         // placeholder
-        title: 'Decision title',
+        keyword: 'Short keyword',
+        title: 'The decision stated in one sentence.',
         chose: 'The option that shipped',
         over: 'The option that did not',
         why: 'One or two sentences on the trade-off actually being made, and what it cost.',
@@ -2713,13 +4113,13 @@ project2-security/
     // placeholder — the descriptive page heading. `title` above stays the
     // short name the sidebar shows and the eyebrow repeats.
     fullTitle:
-      'Individual project one — full descriptive title TBD',
+      'Individual project one: full descriptive title TBD',
     accent: 'forest',
     // placeholder
     period: 'TBD', // placeholder
     glance: {
       why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built — the stack and the shape of it, in one sentence.',
+      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
       result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
     },
     // placeholder
@@ -2742,7 +4142,8 @@ project2-security/
     decisions: [
       {
         // placeholder
-        title: 'Decision title',
+        keyword: 'Short keyword',
+        title: 'The decision stated in one sentence.',
         chose: 'The option that shipped',
         over: 'The option that did not',
         why: 'One or two sentences on the trade-off actually being made, and what it cost.',
@@ -2768,13 +4169,13 @@ project2-security/
     // placeholder — the descriptive page heading. `title` above stays the
     // short name the sidebar shows and the eyebrow repeats.
     fullTitle:
-      'Individual project two — full descriptive title TBD',
+      'Individual project two: full descriptive title TBD',
     accent: 'indigo',
     // placeholder
     period: 'TBD', // placeholder
     glance: {
       why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built — the stack and the shape of it, in one sentence.',
+      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
       result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
     },
     // placeholder
@@ -2797,7 +4198,8 @@ project2-security/
     decisions: [
       {
         // placeholder
-        title: 'Decision title',
+        keyword: 'Short keyword',
+        title: 'The decision stated in one sentence.',
         chose: 'The option that shipped',
         over: 'The option that did not',
         why: 'One or two sentences on the trade-off actually being made, and what it cost.',
@@ -2827,15 +4229,15 @@ project2-security/
     // placeholder
     period: 'TBD', // placeholder
     glance: {
-      why: 'The Cloud Resume Challenge is usually finished as a web page. Doing it as infrastructure instead — every piece in Terraform, nothing clicked in the console — proves the whole delivery loop rather than just the front end.',
+      why: 'The Cloud Resume Challenge is usually finished as a web page. Doing it as infrastructure instead, with every piece in Terraform and nothing clicked in the console, proves the whole delivery loop rather than just the front end.',
       how: 'A static site on S3 behind CloudFront and Route 53, a visitor-counter API on Lambda and DynamoDB, all defined in Terraform and shipped by GitHub Actions.',
-      result: 'Placeholder for the outcome — the deploy time and the running cost are the figures worth stating here. Replace once the metrics above are real.',
+      result: 'Placeholder for the outcome: the deploy time and the running cost are the figures worth stating here. Replace once the metrics above are real.',
     },
     // placeholder
     role: 'Solo build, end to end: the static site, the visitor-counter API behind it, the Terraform that stands it all up, and the pipeline that ships it.',
     // placeholder
     context:
-      'The Cloud Resume Challenge, done as infrastructure rather than as a web page — every piece defined in Terraform and deployed by CI, with no console clicking anywhere in the path. The point was to prove the whole loop, not just the front end.',
+      'The Cloud Resume Challenge, done as infrastructure rather than as a web page, with every piece defined in Terraform and deployed by CI and no console clicking anywhere in the path. The point was to prove the whole loop, not just the front end.',
     metrics: [
       { size: 'wide', value: '00', label: 'AWS resources', hint: 'AWS resources in Terraform' }, // placeholder
       { size: 'square', value: '0 min', label: 'Deploy time' }, // placeholder
@@ -2852,7 +4254,8 @@ project2-security/
     decisions: [
       {
         // placeholder
-        title: 'Decision title',
+        keyword: 'Short keyword',
+        title: 'The decision stated in one sentence.',
         chose: 'The option that shipped',
         over: 'The option that did not',
         why: 'One or two sentences on the trade-off actually being made, and what it cost.',
@@ -2890,7 +4293,7 @@ project2-security/
     role: 'Solo build: cluster provisioning, the app workloads on top of it, autoscaling, and the GitOps flow that keeps the cluster matching the repo.',
     // placeholder
     context:
-      'The Kubernetes Resume Challenge — an e-commerce workload taken from a container image to a running, autoscaling, self-updating cluster. Deliberately kept separate from the team autoscaling work so the solo end-to-end path stands on its own.',
+      'The Kubernetes Resume Challenge: an e-commerce workload taken from a container image to a running, autoscaling, self-updating cluster. Deliberately kept separate from the team autoscaling work so the solo end-to-end path stands on its own.',
     metrics: [
       { size: 'wide', value: '00', label: 'Workloads', hint: 'Workloads managed' }, // placeholder
       { size: 'square', value: '00 s', label: 'Scale-out', hint: 'Scale-out response time' }, // placeholder
@@ -2907,7 +4310,8 @@ project2-security/
     decisions: [
       {
         // placeholder
-        title: 'Decision title',
+        keyword: 'Short keyword',
+        title: 'The decision stated in one sentence.',
         chose: 'The option that shipped',
         over: 'The option that did not',
         why: 'One or two sentences on the trade-off actually being made, and what it cost.',

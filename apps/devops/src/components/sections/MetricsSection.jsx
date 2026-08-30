@@ -88,7 +88,7 @@ function Label({ metric }) {
           </span>,
           document.body
         )}
-      <span className="sr-only"> — {metric.hint}</span>
+      <span className="sr-only">, {metric.hint}</span>
     </span>
   )
 }

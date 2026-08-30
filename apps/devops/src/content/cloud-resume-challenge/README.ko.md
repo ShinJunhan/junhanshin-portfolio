@@ -7,12 +7,12 @@ AWS 위에 정적 이력서 사이트를 올리고 방문자 카운터를 붙인
 
 ## 구성
 
-- **프런트엔드** — S3에 정적 사이트를 두고, CloudFront로 서빙하며 Route 53에
+- **프런트엔드.** S3에 정적 사이트를 두고, CloudFront로 서빙하며 Route 53에
   커스텀 도메인을 연결합니다.
-- **API** — API Gateway 뒤의 Lambda 함수, 카운터는 DynamoDB에 저장합니다.
-- **인프라** — 위 항목 전부를 Terraform으로 관리하고, 상태는 원격 백엔드에
+- **API.** API Gateway 뒤의 Lambda 함수이며, 카운터는 DynamoDB에 저장합니다.
+- **인프라.** 위 항목 전부를 Terraform으로 관리하고, 상태는 원격 백엔드에
   보관합니다.
-- **파이프라인** — GitHub Actions에서 PR 시 plan, merge 시 apply를 실행합니다.
+- **파이프라인.** GitHub Actions에서 PR 시 plan을, merge 시 apply를 실행합니다.
 
 ## 실행
 

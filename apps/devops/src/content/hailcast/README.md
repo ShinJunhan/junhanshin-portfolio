@@ -21,15 +21,15 @@ Observe (Prometheus) → Predict (LightGBM) → Act (KEDA, Karpenter) → Verify
 - Node supply: when pods grow and there is nowhere to put them, Karpenter
   supplies EC2 (Spot) capacity and reclaims it when things quieten down
 
-This repository builds only that foundation — VPC, EKS, IRSA, the data stores,
+This repository builds only that foundation: VPC, EKS, IRSA, the data stores,
 and the CI roles. Installing the add-ons (KEDA, Karpenter, ArgoCD, the ALB
 Controller) and deploying them belongs to the manifests repository (ArgoCD).
 Installing them from the infrastructure Terraform with `helm_release` splits
 ownership with ArgoCD and produces drift.
 
-**Honesty declaration: this is not a live service.** What is presented is not a
-measured saving but the design, the implementation, and a simulated expected
-effect.
+**Honesty declaration: this is a development environment rather than a live
+service.** What is presented is the design, the implementation, and a simulated
+expected effect. The saving figure is modelled.
 
 ## 2. Repository layout (4 repos)
 
@@ -98,16 +98,16 @@ Node and subnet placement in detail:
 - **CI permissions are split between plan and apply.** `plan` is read-only (the
   one exception being writing the tfstate lock file) and runs on every PR;
   `apply` is restricted to the `dev` branch behind an environment approval. The
-  defensive line for the apply role is not the IAM policy but the trust policy,
-  which pins the environment, the workflow file and the branch.
+  defensive line for the apply role is the trust policy, which pins the
+  environment, the workflow file and the branch.
 - **Cost is inside the design scope.** Cost tags on every resource, budget
   alerts, and a teardown-order runbook (`비용관리.md`) that reaches the resources
-  Kubernetes created — all of it is the infrastructure's responsibility.
+  Kubernetes created. All of it is the infrastructure's responsibility.
 - **Development-period cost is reduced on a schedule.** EventBridge Scheduler
   calls the AWS API directly, with no Lambda, to take the system node group and
   RDS down and back up daily between 02:00 and 10:00 KST
-  (`enable_night_shutdown`, default true). This is a budget device for the
-  learning period, not a service feature.
+  (`enable_night_shutdown`, default true). It is a budget device for the
+  learning period.
 
 ## 5. Collaboration rules
 
@@ -187,5 +187,5 @@ make apply                    # a person types yes. Cost starts here
 
 ## 9. Related documents
 
-- [`docs/네이밍규약서.md`](./docs/네이밍규약서.md) — the SSOT for every name and every team contract
-- [`docs/비용관리.md`](./docs/비용관리.md) — the budget safety net, tag coverage, destroy order
+- [`docs/네이밍규약서.md`](./docs/네이밍규약서.md) is the SSOT for every name and every team contract
+- [`docs/비용관리.md`](./docs/비용관리.md) covers the budget safety net, tag coverage and destroy order

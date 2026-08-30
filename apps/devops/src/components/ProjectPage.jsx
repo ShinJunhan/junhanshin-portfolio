@@ -46,8 +46,11 @@ export default function ProjectPage({ project }) {
         <header className="project__head" id="project-top">
           {/* The short name — the team's, for team projects — kept as a quiet
               eyebrow so it still ties the page to the sidebar entry the reader
-              clicked, without competing with the real title for weight. */}
-          <p className="project__eyebrow">{project.title}</p>
+              clicked, without competing with the real title for weight. A
+              project sets `eyebrow` only when the two names differ, which is
+              the case where the team built something with a name of its own:
+              the sidebar carries the team, the eyebrow carries the product. */}
+          <p className="project__eyebrow">{project.eyebrow ?? project.title}</p>
           <h1 className="project__title">{project.fullTitle ?? project.title}</h1>
           {/* "Project Period:" is fixed chrome, so it lives here rather than
               being repeated in every project's data. The team size is derived

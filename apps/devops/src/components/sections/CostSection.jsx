@@ -24,6 +24,14 @@ import EmptySlot from './EmptySlot.jsx'
 //   total   optional { <seriesId>: number } summary row
 //   notes   the bullets beside the chart
 //   caveat  the one line that says these are estimates
+//   measured
+//           optional { label, lede, figures: [{ value, label, note }], source }
+//           A second reading of the same system, in a different unit and from
+//           a different source — for a project whose chart is modelled and
+//           whose billing is not. It is deliberately a strip of figures and
+//           not a second chart: two charts in one section invite a comparison
+//           between numbers that do not compare, which is the exact mistake
+//           the block exists to keep the reader out of.
 
 // Bars are a share of the largest number anywhere in the chart, so every row
 // is on the same scale and a small row reads as small.
@@ -94,7 +102,7 @@ export default function CostSection({ project }) {
                       </span>
                       <span className="cost__bar-value">
                         {money(value, cost.unit)}
-                        <span className="sr-only"> — {s.label}</span>
+                        <span className="sr-only">, {s.label}</span>
                       </span>
                     </span>
                   )
@@ -121,7 +129,7 @@ export default function CostSection({ project }) {
               {series.map((s, i) => (
                 <span className={`cost__total cost__total--${i === 0 ? 'base' : 'ours'}`} key={s.id}>
                   {money(cost.total[s.id] ?? 0, cost.unit)}
-                  <span className="sr-only"> — {s.label}</span>
+                  <span className="sr-only">, {s.label}</span>
                 </span>
               ))}
             </dd>
@@ -146,6 +154,41 @@ export default function CostSection({ project }) {
           </p>
         )}
       </div>
+
+      {/* Full width, under both columns, because it is not a footnote to
+          either one — it is the same system read a second way, and it has to
+          be as legible as the chart it sits beneath. */}
+      {cost.measured?.figures?.length > 0 && <Measured measured={cost.measured} />}
     </div>
+  )
+}
+
+// The second reading. A heading, one line saying where the numbers came from,
+// then the figures themselves — same mono treatment as the bento tiles, so a
+// reader recognises them as measurements rather than as more chart furniture.
+function Measured({ measured }) {
+  return (
+    <section className="cost__measured">
+      <h3 className="cost__measured-title">{measured.label}</h3>
+      {measured.lede && (
+        <p className="cost__measured-lede">
+          <RichText>{measured.lede}</RichText>
+        </p>
+      )}
+      <ul className="cost__figures">
+        {measured.figures.map((figure) => (
+          <li className="cost__figure" key={figure.label}>
+            <span className="cost__figure-value">{figure.value}</span>
+            <span className="cost__figure-label">{figure.label}</span>
+            {figure.note && <span className="cost__figure-note">{figure.note}</span>}
+          </li>
+        ))}
+      </ul>
+      {measured.source && (
+        <p className="cost__measured-source">
+          <RichText>{measured.source}</RichText>
+        </p>
+      )}
+    </section>
   )
 }

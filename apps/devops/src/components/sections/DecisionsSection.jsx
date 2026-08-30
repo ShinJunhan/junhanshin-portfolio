@@ -1,377 +1,415 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useReducedMotion } from 'framer-motion'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import RichText from '../../lib/richText.jsx'
 import DecisionGlyph from './decisionGlyphs.jsx'
 
 // A trade-off is only legible next to the thing that lost, so each decision
-// states both sides before the reasoning — where there is a competing option
-// to name. Some choices are a way of working rather than a fork, and those
-// leave `over` unset and simply state what was chosen.
+// states both sides before the reasoning, where there is a competing option to
+// name. Some choices are a way of working rather than a fork, and those leave
+// `over` unset and simply state what was chosen.
 //
-// The decisions are picked from a crescent of numbered circles down the left
-// edge and read in a single card on the right. Four dense trade-offs stacked
-// as four bordered panels competed with each other and with everything below
-// them; one at a time, chosen deliberately, is the right density for this.
+// The deck is picked from a column of keyword bubbles on the left. A bubble
+// carries the short name of the decision; opening it states the decision in
+// one sentence and deals the matching card onto the stage on the right, with
+// the argument for it underneath.
 //
-// This is emphatically NOT a modal. There is no overlay, no backdrop, no
-// close button and no focus trap — the card is part of the page, and the
-// reader can scroll past it or ignore it at any moment.
-
-// The numbers sit next to each other with no blanks between them — spacing
-// alone separates them. Blanks appear only beyond the ends of the run, where
-// the arc would otherwise stop abruptly at whichever number happens to be
-// last.
-const NUMBERED_EVERY = 1
-const CENTRE_SLOT_PAD = 1 // blank slots kept beyond each end of the run
-
-// The crescent: x bulges rightward at the centre and tucks back to the edge
-// at both ends, so the circles at the extremes hang over the section's left
-// boundary and the middle ones lean in.
+// This replaced a crescent of numbered circles. The numbers were an index with
+// nothing to index by: reaching decision nine meant clicking a 9 and finding
+// out what it was, so the reader could not choose what to read next. A keyword
+// is the thing a reader is actually selecting.
 //
-// Vertical placement is a share of the panel, bounded, rather than a raw
-// pixel step: a fixed step carried the far end of the run past the container
-// and over the neighbouring section's text.
+// This is emphatically NOT a modal. There is no overlay, no backdrop, no close
+// button and no focus trap. The card is part of the page, and the reader can
+// scroll past it or ignore it at any moment.
+
+// The card being read, and the one on its way off the stage. The leaving card
+// is decoration: it is aria-hidden, inert, and removed on a timer rather than
+// on an animation event, so a frame that never composites cannot leave two
+// faces stacked on the stage.
+const LEAVE_MS = 520
+
+// ── Sizing the bubbles ─────────────────────────────────────────────────────
 //
-// Numbers and blanks are spaced by different rules, which is what lets the
-// arc carry a long faded tail without the numbers bunching. The numbers get a
-// constant step wide enough to clear a selected circle against its neighbour.
-// Past them the blanks continue on a decaying step and shrink as they go, so
-// the tail converges instead of marching — the arc's edge fills in, and the
-// total can never reach the container's boundary however many blanks there
-// are. A single step for everything cannot do both: widen it and the tail
-// escapes, narrow it and the numbers collide.
-// The step between adjacent numbers, as a % of the panel's height. This is a
-// *ceiling*, not the value: it is what four decisions get, and it is already
-// the tightest spacing a full-size circle can take against a selected
-// neighbour without touching.
-const NUM_STEP_MAX = 12.8
-// How far from the centre the furthest slot may sit. Every position is
-// relative to the selected circle, so with the *first* decision selected the
-// last one sits a full run below centre — and the run has to end inside the
-// panel. It did not: at seven decisions the fixed step put the last two
-// numbers at 101% and 114%, hanging over the section below. The step now
-// divides this budget by however many numbers there are, so the arc fits any
-// number of decisions by getting tighter rather than by escaping.
+// `text-wrap: balance` decides where the sentence breaks, and it is what stops
+// one word being stranded on a second line. What it cannot do is give the
+// width back: a balanced two-line sentence occupied 197 to 222px inside a
+// 312px panel, so every open bubble carried 90 to 115px of empty right side.
 //
-// 46.7 is chosen so that four decisions still resolve to exactly NUM_STEP_MAX
-// and the pages that already existed are pixel-identical.
-const RUN_BUDGET = 46.7
-// The first blank sits further out than the gaps between numbers do: it has
-// to clear a full-size number against a smaller circle. Stated as a ratio of
-// the step rather than as a constant, because the step is no longer one — at
-// four decisions this reproduces the 8.3 it used to be.
-const TAIL_RATIO = 0.649
-const TAIL_DECAY = 0.6 // each further blank advances less than the last
-const BLANK_DECAY = 0.74 // …and is smaller than the last
-const BULGE_X = 54 // px, at the widest point of the oval
-// The circles shrink with the step, so a tight run never collides. Below the
-// ceiling the size is derived from the step in CSS — see `--pip-size`, which
-// is a fraction of the arc's own height rather than a measured pixel value,
-// so nothing here has to observe the layout to stay correct.
-const PIP_CEILING = '3rem'
-// Clearance between two adjacent circles, before the selected one grows.
-// Worked back from the worst pair — a selected circle at SELECTED_SCALE
-// against its full-size neighbour — which is what actually decides whether
-// the run reads as separate marks. At 6 it left 3.6px between them.
-const PIP_GAP = 7
-
-// The step for a given number of decisions, and the horizontal sweep that
-// goes with it. The sweep has to be normalised against the run's real extent
-// — a fixed figure would have flattened the ellipse as the step shrank.
-function geometry(count) {
-  const reach = Math.max(1, count - 1)
-  const step = Math.min(NUM_STEP_MAX, RUN_BUDGET / (reach + TAIL_RATIO))
-  const tailStep = step * TAIL_RATIO
-  return { reach, step, tailStep, spanMax: reach * step + tailStep }
-}
-
-// The panel grows for a long run rather than shrinking the circles to fit it,
-// because purely tightening the step got seven decisions into the arc at 27px
-// — small enough that the run read as a scrollbar rather than as the numbered
-// selector it is.
+// So each bubble carries three measured widths as custom properties:
+// `--pill-w`, its collapsed keyword; `--bub-w`, its longest balanced line plus
+// the panel's gutters; and `--say-w`, that longest line on its own. Opening one
+// is then a single outward movement from the first to the second.
 //
-// But height is not free either. At 5.9rem an item the seven-decision arc ran
-// 661px against a 462px card, and the section was mostly the empty column
-// beside the deck. This is the settled trade: the arc lands near the card's
-// own height, and the circles stay half again the size that was too small.
-// Both goals cannot be fully met at once — a run that always centres its
-// selection needs vertical room in proportion to how long it is and how big
-// its marks are, and with seven decisions two of those three have to give.
+// `--say-w` is what stops the sentence re-wrapping on the way. The paragraph
+// used to be laid out inside the box that was animating, so across those 320ms
+// it reflowed from four lines to three to two while `balance` re-solved the
+// break points at every intermediate width. Fixing the paragraph's width lays
+// it out once, in its final shape, and the box travels around it.
 //
-// Four decisions land under the floor and keep the height and the 48px circles
-// they always had.
-const ARC_MIN_REM = 28.5
-const ARC_PER_ITEM_REM = 4.9
+// Measuring BOTH is what makes the movement read as one thing. The closed item
+// used to span the column with only the pill inside it drawn narrow, so the
+// width transition ran from the column inward while the pill ran outward, and
+// the bubble visibly flashed full width before snapping back. Two opposing
+// motions over the same 320ms.
+//
+// It also means neither state depends on an intrinsic keyword, so the
+// animation is the same in every browser rather than snapping wherever
+// `interpolate-size` is unsupported.
+//
+// This is the one place in the section that measures layout, and it runs on
+// mount and when the column changes width rather than per selection or per
+// frame.
 
-function arcHeight(count) {
-  return `${Math.max(ARC_MIN_REM, count * ARC_PER_ITEM_REM).toFixed(2)}rem`
-}
+// The rendered lines of an element, as boxes. Grouped by vertical centre with
+// a tolerance of half a line, because an inline `<code>` span sits a pixel or
+// two off its neighbours' baseline box and grouping on `top` alone splits one
+// line into several.
+function lineBoxes(el) {
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  const tolerance = (parseFloat(getComputedStyle(el).lineHeight) || 16) / 2
+  const rows = []
 
-// The selected circle grows as well as centring itself: size is what marks it
-// as chosen while it is moving, before it has arrived anywhere meaningful.
-// 1.14 rather than 1.18: the growth is what sets the tightest clearance in the
-// whole run, and the four points it gives back buy real circle size at every
-// panel height. It still reads as chosen — nothing else in the arc grows.
-const SELECTED_SCALE = 1.14
-
-// Auto-cycle, matching the Tech Stack wheel on the same page so the two
-// sections behave alike.
-const CYCLE_MS = 5200
-const RESUME_MS = 9000
-
-// Position is written as plain inline style and eased by a CSS transition,
-// not driven by an animation loop. The resting layout is then correct the
-// instant it renders — a frame that never composites (a background tab, a
-// paused rAF) leaves the circles where they belong rather than stranded at
-// the previous selection. The transition is what animates; the style is what
-// is true. `prefers-reduced-motion` drops the transition in CSS.
-// Distance from the selected circle, in % of the panel: a constant step while
-// we are still among the numbers, then a decaying one for the blank tail.
-function offsetToSpan(steps, numberReach, step, tailStep) {
-  const within = Math.min(steps, numberReach)
-  let span = within * step
-  for (let k = 0; k < steps - numberReach; k += 1) {
-    span += tailStep * TAIL_DECAY ** k
+  for (const rect of [...range.getClientRects()].sort((a, b) => a.top - b.top)) {
+    if (rect.width === 0 && rect.height === 0) continue
+    const middle = rect.top + rect.height / 2
+    const row = rows.find((r) => Math.abs(r.middle - middle) < tolerance)
+    if (row) {
+      row.left = Math.min(row.left, rect.left)
+      row.right = Math.max(row.right, rect.right)
+    } else {
+      rows.push({ middle, left: rect.left, right: rect.right })
+    }
   }
-  return span
-}
-
-function slotStyle(offset, { reach: numberReach, step, tailStep, spanMax }, selected, blank) {
-  const steps = Math.abs(offset)
-  const span = offsetToSpan(steps, numberReach, step, tailStep)
-  const beyond = Math.max(0, steps - numberReach)
-  // The tail shrinks as it recedes. That is what lets it be packed tightly
-  // enough to close the gap at the arc's edge without the dots touching.
-  const scale = selected
-    ? SELECTED_SCALE
-    : blank
-      ? BLANK_DECAY ** beyond
-      : 1 - Math.min(steps / Math.max(numberReach, 1), 1) * 0.12
-  // A true half-ellipse rather than the parabola this used to trace: x is the
-  // ellipse's width at this height, so the run reads as one oval edge instead
-  // of a slack curve, and the ends tuck in sharply against the boundary.
-  const t = Math.min(1, span / spanMax)
-  return {
-    top: `${50 + Math.sign(offset) * span}%`,
-    left: `${BULGE_X * Math.sqrt(Math.max(0, 1 - t * t))}px`,
-    '--pip-scale': scale.toFixed(3),
-  }
+  return rows
 }
 
 export default function DecisionsSection({ project }) {
   const decisions = project.decisions ?? []
-  const reduceMotion = useReducedMotion()
-  // Inline, so something is always shown: an empty card would be a hole in
-  // the page rather than an invitation.
-  // Auto-cycle, pause on interaction, resume when the reader goes quiet —
-  // the same three pieces of state the Tech Stack wheel uses, in the same
-  // priority order. `pinned` is what a click sets; `cycle` is the ambient
-  // state it overrides.
-  const [cycle, setCycle] = useState(0)
-  const [pinned, setPinned] = useState(null)
-  const [hovering, setHovering] = useState(false)
-  // Bumped on every interaction so the idle timer restarts. A plain boolean
-  // could not tell "still interacting" from "interacted once".
-  const [interactionAt, setInteractionAt] = useState(0)
-  const at = pinned ?? cycle
-  // The card that is leaving. Purely decorative: it is aria-hidden, inert,
-  // and removed on a timer rather than on an animation event, so a frame that
-  // never composites cannot leave faces stacked on the card. The card that is
-  // *staying* is always rendered in its normal resting position — the slide
-  // is an animation over that, never the thing that puts it there.
+  // Two pieces of state, not one. `at` is the decision on the stage and `open`
+  // is whether its bubble is showing the sentence, because clicking the open
+  // bubble closes it without emptying the stage. A card is always dealt: an
+  // empty stage would be a hole in the page rather than a resting state.
+  const [at, setAt] = useState(0)
+  const [open, setOpen] = useState(true)
   const [leaving, setLeaving] = useState(null)
+  const listRef = useRef(null)
 
   const select = useCallback(
     (next) => {
-      setInteractionAt(Date.now())
-      setPinned(next)
-      setCycle(next)
-      setLeaving((current) => (next === at ? current : at))
+      if (next === at) {
+        setOpen((current) => !current)
+        return
+      }
+      setLeaving(at)
+      setAt(next)
+      setOpen(true)
     },
     [at]
   )
 
   useEffect(() => {
     if (leaving === null) return
-    const timer = setTimeout(() => setLeaving(null), 520)
+    const timer = setTimeout(() => setLeaving(null), LEAVE_MS)
     return () => clearTimeout(timer)
   }, [leaving])
 
-  const paused = pinned !== null || hovering
+  // Measure every bubble's two widths. Runs before paint, so a bubble is never
+  // seen at a width it is about to leave.
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (!list) return
+    let live = true
 
-  useEffect(() => {
-    if (reduceMotion || paused || decisions.length < 2) return
+    // The column's width at the last measurement, so a ResizeObserver firing
+    // for a height change does not re-measure anything.
+    let measuredAt = 0
 
-    const timer = setInterval(() => {
-      setCycle((index) => {
-        const next = (index + 1) % decisions.length
-        setLeaving(index)
-        return next
-      })
-    }, CYCLE_MS)
-    return () => clearInterval(timer)
-  }, [reduceMotion, paused, decisions.length])
+    const measure = () => {
+      if (!live) return
+      const items = [...list.querySelectorAll('.bub__item')]
+      if (items.length === 0) return
+      measuredAt = list.getBoundingClientRect().width
 
-  // A pinned decision releases itself once the reader stops interacting, so
-  // the arc returns to cycling rather than staying frozen on whatever was
-  // last clicked.
-  useEffect(() => {
-    if (pinned === null) return
-    const timer = setTimeout(() => setPinned(null), RESUME_MS)
-    return () => clearTimeout(timer)
-  }, [pinned, interactionAt])
+      // Nothing animates while the measurement runs. Without this the reads
+      // below return whatever the running transition is part-way through, and
+      // a candidate width would be checked against the layout it replaced.
+      list.dataset.measuring = 'true'
+
+      // Back to the column's width, so `balance` picks its break points with
+      // room to pick them in and each pill sits at its own content width.
+      for (const item of items) {
+        item.style.removeProperty('--pill-w')
+        item.style.removeProperty('--bub-w')
+        item.style.removeProperty('--say-w')
+        item.style.removeProperty('width')
+      }
+
+      for (const item of items) {
+        const say = item.querySelector('.bub__say')
+        const button = item.querySelector('.bub__btn')
+        const label = item.querySelector('.bub__label')
+        const inner = item.querySelector('.bub__inner')
+        if (!say || !button || !label || !inner) continue
+
+        // The keyword, its numeral, the mark and the padding around them.
+        const pill = Math.ceil(
+          label.getBoundingClientRect().right -
+            button.getBoundingClientRect().left +
+            parseFloat(getComputedStyle(button).paddingRight)
+        )
+
+        const lines = lineBoxes(say)
+        if (lines.length === 0) continue
+        const gutters = getComputedStyle(inner)
+        const widest = Math.ceil(Math.max(...lines.map((row) => row.right - row.left)))
+        const sentence =
+          widest + parseFloat(gutters.paddingLeft) + parseFloat(gutters.paddingRight)
+        // Never narrower than the keyword it is labelled with.
+        const open = Math.ceil(Math.max(sentence, pill))
+
+        // A narrower box lets `balance` re-partition, and a partition that
+        // needs one more line would be worse than the space it saved. Try the
+        // candidate before committing to it. This has to happen before
+        // `--say-w` is applied, because a fixed-width paragraph cannot
+        // re-partition and the check would pass on every candidate.
+        item.style.width = `${open}px`
+        const fits = lineBoxes(say).length <= lines.length
+        item.style.removeProperty('width')
+
+        item.style.setProperty('--pill-w', `${pill}px`)
+        item.style.setProperty('--say-w', `${widest}px`)
+        if (fits) item.style.setProperty('--bub-w', `${open}px`)
+      }
+
+      // Commit the new widths while transitions are still off, so the
+      // measurement itself never animates. Reading a box forces that flush.
+      list.getBoundingClientRect()
+      delete list.dataset.measuring
+    }
+
+    measure()
+
+    // Watch the column rather than the window. The rail folds away without a
+    // window resize and takes 284px of the column with it, and a `resize`
+    // listener alone would never hear about it. The window listener stays as a
+    // second signal; `measuredAt` makes the duplicate call a no-op.
+    const remeasure = () => {
+      if (Math.abs(list.getBoundingClientRect().width - measuredAt) > 0.5) measure()
+    }
+    const observer = new ResizeObserver(remeasure)
+    observer.observe(list)
+    window.addEventListener('resize', remeasure)
+
+    // A web font landing after first paint changes every line box under it,
+    // and changes no width either of those is watching.
+    document.fonts?.ready.then(measure)
+
+    return () => {
+      live = false
+      observer.disconnect()
+      window.removeEventListener('resize', remeasure)
+    }
+  }, [decisions])
+
+  // Moves the selection and takes the focus with it, so the arrow keys walk
+  // the column the way they walk a list. Scoped to the bubbles, never to the
+  // document: this must not take the arrow keys away from the page.
+  // The arrows always open what they land on. Stepping is a way of reading
+  // through the deck, so it would be strange for one to close a bubble.
+  const step = useCallback(
+    (delta) => {
+      const next = (at + delta + decisions.length) % decisions.length
+      if (next !== at) {
+        setLeaving(at)
+        setAt(next)
+      }
+      setOpen(true)
+      listRef.current?.querySelectorAll('.bub__btn')[next]?.focus()
+    },
+    [at, decisions.length]
+  )
 
   const onKeyDown = useCallback(
-    (e) => {
-      // Scoped to the selector, never to the document: this must not take the
-      // arrow keys away from the page the way a modal would.
-      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
-      e.preventDefault()
-      const delta = e.key === 'ArrowDown' ? 1 : -1
-      const next = (at + delta + decisions.length) % decisions.length
-      select(next)
-      e.currentTarget
-        .querySelectorAll('.arc__pip--live')
-        [next]?.focus()
+    (event) => {
+      if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+      event.preventDefault()
+      step(event.key === 'ArrowDown' ? 1 : -1)
     },
-    [at, decisions.length, select]
+    [step]
   )
 
   if (decisions.length === 0) return null
 
-  // Slot layout: numbered circles every other slot, blanks between and beyond.
-  const runLength = (decisions.length - 1) * NUMBERED_EVERY + 1
-  const totalSlots = runLength + CENTRE_SLOT_PAD * 2
-  const selectedSlot = CENTRE_SLOT_PAD + at * NUMBERED_EVERY
-  // Spacing among the numbers depends only on how many numbers there are, so
-  // adding blanks to the tail can never squeeze them.
-  const geo = geometry(decisions.length)
-
   const decision = decisions[at]
 
   return (
-    <div
-      className="decisions"
-      // Hovering anywhere over the pair holds the cycle. The card is long-form
-      // text, and swapping it out from under someone mid-sentence is worse
-      // than a wheel changing category.
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-    >
-      <div
-        className="arc"
-        role="tablist"
-        aria-label="Technical decisions and design trade-offs"
-        aria-orientation="vertical"
-        onKeyDown={onKeyDown}
-        // The circle size rides the step so a tighter run cannot collide.
-        // Expressed against the arc's own height rather than measured, so it
-        // is right on the first paint and stays right through a resize.
-        style={{
-          '--arc-h': arcHeight(decisions.length),
-          '--pip-size': `min(${PIP_CEILING}, calc(var(--arc-h) * ${(
-            geo.step / 100
-          ).toFixed(5)} - ${PIP_GAP}px))`,
-        }}
-      >
-        {Array.from({ length: totalSlots }, (_, slot) => {
-          const numberedIndex =
-            (slot - CENTRE_SLOT_PAD) % NUMBERED_EVERY === 0
-              ? (slot - CENTRE_SLOT_PAD) / NUMBERED_EVERY
-              : null
-          const live =
-            numberedIndex !== null &&
-            numberedIndex >= 0 &&
-            numberedIndex < decisions.length
-
-          // Every circle is placed relative to the selected one, so choosing
-          // a number carries the whole crescent with it.
-          const isOn = live && numberedIndex === at
-          const style = slotStyle(slot - selectedSlot, geo, isOn, !live)
-          const className = `arc__pip${live ? ' arc__pip--live' : ' arc__pip--blank'}${
-            isOn ? ' arc__pip--on' : ''
-          }`
-
-          if (!live) {
-            return (
-              <span key={`blank-${slot}`} className={className} style={style} aria-hidden="true" />
-            )
-          }
-
-          return (
-            <button
-              key={decisions[numberedIndex].title}
-              type="button"
-              role="tab"
-              aria-selected={isOn}
-              tabIndex={isOn ? 0 : -1}
-              onClick={() => select(numberedIndex)}
-              className={className}
-              style={style}
-            >
-              <span className="arc__digit">{numberedIndex + 1}</span>
-              <span className="sr-only">{decisions[numberedIndex].title}</span>
-            </button>
-          )
-        })}
+    <div className="decisions">
+      {/* The stepper, in a gutter of its own. It is the only control that says
+          the bubbles are a sequence rather than a set of unrelated switches. */}
+      <div className="dstep">
+        <button
+          type="button"
+          className="dstep__arrow"
+          onClick={() => step(-1)}
+          aria-label="Previous decision"
+        >
+          <Chevron up />
+        </button>
+        <button
+          type="button"
+          className="dstep__arrow"
+          onClick={() => step(1)}
+          aria-label="Next decision"
+        >
+          <Chevron />
+        </button>
       </div>
 
-      <div className="dcard" role="tabpanel" aria-live="polite">
-        {/* The rest of the deck, faint and fanned behind the live card. The
-            column was one card floating in a lot of empty white; the stack
-            says how many decisions there are without asking anyone to read
-            them. Depth only — no content, and out of the a11y tree. */}
-        <div
-          /* Keyed on the selection so the riffle replays on every deal. */
-          key={`deck-${at}`}
-          className="dcard__stack dcard__stack--riffling"
-          aria-hidden="true"
-        >
-          {decisions.slice(1).map((_, i) => (
-            <span key={i} className="dcard__ghost" style={{ '--depth': i + 1 }} />
-          ))}
-        </div>
+      <ul className="bub" ref={listRef} onKeyDown={onKeyDown}>
+        {decisions.map((item, index) => {
+          const current = index === at
+          const showing = current && open
+          return (
+            <li
+              className="bub__item"
+              key={item.keyword ?? item.title}
+              data-open={showing}
+              // Kept apart from `data-open` so a closed bubble can still say
+              // which card is on the stage.
+              data-current={current}
+            >
+              <button
+                type="button"
+                className="bub__btn"
+                aria-expanded={showing}
+                aria-controls={`decision-say-${index}`}
+                onClick={() => select(index)}
+              >
+                <span className="bub__mark" aria-hidden="true">
+                  <Plus />
+                </span>
+                <span className="bub__num">{String(index + 1).padStart(2, '0')}</span>
+                <span className="bub__label">
+                  <RichText>{item.keyword ?? item.title}</RichText>
+                </span>
+              </button>
 
-        <div className="dcard__window">
-          {/* Every card, stacked in one grid cell and hidden. It contributes
-              nothing but height — which is the point: the window ends up as
-              tall as the *longest* decision, so all four cards are the same
-              size instead of each shrinking to its own text. Measuring in JS
-              would work too, and would go stale the moment the copy changed. */}
-          <div className="dcard__sizer" aria-hidden="true" inert="">
-            {decisions.map((d, i) => (
-              <Face key={`sizer-${i}`} index={i} decision={d} variant="sizer" />
+              {/* Rows of 0fr to 1fr, so the panel opens without anyone
+                  measuring a height. The sentence stays in the DOM while
+                  closed, which is why the pill above it carries the
+                  `fit-content` rather than this item: sizing the item to its
+                  content measures the hidden sentence, and every bubble comes
+                  out as wide as its description instead of its keyword. */}
+              <div className="bub__wrap">
+                <div className="bub__body">
+                  <div className="bub__inner">
+                    <p className="bub__say" id={`decision-say-${index}`}>
+                      <RichText>{item.title}</RichText>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+
+      <div className="dstage" aria-live="polite">
+        <div className="dcard">
+          {/* The rest of the deck, faint and fanned behind the live card. The
+              column was one card floating in a lot of white; the stack says
+              how many decisions there are without asking anyone to read them.
+              Depth only: no content, and out of the a11y tree. */}
+          <div
+            /* Keyed on the selection so the riffle replays on every deal. */
+            key={`deck-${at}`}
+            className="dcard__stack dcard__stack--riffling"
+            aria-hidden="true"
+          >
+            {decisions.slice(1).map((_, i) => (
+              <span key={i} className="dcard__ghost" style={{ '--depth': i + 1 }} />
             ))}
           </div>
 
-          {leaving !== null && leaving !== at && (
-            <Face
-              key={`leaving-${leaving}`}
-              index={leaving}
-              decision={decisions[leaving]}
-              variant="leaving"
-            />
-          )}
-          <Face key={at} index={at} decision={decision} variant="live" />
+          {/* The window carries the card's proportions, a fixed 5:7, the shape
+              of an actual trading card. Every decision is therefore the same
+              object and the fan behind it reads as one stack rather than as
+              paper of assorted sizes. Both faces can be absolute against it
+              because the aspect ratio, not the content, gives it a height. */}
+          <div className="dcard__window">
+            {leaving !== null && leaving !== at && (
+              <Face
+                key={`leaving-${leaving}`}
+                index={leaving}
+                total={decisions.length}
+                decision={decisions[leaving]}
+                variant="leaving"
+              />
+            )}
+            <Face key={at} index={at} total={decisions.length} decision={decision} variant="live" />
+          </div>
+        </div>
+
+        {/* The argument, under the card rather than inside it.
+
+            This is the split that lets the card be a card. The reasoning runs
+            to 400 to 700 characters, and no box at trading-card proportions
+            holds that at any width worth having. So the card keeps the
+            decision, which is what was chosen and what was turned down, and
+            the block beneath it takes the case for it. */}
+        <div className="dwhy">
+          <p className="dwhy__label" aria-hidden="true">
+            Why
+          </p>
+          <p className="dwhy__text" key={at}>
+            <RichText>{decision.why}</RichText>
+          </p>
         </div>
       </div>
     </div>
   )
 }
 
+function Plus() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+function Chevron({ up = false }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={up ? 'M5 15l7-7 7 7' : 'M5 9l7 7 7-7'} />
+    </svg>
+  )
+}
+
 // Both directions slide upward: the card being read leaves through the top
 // while the next one rises into its place, so a run through the decisions
 // reads as one continuous movement rather than as a shuffle.
-// `sizer` is the one that stays in flow: it is what gives the window its
-// height. The live and leaving cards are taken out of flow on top of it, so
-// they fill whatever the tallest decision established.
 const FACE_CLASS = {
   live: ' dcard__face--arriving',
   leaving: ' dcard__face--leaving',
-  sizer: '',
 }
 
-function Face({ index, decision, variant = 'live' }) {
+// The card face, built as a card rather than as a panel that happens to have a
+// border: a name, a picture, a stat block, and a set number. Those four are
+// what make the metaphor legible without anyone having to be told it.
+//
+// The name is the keyword the bubble is labelled with, so the two read as the
+// same object. The sentence form of the decision lives in the bubble, and the
+// reasoning is deliberately not here at all. See the `dwhy` block above.
+function Face({ index, total, decision, variant = 'live' }) {
   return (
     <article
       className={`dcard__face${FACE_CLASS[variant]}`}
@@ -379,32 +417,41 @@ function Face({ index, decision, variant = 'live' }) {
       inert={variant === 'leaving' ? '' : undefined}
     >
       <header className="dcard__head">
-        <span className="dcard__index">{index + 1}</span>
+        <span className="dcard__index">{String(index + 1).padStart(2, '0')}</span>
         <h3 className="dcard__title">
-          <RichText>{decision.title}</RichText>
+          <RichText>{decision.keyword ?? decision.title}</RichText>
         </h3>
       </header>
 
-      <div className="dcard__figure">
+      {/* The art box. A tinted panel rather than a band between two rules, and
+          the one element that flexes: a card whose stat block is short gets a
+          larger picture, which is what a picture box is for, instead of
+          leaving a pocket of empty card under the last line. */}
+      <div className="dcard__art">
         <DecisionGlyph name={decision.glyph} />
       </div>
 
-      <div className="dcard__body">
-        <p className="decision__choice">
-          <span className="decision__chose">
-            <RichText>{decision.chose}</RichText>
-          </span>
-          {decision.over && (
-            <span className="decision__over">
-              {' over '}
+      {/* Labelled rows, not a sentence. "Chose X over Y" read as prose and so
+          did the paragraph under it; as two named fields it reads as a record,
+          which is the whole claim the card is making about itself. */}
+      <dl className="dcard__stat">
+        <dt className="dcard__stat-key">Chose</dt>
+        <dd className="dcard__stat-val">
+          <RichText>{decision.chose}</RichText>
+        </dd>
+        {decision.over && (
+          <>
+            <dt className="dcard__stat-key">Over</dt>
+            <dd className="dcard__stat-val dcard__stat-val--over">
               <RichText>{decision.over}</RichText>
-            </span>
-          )}
-        </p>
-        <p className="decision__why">
-          <RichText>{decision.why}</RichText>
-        </p>
-      </div>
+            </dd>
+          </>
+        )}
+      </dl>
+
+      <p className="dcard__foot" aria-hidden="true">
+        Trade-off {String(index + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+      </p>
     </article>
   )
 }

@@ -1,4 +1,4 @@
-# Runbook — LockBank Security Response Platform
+# Runbook: LockBank Security Response Platform
 
 Operating instructions for the running system. Every section is written to be
 followed under pressure: what to check, what to run, what the correct output
@@ -12,8 +12,8 @@ reading this because your phone buzzed, the message tells you which path fired.
 One thing to know before anything else: **maintenance alerts are deliberately
 silent.** `PrometheusDown`, `GrafanaDown`, `AlertmanagerDown` and
 `NginxExporterDown` are routed straight to the recovery webhook and never reach
-Telegram. Silence is not evidence that nothing has failed — check the
-dashboard, not your phone.
+Telegram. A quiet phone means only that no Telegram alert fired, so check the
+dashboard for the current state.
 
 ---
 
@@ -39,8 +39,8 @@ connection *and* the advertised subnet:
 
 A connected node that is not advertising `172.16.1.0/24` will pass a casual
 glance and then fail every cross-environment scrape. If the advertisement is
-missing, the route needs approving in the Tailscale admin console — the node is
-fine.
+missing, the route needs approving in the Tailscale admin console. The node
+itself is fine.
 
 Check the pieces individually if something is red:
 
@@ -58,8 +58,8 @@ curl -s localhost:8000/health
 curl -s -o /dev/null -w '%{http_code}\n' http://<alb-dns>/health
 ```
 
-That last one is the real test. Prometheus does not watch the container — it
-probes the path a user takes, through Nginx. A running container that is
+That last one is the real test. Prometheus probes the path a user takes,
+through Nginx. A running container that is
 unreachable through the proxy is a failure by this system's definition, and
 that is deliberate.
 
@@ -83,7 +83,7 @@ Then the normal path:
 
 ```bash
 make init            # terraform init -backend-config=hcl/backend.hcl
-make plan            # review before every apply — no exceptions
+make plan            # review before every apply, with no exceptions
 make service         # build-push → build-push-bootstrap → apply-auto → deploy-db
 make output          # Bastion IP, EC2 IPs, target-group ARNs, SG IDs
 ```
@@ -109,8 +109,8 @@ first run.
 ## 3. When an alert fires
 
 The controller handles this on its own. Do not intervene during the retry
-window — manual action competes with the recovery script and makes the outcome
-impossible to read.
+window, because manual action competes with the recovery script and makes the
+outcome impossible to read.
 
 What happens automatically:
 
@@ -130,12 +130,12 @@ The policy, from `monitoring/recovery/config/recovery_map.yaml`:
 | `GrafanaDown` | maintenance | no | auto_recovery | `restart_container` | 3 | 300s |
 | `AlertmanagerDown` | maintenance | no | auto_recovery | `restart_container` | 3 | 300s |
 | `NginxExporterDown` | maintenance | no | auto_recovery | `restart_container` | 3 | 300s |
-| `HighLoginFailureRate` | security | yes | **notify_only** | — | — | — |
-| `RateLimitTriggered` | security | yes | **notify_only** | — | — | — |
+| `HighLoginFailureRate` | security | yes | **notify_only** | n/a | n/a | n/a |
+| `RateLimitTriggered` | security | yes | **notify_only** | n/a | n/a | n/a |
 
-The two security alerts are notify-only by design. An attack is not a fault to
-be repaired — restarting something would destroy the evidence and fix nothing.
-fail2ban already blocked the source; the alert exists so a person knows.
+The two security alerts are notify-only by design. Restarting a component
+during an attack would destroy the evidence and repair nothing. fail2ban has
+already blocked the source, and the alert exists so a person knows.
 
 What fires them:
 
@@ -167,14 +167,15 @@ action that reaches out of the monitoring host. `aws_app_restart.sh` does this
 before it restarts anything:
 
 1. Finds the App instance by tag (`Name=lb-app*`, running) rather than trusting
-   a stored IP — the ASG replaces instances, and a hardcoded address goes stale.
+   a stored IP, because the ASG replaces instances and a hardcoded address goes
+   stale.
 2. Checks the **replica DB** is reachable on 5432, and starts the local replica
    container if it is not.
 3. Checks the **main DB** is reachable from the app host.
 4. Only then restarts the container over SSH via the Bastion.
 
-So a recovery failure is usually not the app. Work down that list — most often
-it is step 2 or 3, and the app was never the problem.
+A recovery failure usually sits at step 2 or step 3 of that list. Work down the
+list in order and check the dependencies before the app itself.
 
 Manual recovery, once you know what is broken:
 
@@ -184,14 +185,14 @@ docker restart lb-fastapi
 curl -s -o /dev/null -w '%{http_code}\n' localhost/health
 ```
 
-A cooldown suppresses repeat attempts for the same alert — 30s for the app,
+A cooldown suppresses repeat attempts for the same alert: 30s for the app and
 300s for the monitoring components. An alert that keeps firing with no recovery
-attempt in the log is inside its cooldown, not stuck.
+attempt in the log is inside its cooldown window.
 
 **The controller cannot recover itself.** `RecoveryControllerDown` has no
 policy, and this is recorded as an open question in the policy file rather than
-solved. If the controller is down, nothing is watching — restart it by hand and
-treat everything since as unmonitored.
+solved. While the controller is down nothing is watching, so restart it by hand
+and treat everything since as unmonitored.
 
 ---
 
@@ -283,15 +284,15 @@ other change is almost always an expired key, not a network fault.
   will pick it up.
 - **Restarting the app container is not recovery.** Early versions did only
   that and the service came back still broken, because its DB and network
-  dependencies were down. That is why the action checks them first — do the
-  same by hand.
+  dependencies were down. The action now checks those dependencies first, so do
+  the same by hand.
 - **The Tailscale tunnel needs traffic originated from inside.** Behind NAT the
   app-to-replica tunnel would not initialise, and the login page rendered while
   logins hung. Pinging out from the replica host registers the connection with
   the firewall and the direct peer-to-peer path comes up.
-- **Public exposure draws automated scanners within minutes.** Not a drill —
-  WordPress and PHP webshell probes started arriving on their own shortly after
-  the EC2 went public. The `nginx-scan` jail exists because of that traffic, not
+- **Public exposure draws automated scanners within minutes.** WordPress and
+  PHP webshell probes started arriving on their own shortly after the EC2 went
+  public. The `nginx-scan` jail exists because of that traffic, not
   in anticipation of it.
 - **Maintenance alerts never reach Telegram.** See the top of this document.
 
@@ -307,12 +308,12 @@ make destroy
 
 The order matters, and `make destroy` enforces it:
 
-1. `monitoring teardown-force` — the AWS resources bootstrap created: Lambda,
+1. `monitoring teardown-force` removes the AWS resources bootstrap created: Lambda,
    IAM, CloudWatch alarms, SNS subscriptions. The SNS topic is left to
    Terraform.
-2. `monitoring destroy` — monitoring containers and volumes.
-3. `destroy-db` — the replica DB stack.
-4. `terraform destroy` — VPC, EC2, ASGs, and the rest.
+2. `monitoring destroy` removes the monitoring containers and volumes.
+3. `destroy-db` removes the replica DB stack.
+4. `terraform destroy` removes the VPC, EC2, ASGs and the rest.
 
 Check the plan lists only this project's resources before approving, and that
 the state bucket is not among them.

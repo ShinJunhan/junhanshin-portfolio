@@ -1,4 +1,4 @@
-# Runbook — Self-Healing AWS Infrastructure
+# Runbook: Self-Healing AWS Infrastructure
 
 Operating instructions for the running system. Every section is written to be
 followed under pressure: what to check, what to run, what the correct output
@@ -48,7 +48,7 @@ Terraform output, so running them out of order configures the previous set of
 instances.
 
 ```bash
-make plan      # review before every apply — no exceptions
+make plan      # review before every apply, with no exceptions
 make apply     # ~10 minutes for the full 41 resources
 make configure # Ansible across mgmt, web, and db
 ```
@@ -69,7 +69,7 @@ ansible-playbook -i ansible/inventory.yml ansible/site.yml --tags monitoring
 ## 3. When an alert fires
 
 The controller handles this on its own. Do not intervene for the first two
-minutes — manual action during a retry window competes with the recovery
+minutes. Manual action during a retry window competes with the recovery
 script and makes the outcome harder to read.
 
 What happens automatically:
@@ -119,7 +119,7 @@ the script or its permissions, not in the service. Check that the controller's
 user can run the script and that the script is executable on the target host.
 
 A cooldown suppresses repeat runs for the same alert. An alert that keeps
-firing without a recovery attempt is inside its cooldown window — check the
+firing without a recovery attempt is inside its cooldown window. Check the
 timestamps in `#monitoring` against the cooldown column above before
 concluding the controller is stuck.
 
@@ -172,7 +172,7 @@ with no other change is almost always an expired key.
 
 - **Use `pkill -x`, never `pkill -f`, in a recovery script.** `pkill -f` matches
   the full command line, which includes the Ansible shell invocation running
-  the recovery script itself — the script kills its own process mid-run. This
+  the recovery script itself, so the script kills its own process mid-run. This
   cost four iterations of `recover_memory.sh` to find.
 - **Memory recovery behaves differently on AWS.** The OOM killer intervenes
   before the script's own threshold is reached. Validate memory scenarios on
@@ -181,7 +181,7 @@ with no other change is almost always an expired key.
   `group_vars/secrets.yml`, which is gitignored. One reached a pull request and
   was caught in review; assume the next one will not be.
 - **Grafana dashboards are imported by hand.** Auto-provisioning is not
-  finished. After a rebuild, re-import `grafana-dashboard.json` — the queries
+  finished. After a rebuild, re-import `grafana-dashboard.json`, because the queries
   are job-based, so it works against a rebuilt fleet without editing.
 
 ---

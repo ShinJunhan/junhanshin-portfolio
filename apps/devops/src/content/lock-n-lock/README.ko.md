@@ -31,9 +31,9 @@
 - 박정은/이지윤: Locust 부하 공격 시나리오, Nginx Rate Limit, fail2ban, 보안 이벤트 검증, 탐지→알림→대응 흐름 테스트 Health Check, 전환 및 Rollback 스크립트
 
 
-# Lock & Lock — 금융 서비스 보안 자동 대응 시스템
+# Lock & Lock: 금융 서비스 보안 자동 대응 시스템
 
-악성 IP 자동 차단과 취약점 스캔 게이트(4중 잠금)를 통한 **보안**, 트래픽 부하에 따른 오토스케일링으로 달성하는 **비용·가용성**, 정책 기반 자동 대응과 상태 검증(verify)·복구 로그를 통한 **운영 안정성** — 이 세 가지를 핵심 가치로 하는 하이브리드(온프레미스↔AWS) 보안 대응 시스템입니다.
+악성 IP 자동 차단과 취약점 스캔 게이트(4중 잠금)를 통한 **보안**, 트래픽 부하에 따른 오토스케일링으로 달성하는 **비용·가용성**, 정책 기반 자동 대응과 상태 검증(verify)·복구 로그를 통한 **운영 안정성**. 이 세 가지를 핵심 가치로 하는 하이브리드(온프레미스↔AWS) 보안 대응 시스템입니다.
 
 ---
 
@@ -117,10 +117,10 @@ make destroy        # Monitoring(AWS+컨테이너) + DB + 인프라 전체 삭�
 ```
 
 `make destroy` 흐름:
-1. `monitoring teardown-force` — bootstrap이 만든 AWS 리소스(Lambda·IAM·CW알람·SNS구독) 삭제 (SNS topic은 Terraform 위임)
-2. `monitoring destroy` — 모니터링 컨테이너·볼륨
-3. `destroy-db` — replica DB 스택(컨테이너·볼륨)
-4. `terraform destroy` — VPC·EC2·ASG 등 인프라
+1. `monitoring teardown-force`: bootstrap이 만든 AWS 리소스(Lambda·IAM·CW알람·SNS구독) 삭제 (SNS topic은 Terraform 위임)
+2. `monitoring destroy`: 모니터링 컨테이너·볼륨
+3. `destroy-db`: replica DB 스택(컨테이너·볼륨)
+4. `terraform destroy`: VPC·EC2·ASG 등 인프라
 
 부분 정리: `make destroy-db`(replica만), `cd monitoring && make teardown`(AWS 리소스 dry-run 확인).
 
@@ -139,17 +139,17 @@ project2-security/
 ├── bootstrap_tailscale.sh# Tailscale 노드-투-노드(L3) 연결 스크립트
 ├── Makefile              # terraform·환경 명령어 단축
 ├── docs/                 # 설계서·다이어그램·가이드
-│   ├── network-design.md # 네트워크 설계서 (CIDR·SG 매트릭스) — A 트랙 산출물
+│   ├── network-design.md # 네트워크 설계서 (CIDR·SG 매트릭스), A 트랙 산출물
 │   ├── guides/           # 트랙별 코드 동작 설명 + setup-guide.md
 │   └── diagrams/         # 아키텍처 다이어그램
 ├── infra/
-│   ├── terraform/        # A 트랙 — VPC·Subnet·EC2·SG (IaC)
-│   └── ansible/          # A·B 트랙 — 구성관리
-├── app/                  # B 트랙 — FastAPI·Dockerfile·DB 스키마
-├── monitoring/           # D 트랙 — prometheus·grafana·alertmanager
-├── security/             # E 트랙 — locust·rate limit·보안 정책
-├── scripts/              # C 트랙 — build-push-image.sh·deploy-app.sh·set-fail2ban.sh
-└── .github/workflows/    # C 트랙 — GitHub Actions (경로 고정)
+│   ├── terraform/        # A 트랙: VPC·Subnet·EC2·SG (IaC)
+│   └── ansible/          # A·B 트랙: 구성관리
+├── app/                  # B 트랙: FastAPI·Dockerfile·DB 스키마
+├── monitoring/           # D 트랙: prometheus·grafana·alertmanager
+├── security/             # E 트랙: locust·rate limit·보안 정책
+├── scripts/              # C 트랙: build-push-image.sh·deploy-app.sh·set-fail2ban.sh
+└── .github/workflows/    # C 트랙: GitHub Actions (경로 고정)
 ```
 
 > `.github/workflows/`는 GitHub Actions가 강제하는 고정 경로입니다. C 트랙의 워크플로 YAML은 반드시 이 위치에, 배포 스크립트는 `scripts/`에 둡니다.
@@ -181,7 +181,7 @@ feature/<트랙>-<주제>  →  dev (임종원 리뷰·머지)  →  main (신�
 
 - **네이밍**: `<트랙소문자>-<영역>.md` (예: `a-infra-terraform.md`)
 - **템플릿**: `docs/guides/_TEMPLATE.md`를 복사해 작성
-- **필수 섹션**: "다른 트랙과의 인터페이스" — 내가 받는 입력 / 내가 내보내는 출력 명시
+- **필수 섹션**: "다른 트랙과의 인터페이스". 내가 받는 입력과 내가 내보내는 출력을 명시합니다.
 
 ---
 

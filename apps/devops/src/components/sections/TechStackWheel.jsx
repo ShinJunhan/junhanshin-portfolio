@@ -51,6 +51,51 @@ const SNAP_MS = 620
 // stood, rather than lurching to catch up with a rotation nobody watched.
 const MAX_FRAME_MS = 50
 
+// ── The bubble ────────────────────────────────────────────────────────
+// The same pointer-tracked magnification the decisions arc uses, bent around a
+// ring. It is deliberately gated on the wheel having been CLICKED — see
+// `drifting` — and not merely hovered.
+//
+// That is not a preference. A bubble that follows the pointer cannot work on a
+// ring that is turning: the icons slide out from under the cursor while the
+// magnification chases it, and the tooltip's own left/right/above/below
+// decision thrashes as each node crosses a threshold. Static is the only state
+// in which this reads as physical rather than as a glitch — so the click, which
+// already stops the drift for good, is what hands the wheel over.
+//
+// Distances are euclidean in stage pixels; the push is tangential, which is the
+// circular form of the Dock's sideways nudge and the only direction that keeps
+// every icon on the ring.
+// The reach and the nudge are stated as multiples of the gap between icons,
+// not as pixels, because that gap is not a constant: it is the ring's
+// circumference divided by however many tools a project lists. Fixed pixel
+// figures tuned on hailcast's 32-icon ring would collapse on a sparser one —
+// at 14 icons the gap is 122px, and a 62px reach leaves the immediate
+// neighbour swelling by 1% instead of 36%, so only the icon directly under the
+// cursor would move and the bubble would read as a hover state. Relative, the
+// effect feels identical at any density.
+const BUBBLE_SIGMA_GAPS = 1.35 // how far the influence reaches, in icon gaps
+const BUBBLE_PUSH_GAPS = 0.55 // peak sideways nudge, in icon gaps
+const BUBBLE_MAG = 0.62 // the icon under the cursor grows by this much
+const BUBBLE_MAX = 1.9 // ceiling, so an already-highlighted icon cannot compound past it
+// Must match --wheel-raster in the stylesheet. The circle is laid out at
+// BUBBLE_MAX times its logical size and scaled back down, so the icon under the
+// cursor lands on scale(1) and is drawn at its own resolution rather than
+// stretched — the logo is 62% of a 51px circle, so magnifying it the other way
+// round rasterised a 32px image and blew it up to 60.
+const WHEEL_RASTER = BUBBLE_MAX
+// Kept clear of the stage's own edge when an icon has to be pulled inward.
+const INWARD_SAFETY = 3
+// The highlighted category's icons carry a ring outside the circle — the
+// box-shadow on `.wheel__node--on .wheel__node-mark`, whose logical width this
+// must match. It has to be counted in the containment below: with the circle
+// alone the worst icon sat 4px INSIDE the stage's box and the ring around it
+// still crossed by 1px, which is the sliver that survived the first fix. What
+// gets clipped is the halo, not the circle.
+const FOCUS_RING = 4
+const BUBBLE_EASE = 0.3
+const BUBBLE_SETTLED = 0.01
+
 // Geometry, in the 0–100 space the wheel's container is measured in. The pie
 // occupies the middle, the icons ride a ring outside it.
 const CENTER = 50
@@ -207,15 +252,39 @@ export default function TechStackWheel({ groups }) {
 
   const dialRef = useRef(null)
   const ringRef = useRef(null)
+  const stageRef = useRef(null)
+  // The pointer, in stage pixels, or null. A ref rather than state: it changes
+  // with every mouse move and nothing rendered depends on it, so putting it in
+  // state would re-render the whole wheel hundreds of times a second to change
+  // where some transforms point.
+  const pointerRef = useRef(null)
+  const stageBoxRef = useRef(null)
+  // The circle's logical size in px — its drawn size divided back down by the
+  // raster factor. Read from the DOM rather than recomputed, so the clamp() in
+  // the stylesheet stays the single source of truth for it.
+  const markSizeRef = useRef(0)
+  // Per-node lerped values, so a frame eases from wherever the last one left
+  // off rather than snapping to the target.
+  const bubbleRef = useRef([])
+  const bubbleFrameRef = useRef(0)
+  // What `paint` needs from the render without being rebuilt when it changes —
+  // rebuilding `paint` would restart the drift loop that depends on it.
+  const activeRef = useRef(0)
+  const bubblingRef = useRef(false)
   const labelRefs = useRef([])
   const spinRefs = useRef([])
   const nodeRefs = useRef([])
+  const markRefs = useRef([])
   // The live angle. Deliberately a ref: it changes every frame and nothing
   // rendered depends on it.
   const angleRef = useRef(0)
 
   const activeIndex = hoverIndex ?? pinnedIndex ?? cycleIndex
   const paused = hoverIndex !== null || pinnedIndex !== null
+  activeRef.current = activeIndex
+  // The bubble is live only once the wheel has been handed over by a click, and
+  // never under prefers-reduced-motion.
+  bubblingRef.current = !drifting && !reduceMotion
 
   // Wedges are sized by how many icons a category holds, not split evenly:
   // an even split gave a one-icon category the same wedge as a four-icon one
@@ -289,17 +358,161 @@ export default function TechStackWheel({ groups }) {
         node.dataset.tip = y < TIP_FLIP_Y ? 'below' : 'above'
         node.dataset.tipX =
           x < TIP_EDGE_X ? 'start' : x > 100 - TIP_EDGE_X ? 'end' : 'center'
+
+        // The node carries the position, the mark carries the size. Splitting
+        // them is what keeps the tooltip out of the scale: the name is a
+        // *sibling* of the mark, so growing the mark leaves the label at its
+        // proper size, and `--node-scale` below tells the CSS how far to move
+        // it clear of the grown circle.
+        const live = bubbleRef.current[index] ?? { scale: 1, px: 0, py: 0, bell: 0 }
+        node.style.transform = `translate(-50%, -50%) translate(${live.px.toFixed(
+          2
+        )}px, ${live.py.toFixed(2)}px)`
+        node.style.zIndex = String(1 + Math.round(live.scale * 10))
+        node.style.setProperty('--node-scale', live.scale.toFixed(4))
+        node.style.setProperty('--node-bell', live.bell.toFixed(3))
+
+        const mark = markRefs.current[index]
+        if (mark) mark.style.transform = `scale(${(live.scale / WHEEL_RASTER).toFixed(4)})`
       })
     },
     [arcs, ringItems]
   )
 
+  // One step of the bubble's easing. Pure state work — it writes nothing to the
+  // DOM, which `paint` does immediately after with whatever this leaves behind.
+  const advance = useCallback(
+    (snap) => {
+      const box = stageBoxRef.current
+      const pointer = bubblingRef.current ? pointerRef.current : null
+      const angle = angleRef.current
+      let settled = true
+
+      // The gap between neighbouring icons along the ring, which everything
+      // below is measured in.
+      const gap =
+        box && ringItems.length
+          ? (2 * Math.PI * (ICON_R / 100) * box.w) / ringItems.length
+          : 0
+      const sigma = gap * BUBBLE_SIGMA_GAPS
+      const push = gap * BUBBLE_PUSH_GAPS
+      // Half the circle at rest, in px. The mark is laid out at WHEEL_RASTER
+      // times this and scaled back, so the *rendered* radius is this times the
+      // logical scale.
+      const markRadius = markSizeRef.current / 2
+
+      ringItems.forEach((entry, index) => {
+        const on = entry.groupIndex === activeRef.current
+        const want = { scale: on ? 1.15 : 1, px: 0, py: 0, bell: 0 }
+
+        if (pointer && box) {
+          // Where this icon actually is on screen, which is its own spoke plus
+          // whatever rotation the ring is carrying.
+          const rad = ((entry.angle + angle - 90) * Math.PI) / 180
+          const cx = (CENTER + ICON_R * Math.cos(rad)) / 100 * box.w
+          const cy = (CENTER + ICON_R * Math.sin(rad)) / 100 * box.h
+          const dist = Math.hypot(cx - pointer.x, cy - pointer.y)
+          const u = sigma > 0 ? dist / sigma : 0
+          const bell = Math.exp(-u * u)
+
+          want.bell = bell
+          want.scale = Math.min(want.scale * (1 + BUBBLE_MAG * bell), BUBBLE_MAX)
+
+          // Tangential, so a nudged icon stays on the ring. Magnitude is the
+          // derivative of the swell — zero directly under the cursor, largest
+          // just outside it — and the sign is whichever way around the ring
+          // leads away from the pointer.
+          const amount = push * u * Math.exp(-(u * u) / 2)
+          const nodeAngle = ((entry.angle - 90) * Math.PI) / 180
+          const pointerAngle =
+            Math.atan2(pointer.y - box.h / 2, pointer.x - box.w / 2) - (angle * Math.PI) / 180
+          const delta = Math.atan2(
+            Math.sin(nodeAngle - pointerAngle),
+            Math.cos(nodeAngle - pointerAngle)
+          )
+          const sign = delta >= 0 ? 1 : -1
+          want.px = -Math.sin(nodeAngle) * amount * sign
+          want.py = Math.cos(nodeAngle) * amount * sign
+
+          // Pulled inward, but only as far as it has to be. A magnified circle
+          // reaches past the stage's own box by 11px at the widest wheel and
+          // 23px at the narrowest, and the only thing that was saving it is
+          // `overflow-clip-margin` — the newest part of the clip spec, and the
+          // piece Safari shipped years after `overflow: clip` itself. Where it
+          // is not honoured the clip is hard at the box edge and the icon is
+          // sliced by exactly that overhang.
+          //
+          // This never showed before the bubble: at the old 1.15 ceiling the
+          // overhang was a single pixel *inside* the box. So rather than lean on
+          // a property that may be ignored, an icon that would cross the edge
+          // slides in along its own radius by the overshoot and no more. At rest
+          // and anywhere in the middle of the ring this is exactly zero.
+          const reach = (ICON_R / 100) * box.w + (markRadius + FOCUS_RING) * want.scale
+          const overshoot = reach - (box.w / 2 - INWARD_SAFETY)
+          if (overshoot > 0) {
+            want.px -= Math.cos(nodeAngle) * overshoot
+            want.py -= Math.sin(nodeAngle) * overshoot
+          }
+        }
+
+        const cur = bubbleRef.current[index] ?? { ...want }
+        if (snap) {
+          Object.assign(cur, want)
+        } else {
+          cur.scale += (want.scale - cur.scale) * BUBBLE_EASE
+          cur.px += (want.px - cur.px) * BUBBLE_EASE
+          cur.py += (want.py - cur.py) * BUBBLE_EASE
+          cur.bell += (want.bell - cur.bell) * BUBBLE_EASE
+          if (
+            Math.abs(want.scale - cur.scale) > BUBBLE_SETTLED ||
+            Math.abs(want.px - cur.px) > BUBBLE_SETTLED ||
+            Math.abs(want.py - cur.py) > BUBBLE_SETTLED ||
+            Math.abs(want.bell - cur.bell) > BUBBLE_SETTLED
+          ) {
+            settled = false
+          }
+        }
+        bubbleRef.current[index] = cur
+      })
+
+      return settled
+    },
+    [ringItems]
+  )
+
+  // Runs only while the bubble is actually moving, and stops itself once every
+  // icon has arrived. Separate from the drift loop because the two never run at
+  // once: the drift belongs to the wheel before it is clicked, this to the
+  // wheel after.
+  const bubbleTick = useCallback(() => {
+    if (bubbleFrameRef.current) return
+    const step = () => {
+      const settled = advance(false)
+      paint(angleRef.current)
+      bubbleFrameRef.current = settled ? 0 : requestAnimationFrame(step)
+    }
+    bubbleFrameRef.current = requestAnimationFrame(step)
+  }, [advance, paint])
+
+  useEffect(() => () => cancelAnimationFrame(bubbleFrameRef.current), [])
+
   // The home alignment, painted before the browser gets a chance to show a
   // frame without it. Without this the labels — whose translate(-50%, -50%)
   // now lives in `paint` rather than in JSX — would flash unpositioned.
   useLayoutEffect(() => {
+    if (stageRef.current) {
+      const box = stageRef.current.getBoundingClientRect()
+      stageBoxRef.current = { w: box.width, h: box.height }
+    }
+    const firstMark = markRefs.current.find(Boolean)
+    if (firstMark) markSizeRef.current = firstMark.offsetWidth / WHEEL_RASTER
+    // Never interrupt a running ease. Leaving the wheel nulls the pointer and
+    // schedules a frame before the re-render lands, and snapping here would
+    // pop every icon back to rest instead of letting them deflate.
+    if (bubbleFrameRef.current) return
+    if (pointerRef.current === null) advance(true)
     paint(angleRef.current)
-  }, [paint])
+  })
 
   useEffect(() => {
     if (reduceMotion || !drifting) return
@@ -375,8 +588,25 @@ export default function TechStackWheel({ groups }) {
   }
 
   return (
-    <div className="wheel" onMouseLeave={() => setHoverIndex(null)}>
-      <div className="wheel__stage">
+    <div
+      className="wheel"
+      onMouseLeave={() => {
+        setHoverIndex(null)
+        pointerRef.current = null
+        bubbleTick()
+      }}
+    >
+      <div
+        className="wheel__stage"
+        ref={stageRef}
+        onMouseMove={(event) => {
+          if (!bubblingRef.current) return
+          const box = event.currentTarget.getBoundingClientRect()
+          stageBoxRef.current = { w: box.width, h: box.height }
+          pointerRef.current = { x: event.clientX - box.left, y: event.clientY - box.top }
+          bubbleTick()
+        }}
+      >
         {/* The pie and its labels turn as one piece, so a label never drifts
             off the wedge it names — only the ring outside it does. */}
         <div className="wheel__dial" ref={dialRef}>
@@ -480,7 +710,12 @@ export default function TechStackWheel({ groups }) {
                     spinRefs.current[index] = node
                   }}
                 >
-                  <span className="wheel__node-mark">
+                  <span
+                    className="wheel__node-mark"
+                    ref={(node) => {
+                      markRefs.current[index] = node
+                    }}
+                  >
                     {icon ? (
                       <img src={icon} alt="" loading="lazy" />
                     ) : (
@@ -497,7 +732,7 @@ export default function TechStackWheel({ groups }) {
                   </span>
                 </span>
                 <span className="sr-only">
-                  {item} — {groups[groupIndex].category}
+                  {item}: {groups[groupIndex].category}
                 </span>
               </li>
             )

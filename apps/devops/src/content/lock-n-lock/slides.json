@@ -1,0 +1,572 @@
+{
+  "deck": "Lock & Lock — Security Detection & Response and Automated Financial Ops",
+  "totalSlides": 72,
+  "imageFormat": "webp",
+  "imageDimensions": {
+    "width": 1800,
+    "height": 1013
+  },
+  "sourceRenderer": "PowerPoint-exported PDF, rasterised with PDFKit",
+  "imageBase": "/projects/lock-n-lock/slides/",
+  "coverSlides": [
+    1,
+    2
+  ],
+  "sections": [
+    {
+      "id": "overview",
+      "num": "01",
+      "title": "Project Overview",
+      "slideStart": 3,
+      "slideEnd": 6
+    },
+    {
+      "id": "team",
+      "num": "02",
+      "title": "Team Members & Roles",
+      "slideStart": 7,
+      "slideEnd": 8
+    },
+    {
+      "id": "process",
+      "num": "03",
+      "title": "Process & Methodology",
+      "slideStart": 9,
+      "slideEnd": 12
+    },
+    {
+      "id": "architecture",
+      "num": "04",
+      "title": "System Architecture",
+      "slideStart": 13,
+      "slideEnd": 20
+    },
+    {
+      "id": "results",
+      "num": "05",
+      "title": "Results & Demo",
+      "slideStart": 21,
+      "slideEnd": 58
+    },
+    {
+      "id": "troubleshooting",
+      "num": "06",
+      "title": "Troubleshooting Cases",
+      "slideStart": 59,
+      "slideEnd": 66
+    },
+    {
+      "id": "evaluation",
+      "num": "07",
+      "title": "Self-Assessment",
+      "slideStart": 67,
+      "slideEnd": 72
+    }
+  ],
+  "slides": [
+    {
+      "number": 1,
+      "file": "slide-01.webp",
+      "section": "cover",
+      "hasNotes": true,
+      "notes": "Hello, I'm Junhan Shin, team lead of TEAM 1, Lock & Lock. We built “LockBank,” a system that detects and responds to security events for a financial service and automates operations end to end. I'll begin the presentation now."
+    },
+    {
+      "number": 2,
+      "file": "slide-02.webp",
+      "section": "cover",
+      "hasNotes": true,
+      "notes": "The presentation will proceed in the following order: project overview, process and methodology, system architecture, actual results and demo, troubleshooting/debugging, and finally self-assessment."
+    },
+    {
+      "number": 3,
+      "file": "slide-03.webp",
+      "section": "overview",
+      "hasNotes": true,
+      "notes": "First, the project overview."
+    },
+    {
+      "number": 4,
+      "file": "slide-04.webp",
+      "section": "overview",
+      "hasNotes": true,
+      "notes": "Our topic was about detecting and responding to security events for a financial service and automating operations.\nWe aimed to proactively defend against the 3 core incidents with the greatest impact in a security breach: abnormal logins, API flooding, and container failures.\nIn particular, we built and validated infrastructure with self-healing capability for a financial domain that demands strict availability.\nOur goal was to build a security-friendly infrastructure that addresses the 3 core incidents with the greatest impact among the various security incidents that commonly occur.\nWe also aimed to build an automated system with built-in self-healing capability to improve operational efficiency around security events."
+    },
+    {
+      "number": 5,
+      "file": "slide-05.webp",
+      "section": "overview",
+      "hasNotes": true,
+      "notes": "Our planning intent rests on three pillars: building a security-first financial environment, detecting and alerting on threats or failures in real time, and creating high-availability infrastructure based on self-healing.\nSecurity, Monitoring, and Self-Healing are the three core pillars.\nDesign an AWS financial infrastructure (VPC, private subnets) that minimizes external exposure, and linked static/dynamic security verification (Bandit, Trivy, OWASP ZAP) at the CI/CD stage with Blue-Green deployment to block vulnerabilities from ever reaching production.\nBlock and throttle critical financial security events such as abnormal logins and API traffic floods in real time via fail2ban and Nginx rate limiting, and immediately alert administrators through Alertmanager the moment anomalies occur.\nUnify infrastructure and app metrics (Prometheus, CloudWatch) when a container or app failure occurs into a single view (Grafana) while the Recovery Controller auto-recovers within 5 minutes (RTO/RPO of 5 minutes) to minimize service downtime."
+    },
+    {
+      "number": 6,
+      "file": "slide-06.webp",
+      "section": "overview",
+      "hasNotes": true,
+      "notes": "Our tech stack is centered on IaC, organized into development/collaboration, infrastructure/containers, monitoring/alerting, and automation.\nCore tools included Terraform, Docker, Prometheus, Grafana, Alertmanager, Telegram, and the security scanner ZAP.\n• Development & Collaboration: VS Code, GitHub, Google Drive, Notion\n• Infrastructure & Containers: Terraform, Ansible, Docker CLI\n• Monitoring & Alerting: Prometheus, Grafana, Telegram Bot\n• Automation: GitHub Actions"
+    },
+    {
+      "number": 7,
+      "file": "slide-07.webp",
+      "section": "team",
+      "hasNotes": true,
+      "notes": "Next is team structure and roles."
+    },
+    {
+      "number": 8,
+      "file": "slide-08.webp",
+      "section": "team",
+      "hasNotes": true,
+      "notes": "We split our team’s responsibilities into 5 parts, named A through E.\nTrack A owned the full Terraform-based AWS infrastructure and IaC; B covered the app and DB; C covered CI/CD; D covered monitoring and recovery; and E covered the security scenario.\nA key feature was designing clear interfaces so each track's deliverables connected cleanly to the others."
+    },
+    {
+      "number": 9,
+      "file": "slide-09.webp",
+      "section": "process",
+      "hasNotes": true,
+      "notes": "Let me walk through our process and methodology."
+    },
+    {
+      "number": 10,
+      "file": "slide-10.webp",
+      "section": "process",
+      "hasNotes": true,
+      "notes": "We ran a 4-week schedule.\nWeek 1: topic selection and architecture design. Week 2: infrastructure build and app/DB implementation. Week 3: monitoring and security scenario implementation. Week 4: final review, demo flow testing, demo recording, and presentation preparation."
+    },
+    {
+      "number": 11,
+      "file": "slide-11.webp",
+      "section": "process",
+      "hasNotes": true,
+      "notes": "We ran Git collaboration in 3 stages. First, a **3-tier branch model (Feature → Dev → Main)** with role-based prefixes prevented conflicts. Second, we blocked direct pushes and required a rule where merging only happens after at least 1 approval and all review comments are resolved.\nA key differentiator was automating first-pass code review with the Gemini Review Bot.\n1. Three-tier branch structure\nPer-track working branches (feature/<track>-<topic>): Prefixes for a(infrastructure), b(app), c(CI), d(monitoring), and e(security) clearly marked each role area to prevent collaboration conflicts\nDev branch: Shared integration space for all tracks' code (Gatekeeper: Jongwon Lim)\nMain branch: Final operations and deployment (Final approval: Junhan Shin)\n2. Code quality & loss-prevention rules (Main and Dev)\nBlock direct pushes: All code must be merged via a Pull Request (PR)\nAt least 1 approval required: a Peer reviewer's approval is required before merging\nConversation-resolution requirement: Merging is only possible once all review comments are resolved\nSafeguards: Force pushes and branch deletion are blocked entirely\n3. Core real-world process\nUpdate dev, then create a feature/ branch per feature\nOnce work is complete, open a PR targeting (base) the dev branch\nMerge after addressing reviewer comments and resolving them"
+    },
+    {
+      "number": 12,
+      "file": "slide-12.webp",
+      "section": "process",
+      "hasNotes": true,
+      "notes": "We followed a PR-based iterative development process from issue to deployment.\nAfter defining a feature, we created a feature branch, followed commit conventions, and on opening a PR, went through **automated CI checks (build/security scan)** and Gemini review before integrating into dev, verifying E2E, and merging to main."
+    },
+    {
+      "number": 13,
+      "file": "slide-13.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "Now, the system architecture."
+    },
+    {
+      "number": 14,
+      "file": "slide-14.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "This is the overall architecture from the design phase. It's a hybrid structure linking AWS in the cloud with on-premises infrastructure, flowing as a single path from user requests through monitoring, security, and recovery.\nWe maximized security by isolating the Public zone connected to the outside internet (Route 53, ALB, Bastion, NAT) from the Private zone (App, DB).\nThrough a multi-AZ design (AZ-a, AZ-c) and Auto Scaling Group (ASG), we built high-availability infrastructure that guarantees financial service continuity even during server outages or traffic surges.\nFor data safety, we adopted a Main DB (EC2) and Replica structure."
+    },
+    {
+      "number": 15,
+      "file": "slide-15.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "From the user's perspective, requests pass through the ALB to app instances in the Auto Scaling group, with Nginx in front acting as the single entry point and first line of defense.\nClient → Route 53 → IGW → ALB → Private Subnet (App server)\nUsers have no way of knowing the real IP of internal servers because they can only enter securely through Route 53 and the ALB.\nAll user traffic is encrypted over HTTPS (port 443) via ACM (AWS Certificate Manager) integration."
+    },
+    {
+      "number": 16,
+      "file": "slide-16.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "Administrator's perspective\nAdministrators bypass the public internet entirely and access internal infrastructure only through a Tailscale tunnel.\nWhen a failure or threshold breach occurs, CloudWatch triggers an ASG scale-out to self-heal by expanding server capacity, sends alerts via the on-prem Grafana dashboard and Telegram notifications, and administrators can control the situation in real time.\nFor stability, internal data is automatically backed up to S3, AWS's durable storage, via periodic pg_dump."
+    },
+    {
+      "number": 17,
+      "file": "slide-17.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "In the case of when Blue-Green zero-downtime deployment is implemented (future work).\nThe goal is for the CI/CD workflow (runner) to pre-deploy new-version code to the Green environment, then switch routing to serve traffic without downtime. If a bug is found, it would immediately revert the load balancer back to Blue, which enables a fully automated zero-downtime rollback.\nWe designed the structure for Blue-Green zero-downtime deployment, but we separated it out as future work since it still needs stabilization testing. We'll cover this in more detail in the demo section later."
+    },
+    {
+      "number": 18,
+      "file": "slide-18.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "This is the container diagram. It shows how the app, DB, monitoring, and security containers are designed.\nAt the container level, the app, DB, monitoring, and security components each run as independent containers, connected over the Tailscale network."
+    },
+    {
+      "number": 19,
+      "file": "slide-19.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "The defining feature of our infrastructure is the hybrid setup.\nWe connected the on-prem Rocky8 server with the AWS cloud via Tailscale, so they operate as though they are on the same network.\nThe Replica DB and monitoring live on-prem while core services live in the cloud.\nA hybrid setup connecting on-premises and AWS directly via Tailscale:\nOn-premises (proj-mgmt · Rocky8): Control, Monitoring stack, Replica DB\nCloud (AWS VPC): ALB, ASG (App), Bastion, Main DB\nConnection (Tailscale L3): Bastion as subnet router, Direct on-prem↔VPC link with no public ports opened\nBenefits: Private-network security, Use of on-prem resources, Unified observability across a single Tailnet"
+    },
+    {
+      "number": 20,
+      "file": "slide-20.webp",
+      "section": "architecture",
+      "hasNotes": true,
+      "notes": "A Self-Healing Loop that automatically detects and recovers from failures:\nRecovery scope:\n•  App down → automatic FastAPI container recovery\n•  EC2 instance down → automatic ASG-based instance recovery\n1   Detection: Prometheus-based app failure detection\n2   Policy Decision: Look up recovery policy\n3   Dependency Check: Verify DB connection status\n4   Recovery Action: Automatically restart the LockBank app container\n5   Verify: Run health check\n6   Logging & Notification: Log the recovery and send a Telegram notification"
+    },
+    {
+      "number": 21,
+      "file": "slide-21.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "From here, I'll show what we actually built and demo it."
+    },
+    {
+      "number": 22,
+      "file": "slide-22.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the infrastructure track's key deliverable.\nWe auto-generated about 60 AWS resources via Terraform code, and we used S3 and DynamoDB for the team to manage safely and concurrently.\nWe connected on-premises and the cloud via Tailscale, and we even optimized cost with a NAT Instance and Bastion.\nTailscale node-to-node (L3) hybrid connectivity\nFor the hybrid connection between the on-premises (VMware Rocky Linux) environment and AWS, we used a pure Tailscale node-to-node L3 encrypted tunnel instead of an L2 overlay (VXLAN).\nSetting accept-routes=false prevented routing conflicts (VSCode Remote-SSH disconnects) while each node's 100.x Tailscale virtual IP was used to build a secure communication network."
+    },
+    {
+      "number": 23,
+      "file": "slide-23.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the infrastructure code structure.\nWe split network, security groups, compute, ALB, Tailscale, IAM, CloudWatch, etc. into separate .tf files by module.\nI especially want to highlight outputs.tf because it outputs the ALB DNS, Target Group ARN, Security Group ID, DB IP, and more.\nActs as an interface that other tracks consume directly. We wired the tracks together by having them reference these output values."
+    },
+    {
+      "number": 24,
+      "file": "slide-24.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Track B is the FastAPI financial app. We implemented login, transfers, and dashboard. We split the DB into Main and Replica with real-time replication. It has built-in app security such as CSRF, bcrypt, sessions, and security logs. It is built as a Docker image and deployed to Docker Hub.\nAnsible-based automated configuration management\nAfter infrastructure provisioning finishes, it automatically installs middleware packages needed for operations and security (Docker, Nginx, fail2ban, etc.) on the target servers and keeps configuration state consistent.\nImplementing the financial web demo application\nBuilt on the FastAPI framework, implementing user login/logout, dashboard (balance inquiry, recent transfer history), and transfer/deposit business logic.\nDB read/write splitting (Main/Replica DB) and synchronization\nTransfer/deposit (write) transactions go to the Main DB on AWS, while queries and login verification (read) are routed to the Replica DB on-premises (VMware), connected over the Tailscale L3 network. Achieves high availability and load distribution.\nCustom metrics collection wired into monitoring\nInternal application security events such as cumulative failed logins (login_failed_total) and cumulative transfer requests (transfer_requests_total) are defined as Prometheus custom metrics and exposed via the /metrics endpoint.\nDB read/write splitting (Main/Replica DB) and synchronization\nTransfer/deposit (write) transactions go to the Main DB on AWS while queries and login verification (read) are routed to the Replica DB on-premises (VMware), connected over the Tailscale L3 network. Achieves high availability and load distribution."
+    },
+    {
+      "number": 25,
+      "file": "slide-25.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The app is built around Dockerfile and main.py, and DB provisioning is automated with Ansible playbooks. Main and Replica are brought up sequentially, and even daily S3 backups and replication-permission initialization are managed as code."
+    },
+    {
+      "number": 26,
+      "file": "slide-26.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "For Track C, we applied a DevSecOps automation pipeline as our CI/CD and deployment strategy.\nWe built 3 GitHub Actions workflows (plan, deploy, destroy) and automated a 3-stage security scan with Bandit, Trivy, and ZAP.\nWe optimized builds to trigger only on detected changes via paths-filter, and isolated each team's secrets using Environments.\n3. CI/CD & DevSecOps Pipeline\n• Built CI/CD on GitHub Actions\n• Automated triple security scanning\nBuilt CI/CD on GitHub Actions\nBuilt a deployment pipeline (deploy.yml) that automatically builds, runs vulnerability tests, and performs remote deployment and rollback on every code push.\nAutomated triple security scanning\nBandit: static vulnerability scan of Python code (SAST)\nTrivy: vulnerability scan of the built Docker image and its packages\nOWASP ZAP: dynamic web application vulnerability check before deployment completes (DAST)\nAutomated 3-stage security scanning: Integrates Bandit, Trivy, and OWASP ZAP into the CI/CD pipeline, automating 3-stage security verification across the full software lifecycle and vulnerability response.\nAutomated triple security scanning\nBandit: static vulnerability scan of Python code (SAST)\nTrivy: vulnerability scan of the built Docker image and its packages\nOWASP ZAP: dynamic web application vulnerability check before deployment completes (DAST)"
+    },
+    {
+      "number": 27,
+      "file": "slide-27.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Before showing Track C's code structure, let me first explain DevSecOps.\nDevSecOps combines DevOps with security. It is a methodology that embeds security into the entire lifecycle: planning, development, testing, deployment, operations, and monitoring.\nTraditionally, teams moved fast through development and deployment, then crammed security checks into the final stage, which often delayed releases or letting security gaps slip through.\nDevSecOps solves this with the core idea of \"Shift-Left”. It pulls security earlier into development. In other words, it factors security in from the earliest planning and development stages, cutting cost and enabling fast, safe deployment."
+    },
+    {
+      "number": 28,
+      "file": "slide-28.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "True to our team name, Lock & Lock, we locked down security in 4 layers. Layer 1 is SAST, static code analysis; layer 2 is image vulnerability scanning; layer 3 is DAST, a dynamic check of the running app with ZAP; and layer 4 blocks real-time attacks at runtime via Nginx and Fail2ban.\nBandit is a static security testing (SAST) tool that analyzes Python source code without executing it. It finds security vulnerabilities and design flaws.\nTrivy is a container scanning tool that finds known vulnerabilities in the OS packages and open-source libraries inside a Docker image.\nOWASP ZAP (DAST) is a dynamic security testing (DAST) tool that runs simulated attacks against a live, running web application to find runtime vulnerabilities.\nExplanation of layers 1, 2, and 3\nBandit (SAST): a static security testing (SAST) tool that analyzes Python source code without executing it, to find security vulnerabilities and design flaws.\nVulnerabilities Bandit detects are matched to standard CWE (Common Weakness Enumeration) IDs in its report, making source-code-level defects easy to identify at a glance.\nTrivy: a container scanning tool that finds known vulnerabilities in the OS packages and open-source libraries inside a Docker image.\nTrivy links in real time to the CVE (Common Vulnerabilities and Exposures) data in NVD, the official vulnerability database maintained by the US government (NIST), to verify security flaws in the base image and build environment.\nOWASP ZAP (DAST): a dynamic security testing (DAST) tool that runs simulated attacks against a live, running web application to find runtime vulnerabilities.\nBecause it scans against the 'OWASP Top 10’ (the most authoritative global standard for web application vulnerabilities), it's best suited for assessing risk in a real production environment.\n1. SAST (Static Application Security Testing)\nMeaning: a technique that finds security flaws by analyzing source code, bytecode, or binaries without executing the software (white-box testing). [1, 2]\nCharacteristics:\nWhen tested: early in development (while coding or at build time)\nVulnerabilities found: code-level errors (SQL injection, hardcoded passwords, memory leaks, weak encryption, etc.)\nAdvantage: pinpoints the exact code line where the vulnerability occurs, enabling fast fixes.\n2. DAST (Dynamic Application Security Testing)\nMeaning: a technique that injects input from the perspective of an outside attacker (black-box testing) while the software is running, to find abnormal behavior or vulnerabilities. [1, 2, 3]\nCharacteristics:\nWhen tested: late in development (usually after deployment to a test or staging environment)\nVulnerabilities found: runtime environment issues (server misconfiguration, auth/authorization bypass, cookie and session vulnerabilities, etc.)\nAdvantage: uncovers potential attack paths that arise in a real production environment and structural vulnerabilities that only appear while running.\nSAST (Static Application Security Testing): finds potential security vulnerabilities by analyzing the structure and patterns of source code, bytecode, or binaries without executing the application.\nDAST (Dynamic Application Security Testing): detects runtime environment vulnerabilities by manipulating input and analyzing responses from the same perspective as an outside attacker while the application is running. [1, 2, 3, 4, 5]"
+    },
+    {
+      "number": 29,
+      "file": "slide-29.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "We put the entire pipeline into this one slide. This shows the flow that automatically connects everything from the PR through security scanning, build/push, and to deployment.\nCI/CD & DevSecOps Pipeline\nWhen a developer pushes and the code lands in the GitHub repo, GitHub Actions runs code tests. Bandit inspects the source code for vulnerabilities and assigns each one a CWE ID.\nOnce the vulnerability check finishes, it builds the Docker image and runs Trivy to check for OS and package vulnerabilities inside the image.\nAfter security verification completes, the image is pushed for the final time.\nDeployment proceeds via a manual trigger button.\nAfter deployment, OWASP ZAP launches attacks against the live URL.\nAfter the attack run, it writes a security vulnerability report as a GitHub issue, reporting whatever vulnerabilities were found.\nThe team fixes the discovered vulnerabilities and does a final push."
+    },
+    {
+      "number": 30,
+      "file": "slide-30.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The CI/CD code consists of the plan/deploy/destroy workflows, issue and PR templates, and deployment helper scripts. As shown at the bottom, this track acts as the hub connecting tracks. It consumes Track B's Docker images and Track A's Makefile targets."
+    },
+    {
+      "number": 31,
+      "file": "slide-31.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Track D is the observability and auto-recovery stack. We built an observability stack of 11 containers (Prometheus, Grafana, Loki, and more), and implemented dual alerting via CloudWatch and Alertmanager, policy-based auto-recovery, and dynamic target discovery via Tailscale SD."
+    },
+    {
+      "number": 32,
+      "file": "slide-32.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "For monitoring, we separated Prometheus, Grafana, Alertmanager, Loki, the Recovery Controller, etc. into their own directories, and built a bootstrap script that queries AWS resources to configure everything automatically.\nPrometheus & Grafana observability\nCollects system metrics and custom metrics (failed login count, transfer request count, etc.) via Prometheus and visualizes them in real time on a Grafana dashboard.\nUnified log collection via Loki & Promtail\nCollects Nginx access/error logs, application logs, and system logs in real time and feeds them into the dashboard.\nSelf-healing Recovery Controller\nBuilt a self-healing engine that, on alerts like BankAppDown, restarts containers and verifies health-check status via API, and immediately reports recovery success or failure over Telegram.\n•  Unified log collection via Loki & Promtail: recovery logs and security event logs are collected by Promtail, stored in Loki, and queried in Grafana as an operational history\n•  Pre-Verify based auto-recovery: checks status via health check before running recovery, and only restarts the remote container when there's an actual failure\n•  Verify-based recovery outcome: re-checks the same endpoint after recovery to confirm the service is actually back to normal"
+    },
+    {
+      "number": 33,
+      "file": "slide-33.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Track E covers attack simulation and layered defense. We generated attack traffic with 3 Locust scenarios, defended in layers with Nginx rate limiting and Fail2ban, and responded automatically all the way from detection to alerting, blocking, and Telegram notification. We also documented our incident response procedure.\n• Locust load & attack scenarios: Generates large-scale traffic requests with the load-testing tool (Locust) to validate the real-time blocking effectiveness of the Nginx and fail2ban defense mechanisms.\nLocust load & attack scenarios: writes real attack scenarios (normal user traffic, brute-force login attempts, large-scale API flooding) to rigorously stress-test the system for security validation.\n• Nginx rate limit: the Nginx web server watches per-client-IP request counts for each API and blocks immediately once a threshold is exceeded.\nNginx rate limit: when a sudden surge of API requests occurs, rate limiting kicks in, returning HTTP 429 (Too Many Requests) and throttling requests to FastAPI.\n• fail2ban automatic IP blocking: the host OS (fail2ban) uses regex to detect attacker IPs in Nginx's JSON logs, and automatically isolates them via firewall (iptables) rules once a threshold is exceeded\nfail2ban automatic IP blocking: once failed login attempts exceed a threshold, it detects the pattern in the Nginx access log and automatically blocks that IP at the firewall in real time, sending a block notification."
+    },
+    {
+      "number": 34,
+      "file": "slide-34.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The security code consists of attack scripts, policy documents, and validation scripts. Defense operates in two stages. The first stage is handled by Nginx: if requests spike within a short window, it throttles with a 429 response. Any IP that keeps hammering anyway gets isolated entirely at the second stage by Fail2ban via iptables. Fail2ban maintains three jails by attack type, each detecting and containing IPs for login brute-forcing, traffic flooding, and vulnerability scanning respectively.\n① nginx-login : \"If the same IP keeps failing logins (401), treat it as a brute-force attack and block it.\" A legitimate user might mistype a few times but succeeds soon after; a bot fails hundreds of times, revealing the pattern.\n② nginx-rate-limit : \"If an IP that Nginx rate limiting is already blocking with 429 keeps hammering, block the IP outright.\" This traps persistent IPs trying to punch through the first line of defense (Nginx 429).\n③ nginx-scan : \"Block IPs scanning paths that don't exist in our app, like WordPress or PHP admin pages.\" This stops automated scans attackers send looking for vulnerabilities before they ever reach the application."
+    },
+    {
+      "number": 35,
+      "file": "slide-35.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "We unified all operations under Makefile commands at the repo root. Setup installs tools, joins Tailscale, verifies the environment, and a single full-service deploys everything from build through infrastructure, DB, and monitoring."
+    },
+    {
+      "number": 36,
+      "file": "slide-36.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the initial setup stage. Setup installs the tools and connects Tailscale, then checks if it acts as the gate. If there's a problem with credentials, Docker, or Tailscale, it blocks immediately before deployment to prevent incidents."
+    },
+    {
+      "number": 37,
+      "file": "slide-37.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Full-service runs in three stages: Service builds the image and deploys infrastructure and app/DB. Then, on EC2 boot, the app starts itself and followed by the monitoring stack coming up, auto-configuring the entire environment."
+    },
+    {
+      "number": 38,
+      "file": "slide-38.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Breaking down service: Builds the app & security Nginx images, pushes to Docker Hub, builds the bootstrap image, provisions infrastructure with Terraform, and deploys the DB with Ansible. The key part here is that the Tailscale IP gets auto-injected."
+    },
+    {
+      "number": 39,
+      "file": "slide-39.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The app starts itself the moment EC2 boots, with no separate deploy command. user_data pulls the bootstrap image, extracts the app files, brings up Nginx, FastAPI, and the exporter, then sets up the 3 Fail2ban jails.\nOnly Nginx port 80 is exposed externally, while FastAPI stays internal-only while keeping a single entry point."
+    },
+    {
+      "number": 40,
+      "file": "slide-40.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Finally, the monitoring service configures itself automatically. It queries AWS resources to generate dashboards and launch the stack. It collects AWS Nginx logs and turning them into metrics like attack counts. Those raw logs also feed into Loki, the log-only store, so on one Grafana screen you can see both the number: 'how many attacks happened' and the log, 'what requests actually came in.'\nWhat is Loki?\nLoki is a log-only storage and query system. It's made by the same team behind Grafana, and it lets you search and browse logs right inside the Grafana UI."
+    },
+    {
+      "number": 41,
+      "file": "slide-41.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the actual working LockBank login screen."
+    },
+    {
+      "number": 42,
+      "file": "slide-42.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the transfer screen. You can perform an account transfer transaction here."
+    },
+    {
+      "number": 43,
+      "file": "slide-43.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the transfer result screen, showing a transaction processed successfully."
+    },
+    {
+      "number": 44,
+      "file": "slide-44.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "We built a dedicated Security Center for an at-a-glance view of operations and security scenarios. This screen enables unified monitoring and control."
+    },
+    {
+      "number": 45,
+      "file": "slide-45.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Now for the demo. First is normal operation. A user logging in and transferring funds flows through Nginx → FastAPI → PostgreSQL, the health check returns 200 OK, and every panel on the Grafana dashboard is GREEN, collecting normally."
+    },
+    {
+      "number": 46,
+      "file": "slide-46.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Let's check this in the video. (plays video)"
+    },
+    {
+      "number": 47,
+      "file": "slide-47.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The second scenario is the login attack. When Locust runs a credential brute-force attack, it detects the 401 failures → Nginx returns 429 → Fail2ban auto-blocks the IP. The login_failed_total spike, the 429 spike, and a real-time Telegram alert all fire together."
+    },
+    {
+      "number": 48,
+      "file": "slide-48.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Let's check this in the video. (plays video)"
+    },
+    {
+      "number": 49,
+      "file": "slide-49.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "The third scenario is traffic flooding. When a large volume of API requests comes in, Nginx rate limiting blocks the excess with 429s, the failure is detected and a Telegram alert goes out, and service availability is maintained throughout."
+    },
+    {
+      "number": 50,
+      "file": "slide-50.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Let's check this in the video. (plays video)"
+    },
+    {
+      "number": 51,
+      "file": "slide-51.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Fourth scenario is container failure and self-healing. When we force-stop the app container to trigger a failure, the Recovery Controller detects the health-check failure and auto-restarts it, confirms the health-200 recovery via Verify, then logs the recovery and sends an alert."
+    },
+    {
+      "number": 52,
+      "file": "slide-52.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Let's check this in the video. (plays video)"
+    },
+    {
+      "number": 53,
+      "file": "slide-53.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Fifth scenario is safe deployment. A new version can only merge to main after passing all 3 stages of security scanning: Bandit, Trivy, and ZAP. The Blue-Green deployment structure, where Green is verified before traffic switches over with rollback on failure, is designed but left as future work.\nAdditional notes (if needed):\nPath Traversal: a vulnerability where an attacker manipulates input to escape a web server's public directory and access sensitive internal files (e.g., config files, source code, password files).\nSSRF (Server-Side Request Forgery): a vulnerability where an attacker abuses a web application server as a proxy, causing it to send network requests to unintended destinations.\nNote: for Bandit questions, see the speaker notes on p28"
+    },
+    {
+      "number": 54,
+      "file": "slide-54.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "This is the target structure for Blue-Green zero-downtime deployment. The next step is completing the zero-downtime switchover after passing the 3-stage security gate described earlier.\nThe goal is for the CI/CD workflow (runner) to pre-deploy new-version code to the Green environment, and then switching routing to serve traffic without downtime. If a bug is found, it will immediately revert the load balancer back to Blue, enabling a fully automated zero-downtime rollback."
+    },
+    {
+      "number": 55,
+      "file": "slide-55.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "Watch the Bandit demo video. Let's watch the video of our team actually using Bandit to find and remediate a Path Traversal and SSRF vulnerability.\nAdditional notes (if needed):\nPath Traversal: a vulnerability where an attacker manipulates input to escape a web server's public directory and access sensitive internal files (e.g., config files, source code, password files).\nSSRF (Server-Side Request Forgery): a vulnerability where an attacker abuses a web application server as a proxy, causing it to send network requests to unintended destinations.\nWatch the Trivy demo video\nLet's watch the video of us using Trivy to find and remediate container image vulnerabilities. It is a path traversal issue (jaraco.context) and a privilege escalation / arbitrary code execution issue (wheel).\nPath traversal (jaraco.context): a vulnerability that escapes the public directory to drop malicious files inside the system, contaminating and taking over the system environment.\nPrivilege escalation & arbitrary code execution (wheel): a vulnerability that elevates file permissions from regular to full admin and executes malicious code to take over the entire server.\nWatch the ZAP demo video\nLet's watch the video of us using ZAP to find and fully remediate a post-deployment vulnerability.\nNginx version disclosure: fully blocks hackers from learning the server software version (e.g., nginx/1.24.0) so they can't design a targeted attack.\nThe 3 Cross-Origin-Policy headers: block browser-side attacks where another malicious site tries to snoop on your login session or resources.\nStrict-Transport-Security: prevents a user's browser from ever connecting over plain HTTP, even by mistake, forcing HTTPS (encrypted) communication only.\nCache-Control: no-store, no-cache: sets cache expiry for login and other sensitive pages.\nPrivate IP Disclosure: prevents internal private IPs from leaking when an error occurs.\nNote: for questions, see the speaker notes on p28"
+    },
+    {
+      "number": 56,
+      "file": "slide-56.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "To sum up the results as metrics: ~60 Terraform resources auto-provisioned, 4-layer security lock across SAST/image/DAST/runtime, 6 layers passing E2E live verification GREEN, and 11 observability containers. We proved every scenario live from login-attack detection, blocking, and automatic container recovery."
+    },
+    {
+      "number": 57,
+      "file": "slide-57.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "We automated teardown. A single destroy command runs all 4 stages together: cleaning up monitoring AWS resources, removing the monitoring stack, cleaning up the Replica DB, and reclaiming the Terraform infrastructure."
+    },
+    {
+      "number": 58,
+      "file": "slide-58.webp",
+      "section": "results",
+      "hasNotes": true,
+      "notes": "In the end, a handful of Makefile-based commands covered the full operational cycle: building the container image, provisioning infrastructure, deploying the app, monitoring and recovery, and cleaning up resources.\nThis is the result of our team treating IaC-based operational automation as a core value."
+    },
+    {
+      "number": 59,
+      "file": "slide-59.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "The next topic is about our troubleshooting cases."
+    },
+    {
+      "number": 60,
+      "file": "slide-60.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "We organized the issues found and resolved across the whole project into 4 categories, totaling 6 issues: security detection, monitoring, infrastructure/deployment, and network. The shared lesson was that E2E live verification is what surfaced the gap between 'configured' and 'actually working.'"
+    },
+    {
+      "number": 61,
+      "file": "slide-61.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "This is our first case. Failed logins were handled as 302 redirects, so no 401 ever appeared in the log and detection metrics sat at 0. We changed the response to 401 and unified/doubled the detection source on the Nginx 401 log, then confirmed with a live run from detection through the Fail2ban block."
+    },
+    {
+      "number": 62,
+      "file": "slide-62.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "After introducing the Nginx reverse proxy, Prometheus stopped properly collecting app status. We introduced a Blackbox Exporter-based health check to restructure detection around user-facing access rather than the app itself."
+    },
+    {
+      "number": 63,
+      "file": "slide-63.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "Docker Hub login conflicted with the host's global config, making builds and pushes unstable. We pinned DOCKER_CONFIG to a repo-isolated folder in the Makefile and dynamically parsed the login ID, achieving reproducible behavior on any machine."
+    },
+    {
+      "number": 64,
+      "file": "slide-64.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "Even after restarting the container, the service wasn't recovering. The initial logic only restarted the app and missed DB/network dependencies. We added Main/Replica DB connection checks and network verification to the recovery procedure and finished with a health-check step."
+    },
+    {
+      "number": 65,
+      "file": "slide-65.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "The login page rendered, but the processing never completed. The firewall/NAT environment was preventing the Tailscale tunnel between the app and Replica DB from initializing. We fixed it by pinging the app instance to register the connection with the firewall (hole punching) and establishing a direct P2P connection."
+    },
+    {
+      "number": 66,
+      "file": "slide-66.webp",
+      "section": "troubleshooting",
+      "hasNotes": true,
+      "notes": "Right after we exposed the EC2 service, a flood of automated scans targeting WordPress/PHP web-shell vulnerabilities came in. We blocked it with an Nginx security policy that stops requests before they reach the application.\nCase 6: Automated web-shell scanning right after going live on the internet\nRight after exposing the EC2 service, a flood of automated scan requests targeting WordPress/PHP web-shell vulnerabilities came in.\nWe confirmed repeated access attempts against paths that don't exist.\nWe added an Nginx security policy that blocks PHP execution paths, blocks WordPress admin paths, and immediately returns 404 for unnecessary requests. This stopped them at the Nginx layer before they reached the application.\nOne-line summary for the talk\nThe moment we exposed EC2 to the internet, automated scan requests came in probing for WordPress web shells and admin pages. We responded by proactively blocking PHP/WordPress-related paths at Nginx so requests never reached the application."
+    },
+    {
+      "number": 67,
+      "file": "slide-67.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "Finally, our self-assessment."
+    },
+    {
+      "number": 68,
+      "file": "slide-68.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "The expected impacts are: an operational security automation framework, improved service availability and stability, improved operational efficiency, scalability and cost efficiency, stronger real-world DevOps skills, and stronger recovery capability.\nEstablished an operational security automation framework\nDetect and auto-respond to security events like login attacks and API flooding in real time can shorten operator response time.\nAutomatically block abnormal access can reduce operational burden and improve service stability.\nImproved service availability and stability\nAutomatic detection and recovery when a failure occurs can minimize service downtime.\nBlue-Green deployment and rollback can provide a stable operating environment for the service.\nImproved operational efficiency\nAutomate monitoring, alerting, response, and recovery can reduce repetitive operational work.\nEnables a unified view of operational status and standardized response procedures.\nAchieved scalability and cost efficiency\nAuto Scaling-based resource expansion can flexibly handle changes in service load.\nEfficient use of cloud resources can improve operational efficiency relative to cost.\nStrengthened real-world DevOps skills\nWe gained hands-on experience building cloud infrastructure that ties together AWS, Docker, Terraform, Ansible, and GitHub Actions.\nWe strengthened DevOps skills spanning monitoring, security, automation, and deployment as a unified practice.\nBuilt operational stability and recovery capability\nAutomating the full path from failure detection to recovery gave us operations-focused cloud infrastructure management experience.\nApplying an RTO/RPO-based recovery strategy let us build experience designing for service continuity and failure recovery."
+    },
+    {
+      "number": 69,
+      "file": "slide-69.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "In terms of real-world applicability, this can extend into fraud detection for finance/fintech, regulatory compliance via SAST/DAST, shorter incident MTTR through self-healing, and a hybrid operating model combining in-house resources with the cloud."
+    },
+    {
+      "number": 70,
+      "file": "slide-70.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "First, our team achieved the following on this project: security event detection, response, and self-recovery end to end, building a hybrid IaC infrastructure that uses Docker, and a 4-layer security lock (SAST, image, DAST, runtime). We ran the full login-attack path live from 401 detection through 429 blocking to Fail2ban.\nThere are four areas for future improvement: implementing DB security threat and failure recovery scenarios, completing Blue-Green zero-downtime deployment, achieving high availability through NAT Instance redundancy, and further strengthening security with L7/WAF blocking."
+    },
+    {
+      "number": 71,
+      "file": "slide-71.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "Finally, a few short reflections from the team. Something we all felt in common: security shouldn’t be an afterthought but a default we should design from the start.\nBuilding security as a real, working system rather than just documentation helped us understand it as something that spans from blocking attacks to service stability and operational efficiency. This project broadened our view beyond infrastructure into security.\nThe project period felt short, and it was difficult to stay on track. Weaving each person's track together through PRs into one automated piece of infrastructure helped streamline the process and teach us the power of collaboration.\nI want to say great work to all the team members of Team Lock & Lock. I also want thank our instructors, the infrastructure operations team, and our mentors for supporting us throughout this project.\nThat concludes our presentation. Thank you."
+    },
+    {
+      "number": 72,
+      "file": "slide-72.webp",
+      "section": "evaluation",
+      "hasNotes": true,
+      "notes": "This concludes Team Lock & Lock's presentation. Thank you. If there are any questions, feel free to ask."
+    }
+  ]
+}

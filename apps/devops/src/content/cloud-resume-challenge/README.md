@@ -7,11 +7,11 @@ in Terraform and deployed by CI.
 
 ## What's in here
 
-- **Front end** — static site in S3, served through CloudFront with a custom
+- **Front end.** A static site in S3, served through CloudFront with a custom
   domain in Route 53.
-- **API** — a Lambda function behind API Gateway, backed by a DynamoDB counter.
-- **Infrastructure** — Terraform for all of the above, with remote state.
-- **Pipeline** — GitHub Actions: plan on pull request, apply on merge.
+- **API.** A Lambda function behind API Gateway, backed by a DynamoDB counter.
+- **Infrastructure.** Terraform for all of the above, with remote state.
+- **Pipeline.** GitHub Actions runs a plan on every pull request and applies on merge.
 
 ## Running it
 

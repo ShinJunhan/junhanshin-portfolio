@@ -1,4 +1,4 @@
-# project1-aws — AWS 기반 자동복구(Self-Healing) 인프라
+# project1-aws: AWS 기반 자동복구(Self-Healing) 인프라
 
 각자의 AWS 계정에서 이 코드를 실행하면 동일한 인프라가 자동으로 구축되고, **장애 발생 시 자동 복구**가 동작합니다.
 
@@ -8,19 +8,19 @@
 
 ## ✨ 핵심 특징
 
-- **🔄 자동복구(Self-Healing)** — Prometheus alert 발화 시 Recovery Controller가 Ansible 기반 복구 스크립트 자동 실행 + verify + retry 3회
-- **🏗️ Full IaC** — Terraform으로 AWS 41개 리소스 + Ansible 8개 role을 `make apply` 한 줄로 배포 (~10분)
-- **📊 모니터링 통합** — Prometheus + Grafana + AlertManager (scrape 5s, alert for 5s)
-- **🔔 분리된 알림** — `#monitoring` (장애 감지) / `#recovery` (복구 결과)로 Slack 채널 역할 분리
-- **🌐 하이브리드 네트워크** — Tailscale VPN으로 VMware(proj-mgmt) ↔ AWS 통합 관리
-- **💰 비용 최적화** — NAT Gateway 대신 NAT Instance 도입 (비용 절감 + 속도 향상)
-- **🎬 시연 친화적** — `chaos/inject.sh` 한 줄로 장애 주입 + 자동복구 흐름 검증 (MTTD 5~10초, MTTR 30~60초)
+- **🔄 자동복구(Self-Healing).** Prometheus alert 발화 시 Recovery Controller가 Ansible 기반 복구 스크립트 자동 실행 + verify + retry 3회
+- **🏗️ Full IaC.** Terraform 리소스 41개 + Ansible 8개 role을 `make apply` 한 줄로 배포 (~10분)
+- **📊 모니터링 통합.** Prometheus, Grafana, AlertManager (scrape 5s, alert for 5s)
+- **🔔 분리된 알림.** `#monitoring` (장애 감지) / `#recovery` (복구 결과)로 Slack 채널 역할 분리
+- **🌐 하이브리드 네트워크.** Tailscale VPN으로 VMware(proj-mgmt) ↔ AWS 통합 관리
+- **💰 비용 최적화.** NAT Instance로 아웃바운드를 처리해 비용을 절감하고 응답 속도를 높였습니다.
+- **🎬 시연 친화적.** `chaos/inject.sh` 한 줄로 장애 주입 + 자동복구 흐름 검증 (MTTD 5~10초, MTTR 30~60초)
 
 ## 📚 문서 가이드
 
 | 문서 | 용도 |
 |---|---|
-| README.md | 이 파일 — 프로젝트 개요 및 빠른 시작 |
+| README.md | 이 파일이며, 프로젝트 개요와 빠른 시작을 다룹니다 |
 | setup_manual.md | **첫 배포** 단계별 매뉴얼 (terraform/ansible/Tailscale 설치부터) |
 | DEMO.md | **시연** 가이드 (chaos/inject.sh 시나리오 자동화) |
 | Chaos_Demo_Guide.md | **Grafana 관전 포인트** + 카오스 시나리오 상세 (SRE 관점) |
@@ -131,14 +131,14 @@ make destroy
 | 항목 | On-premise (VMware) | AWS |
 |---|---|---|
 | 로드밸런서 | HAProxy (직접 설치) | ALB (관리형) |
-| NAT | — | NAT Instance (비용 절감, NAT GW 대신) |
+| NAT | 해당 없음 | NAT Instance (NAT GW 대비 비용 절감) |
 | DB 위치 | Host-only `172.16.1.x` | Private Subnet `10.0.11.x` |
 | SSH 키 | `project.pem` (수동 생성) | `proj-key.pem` (Terraform 자동 생성) |
 | 네트워크 | VMware Host-only | VPC / Subnet (AZ 분리) |
 | IP 관리 | 고정 IP | Terraform output 동적 확인 |
 | DB 접근 | 직접 접속 | mgmt를 jump host로 경유 |
 | 외부 노출 | Cloudflare Tunnel | ALB DNS |
-| 하이브리드 연결 | — | Tailscale VPN (proj-mgmt ↔ AWS) |
+| 하이브리드 연결 | 해당 없음 | Tailscale VPN (proj-mgmt ↔ AWS) |
 
 ---
 
@@ -279,11 +279,11 @@ project1-aws/
 ### 브랜치 전략
 
 ```
-main ──────────●────────────●────────────  (조휘정, 보호 브랜치 — 발표/릴리즈용)
+main ──────────●────────────●────────────  (조휘정, 보호 브랜치, 발표·릴리즈용)
                ▲            ▲
                │ PR         │ PR
                │            │
-dev ───────────●────●────●──●────────────  (신준한 PR Owner — 통합 개발)
+dev ───────────●────●────●──●────────────  (신준한 PR Owner, 통합 개발)
                ▲    ▲    ▲
                │    │    │ PR
                │    │    │
@@ -294,7 +294,7 @@ docs/*     ────●──────────────────
 
 **원칙:**
 - `main`: 검증 완료된 코드만 (조휘정만 머지 권한)
-- `dev`: 통합 테스트 브랜치 (신준한 PR Owner — 검토 + 머지 + 동기화)
+- `dev`: 통합 테스트 브랜치 (신준한 PR Owner가 검토·머지·동기화를 담당)
 - `feature/fix/docs/*`: 각자 작업 브랜치 → dev로 PR
 
 **PR Owner 체크리스트:**
@@ -479,9 +479,9 @@ alertmanager_url   = "http://x.x.x.x:9093"
 ```
 
 > 자동 생성된 파일들 (gitignore):
-> - `terraform/proj-key.pem` — EC2 SSH 개인키
-> - `terraform/inventory.yml` — Ansible 인벤토리
-> - `terraform/ansible.cfg` — Ansible 설정
+> - `terraform/proj-key.pem`: EC2 SSH 개인키
+> - `terraform/inventory.yml`: Ansible 인벤토리
+> - `terraform/ansible.cfg`: Ansible 설정
 
 ### 🔹 STEP G · Grafana 대시보드 Import
 
@@ -538,10 +538,10 @@ alertmanager    → mgmt:9093               (alertmanager)    UP
 **Grafana 주요 패널:**
 - 🖥️ Nginx 서비스 상태 (ONLINE/OFFLINE 신호등)
 - 🖥️ Exporter 센서 생존 상태 (ONLINE/OFFLINE)
-- 📈 실시간 CPU 사용률 (%) — threshold: 80%
-- 📈 실시간 Memory 사용률 (%) — threshold: 70%
+- 📈 실시간 CPU 사용률 (%), threshold 80%
+- 📈 실시간 Memory 사용률 (%), threshold 70%
 - 📊 인스턴스별 CPU/Memory 현황 (Bar Gauge)
-- 🚨 Chaos Alert 세로 마킹 (Annotation — 장애 발생 시점 시각화)
+- 🚨 Chaos Alert 세로 마킹 (Annotation으로 장애 발생 시점을 시각화)
 
 ### 3️⃣ 메트릭 수집 경로
 
@@ -639,7 +639,7 @@ Prometheus: nginx_up == 1 → Alert resolved
 | `terraform/terraform.tfstate*` | AWS 계정 정보 포함 |
 | `ansible/group_vars/secrets.yml` | Slack URL, DB 비밀번호 |
 
-### 🔹 보안 정책 — 학습 환경 기준
+### 🔹 보안 정책: 학습 환경 기준
 
 | 항목 | 현재 설정 | 운영 환경 권장 | 트레이드오프 이유 |
 |---|---|---|---|

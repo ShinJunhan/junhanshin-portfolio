@@ -5,9 +5,9 @@
 >
 >
 >
-> This project deploys a financial-service demo application as containers in an AWS cloud environment, and builds a DevSecOps system that automates operational security — detecting, visualising, alerting on, and responding to security events such as login failures and a flood of transfer requests, in real time.
+> This project deploys a financial-service demo application as containers in an AWS cloud environment, and builds a DevSecOps system that automates operational security. The system detects, visualises, alerts on and responds to security events such as login failures and a flood of transfer requests, in real time.
 >
-> It is not web-service development. The focus is on detecting the abnormal traffic and security events that can occur while a service is running in a cloud environment, and connecting that detection through to automated response and recovery.
+> This is a cloud operations project. The focus is on detecting the abnormal traffic and security events that can occur while a service is running in a cloud environment, and connecting that detection through to automated response and recovery.
 >
 
 Beyond deploying a service, it builds a cloud operational-security platform that detects, responds to, and recovers from security events automatically.
@@ -31,7 +31,7 @@ Beyond deploying a service, it builds a cloud operational-security platform that
 - Jeongeun Park / Jiyoon Lee: Locust load and attack scenarios, Nginx rate limiting, fail2ban, security event validation, detection → alert → response flow testing, health checks, cutover and rollback scripts
 
 
-# Lock & Lock — Automated Security Response System for a Financial Service
+# Lock & Lock: Automated Security Response System for a Financial Service
 
 A hybrid (on-premises ↔ AWS) security response system built on three core values: **security**, through automatic malicious-IP blocking and vulnerability-scan gates (the four-layer lock); **cost and availability**, through autoscaling that follows traffic load; and **operational stability**, through policy-driven automated response with state verification and recovery logging.
 
@@ -117,10 +117,10 @@ make destroy        # delete monitoring (AWS + containers) + DB + all infrastruc
 ```
 
 What `make destroy` does:
-1. `monitoring teardown-force` — deletes the AWS resources bootstrap created (Lambda, IAM, CloudWatch alarms, SNS subscriptions); the SNS topic is left to Terraform
-2. `monitoring destroy` — monitoring containers and volumes
-3. `destroy-db` — replica DB stack (containers, volumes)
-4. `terraform destroy` — VPC, EC2, ASG and the rest of the infrastructure
+1. `monitoring teardown-force` deletes the AWS resources bootstrap created (Lambda, IAM, CloudWatch alarms, SNS subscriptions); the SNS topic is left to Terraform
+2. `monitoring destroy` removes the monitoring containers and volumes
+3. `destroy-db` removes the replica DB stack (containers and volumes)
+4. `terraform destroy` removes the VPC, EC2, ASG and the rest of the infrastructure
 
 Partial teardown: `make destroy-db` (replica only), `cd monitoring && make teardown` (dry-run check of the AWS resources).
 
@@ -139,17 +139,17 @@ project2-security/
 ├── bootstrap_tailscale.sh# Tailscale node-to-node (L3) connection script
 ├── Makefile              # shortcuts for terraform and environment commands
 ├── docs/                 # design documents, diagrams, guides
-│   ├── network-design.md # network design (CIDR and SG matrix) — Track A deliverable
+│   ├── network-design.md # network design (CIDR and SG matrix), Track A deliverable
 │   ├── guides/           # per-track code walkthroughs + setup-guide.md
 │   └── diagrams/         # architecture diagrams
 ├── infra/
-│   ├── terraform/        # Track A — VPC, subnets, EC2, SGs (IaC)
-│   └── ansible/          # Tracks A and B — configuration management
-├── app/                  # Track B — FastAPI, Dockerfile, DB schema
-├── monitoring/           # Track D — prometheus, grafana, alertmanager
-├── security/             # Track E — locust, rate limiting, security policy
-├── scripts/              # Track C — build-push-image.sh, deploy-app.sh, set-fail2ban.sh
-└── .github/workflows/    # Track C — GitHub Actions (fixed path)
+│   ├── terraform/        # Track A: VPC, subnets, EC2, SGs (IaC)
+│   └── ansible/          # Tracks A and B: configuration management
+├── app/                  # Track B: FastAPI, Dockerfile, DB schema
+├── monitoring/           # Track D: prometheus, grafana, alertmanager
+├── security/             # Track E: locust, rate limiting, security policy
+├── scripts/              # Track C: build-push-image.sh, deploy-app.sh, set-fail2ban.sh
+└── .github/workflows/    # Track C: GitHub Actions (fixed path)
 ```
 
 > `.github/workflows/` is a path GitHub Actions requires. Track C's workflow YAML must live there, and its deployment scripts in `scripts/`.
@@ -181,7 +181,7 @@ Each owner writes a guide in `docs/guides/` explaining how their own code works.
 
 - **Naming**: `<track-letter-lowercase>-<area>.md` (for example `a-infra-terraform.md`)
 - **Template**: copy `docs/guides/_TEMPLATE.md`
-- **Required section**: "Interfaces with other tracks" — state what you take as input and what you publish as output
+- **Required section**: "Interfaces with other tracks". State what you take as input and what you publish as output
 
 ---
 

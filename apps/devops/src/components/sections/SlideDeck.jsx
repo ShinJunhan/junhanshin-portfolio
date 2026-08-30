@@ -35,7 +35,7 @@ function Slide({ slide, dimensions, registerItem }) {
       <div className="deck__frame">
         <img
           src={slide.src}
-          alt={`Slide ${slide.number} — ${slide.label}`}
+          alt={`Slide ${slide.number}: ${slide.label}`}
           width={dimensions?.width}
           height={dimensions?.height}
           loading="lazy"
@@ -81,34 +81,102 @@ export function useSlideDeck(deck) {
   const [activeNumber, setActiveNumber] = useState(deck?.slides[0]?.number ?? 1)
   const itemsRef = useRef(new Map())
 
+  // Keyed by slide number, and only ever written to. Detachment passes null
+  // and says nothing about which slide it was, so there is nothing to remove;
+  // a deck that unmounts and comes back re-registers every slide under the
+  // same numbers, and the map dies with the component either way.
+  //
+  // It used to be emptied in the sync effect's cleanup, which meant that under
+  // StrictMode's mount / unmount / remount the map was cleared after the refs
+  // had attached and never refilled — leaving both this panel's sync and the
+  // Jump to section control doing nothing at all in development.
   const registerItem = useCallback((element) => {
-    // Detachment passes null and says nothing about which slide it was; the
-    // map is emptied when the body unmounts instead, below.
     if (element) itemsRef.current.set(Number(element.dataset.slide), element)
   }, [])
 
-  // Whichever slide the middle of the frame is over. The negative margins
-  // collapse the observer's root to that centre line, so at most one slide is
-  // intersecting at a time and the callback needs no comparison of its own.
-  // While the line is in the gap between two slides nothing fires and the last
-  // answer stands, which is also what a reader would say is on screen.
+  // Whichever slide owns the top of the frame — the same rule the root site's
+  // NavBar keeps for its sections: a line a fixed distance down the scroller,
+  // and the last slide whose top has crossed it is the active one.
+  //
+  // This used to be an IntersectionObserver collapsed to the frame's centre
+  // line, which handed the notes to slide N+1 while slide N still filled the
+  // top half of the frame. The notes ran a slide ahead of what was being read,
+  // which on a panel whose whole job is to pair the two is the one thing it
+  // must not do.
+  //
+  // The line sits at JUMP_INSET, the same distance below the top edge that a
+  // jumped-to slide lands at, and the switch therefore happens only once the
+  // outgoing slide has left the frame entirely: the gap between two slides is
+  // never smaller than 17px, so by the time N+1's top reaches the line at 12px
+  // N's bottom is already above the top edge.
+  //
+  // Measured as `offsetTop - scrollTop` rather than off a bounding rect, which
+  // is how `jumpTo` below places a slide. The two differ by the scroller's own
+  // 1px border, and a jump landed a slide short of itself when the sync read
+  // one and the scroll wrote the other: slide 30 came to rest 13.4px down
+  // against a 12px line and the panel stayed on slide 29. Sharing the measure
+  // makes a jump land on its own slide's notes by construction.
   useEffect(() => {
     if (!scroller) return undefined
 
-    const items = itemsRef.current
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) setActiveNumber(Number(entry.target.dataset.slide))
-        }
-      },
-      { root: scroller, rootMargin: '-50% 0px -50% 0px', threshold: 0 }
-    )
+    // Read off the DOM rather than the ref map: document order is deck order,
+    // so "the last one to have crossed" needs no sort and no second source of
+    // truth for what is on screen.
+    const slides = [...scroller.querySelectorAll('.deck__slide')]
+    const list = scroller.querySelector('.deck__list')
+    const last = slides[slides.length - 1]
 
-    for (const element of items.values()) observer.observe(element)
+    // The last slides in a deck cannot reach the line on their own: the deck
+    // runs out of scroll while they are still sitting in the lower half of the
+    // frame, so the rule above hands the panel to whichever slide is stuck at
+    // the top and the tail never gets a turn. On Lock-N-Lock that was slides
+    // 70, 71 and 72 — the team's results, the reflections and the closing —
+    // all with notes nobody could bring up.
+    //
+    // So the list is given exactly enough trailing space for the last slide to
+    // come to rest on the line, which is the same distance a jump to it would
+    // need. Measured rather than guessed: it depends on the frame's height and
+    // on the last slide's own, and both move with the panel's width.
+    function fitTail() {
+      if (!list || !last) return
+      list.style.setProperty('--deck-tail', '0px')
+      // The last slide plus the list's own bottom padding — what already sits
+      // below its top edge without any tail.
+      const belowLastTop = scroller.scrollHeight - last.offsetTop
+      // Nothing to do for a deck that fits its frame: there is no scrolling to
+      // run out of, and growing a list that is not overflowing would resize
+      // the scroller and set the observer below off against itself.
+      const overflows = scroller.scrollHeight > scroller.clientHeight
+      const tail = overflows ? Math.max(scroller.clientHeight - belowLastTop - JUMP_INSET, 0) : 0
+      list.style.setProperty('--deck-tail', `${tail}px`)
+    }
+
+    function onScroll() {
+      // Defaults to the first slide, like NavBar's does. Above the first
+      // slide's top nothing has crossed the line, and the slide at the top of
+      // the deck is the honest answer there — leaving the last match standing
+      // instead would keep slide 69's notes up after a scroll back to the top.
+      let current = slides[0]
+      for (const element of slides) {
+        if (element.offsetTop - scroller.scrollTop <= JUMP_INSET) current = element
+      }
+      if (current) setActiveNumber(Number(current.dataset.slide))
+    }
+
+    // Both the frame's height and the slides' rest on the panel's width, which
+    // moves when the notes open, when the sidebar collapses and on any resize.
+    const observer = new ResizeObserver(() => {
+      fitTail()
+      onScroll()
+    })
+    observer.observe(scroller)
+
+    fitTail()
+    onScroll()
+    scroller.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       observer.disconnect()
-      items.clear()
+      scroller.removeEventListener('scroll', onScroll)
     }
   }, [scroller])
 

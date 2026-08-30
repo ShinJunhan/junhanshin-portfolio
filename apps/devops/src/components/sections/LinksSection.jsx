@@ -69,7 +69,7 @@ function LinkTile({ kind, href }) {
             <Icon />
           </span>
           <span className="link-tile__label">{kind.label}</span>
-          <span className="sr-only"> — link not available yet</span>
+          <span className="sr-only">, link not available yet</span>
         </span>
       </li>
     )

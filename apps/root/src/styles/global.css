@@ -1051,6 +1051,16 @@ button:focus-visible {
   color: #E2E7ED;
 }
 
+/* `help` prints a two-column table: command name padded to 12 characters,
+   then ": ", then the description. The panel is narrow (and full-width on
+   phones), so the long rows always wrap somewhere. Hanging the wrap at the
+   description column keeps the colons lined up instead of letting the
+   continuation fall back to column zero and break the table. */
+.term-hang {
+  padding-left: 14ch;
+  text-indent: -14ch;
+}
+
 .term-panel__form {
   display: flex;
   align-items: center;

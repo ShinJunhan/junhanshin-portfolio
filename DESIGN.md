@@ -26,15 +26,19 @@ Design reference for Junhan Shin's cloud/DevOps portfolio site. Use this documen
 
 Accent color appears ONLY on: status dot, tag/badge background+text, and the primary button. Everything else on the page (background, body text, layout) stays in the base indigo palette above.
 
-Sidebar order for the team projects is EchoChallengers, Lock-N-Lock, hailcast.
-The KT Cloud fellowship build is no longer among them — it has a sidebar
-category of its own.
+Sidebar order for the team projects is EchoChallengers, Lock-N-Lock,
+ThisPod-ThatPod. The KT Cloud fellowship build is no longer among them — it has
+a sidebar category of its own.
+
+The third entry is the team's name, not the product's. ThisPod-ThatPod built an
+app called hailcast, and both names are load-bearing: the sidebar, the eyebrow
+and the Workspace heading are covered under **Page heading** below.
 
 | Accent | Hex | Assigned to |
 |---|---|---|
 | Emerald | `#4FA88F` | EchoChallengers (self-healing infrastructure) |
 | Coral-red | `#D9645A` | Lock-N-Lock (DevSecOps/security project) |
-| Warm orange | `#E08A3C` | hailcast (predictive autoscaling/FinOps) |
+| Warm orange | `#E08A3C` | ThisPod-ThatPod / hailcast (predictive autoscaling/FinOps) |
 | Steel gray | `#5C6670` | KT Cloud TECH UP fellowship project (in progress, unnamed) |
 | Deep forest green | `#3D6B52` | Kubernetes Challenge; individual project one |
 | Indigo (base accent) | `#3E5C89` | Cloud Resume Challenge; individual project two |
@@ -143,7 +147,7 @@ Mono is for things that are measured — numbers, labels, timestamps, paths, cod
 - **Sections:**
   1. Landing dashboard (default view) — status line, metric stat cards, project panel grid
   2. Cloud Resume Challenge write-up (own page, diagram-heavy)
-  3. Kubernetes Resume Challenge write-up (separate page from #2 — demonstrates solo end-to-end skill distinct from team-based hailcast)
+  3. Kubernetes Resume Challenge write-up (separate page from #2 — demonstrates solo end-to-end skill distinct from the team projects)
   4. Interactive terminal "show and tell" page (secondary/opt-in, not the default entry point) — resume-as-CLI, Terraform validator/linter, interactive VPC diagram, system status dashboard
   5. AWS study notes — published via real Notion, embedded/linked rather than rebuilt from scratch
 
@@ -184,6 +188,34 @@ decisions behind it are recorded below rather than left in the code.
   template — there is no short form. Sections whose absence is meaningful do
   not render at all: a solo project has no Members section and no Notion link,
   rather than empty slots where they would be.
+- **My Role is a bento of duties, and counting is a separate job from claiming.**
+  Each tile carries one duty as a full sentence, sized by how much of the project
+  that duty was. A project with a single figure keeps it on the lead tile, where
+  it is part of that tile's claim. A project with more than one writes `figures`
+  on the role instead, and they render as a **band across the top of the
+  section**: one card, one row, one cell per figure, hairline-divided.
+
+  The band exists because the alternative failed. Two figures inside a lead tile
+  that spans three rows left it 52% empty, and every fix that kept them there
+  was a way of decorating the hole rather than closing it. Four rules hold the
+  band together, each one a bug that was hit first:
+
+  1. **One column per figure, never `auto-fit`.** Auto-fit wrapped three figures
+     onto two columns at laptop width and left a fourth cell that existed and
+     held nothing. A row of figures is a row or a stack, never a row with a hole
+     at the end of it. Below 640px it becomes a stack.
+  2. **Hairlines are a 1px gap over the border colour**, not a border per cell.
+     A left border draws a rule at the start of a wrapped row where nothing sits
+     beside it; a gap draws lines only between cells that are actually adjacent,
+     in both directions.
+  3. **Each figure is sized against its own cell**, with the cell as a container
+     and `cqw` as the second term of a `min()`. A viewport clamp alone overflows
+     at laptop width, where the cells are narrow but the viewport is not. The
+     widest figure on the site sets about 1.65 times its font size, which is
+     where the divisor comes from.
+  4. **Figure labels stay short enough to hold one line.** They are labels, not
+     sentences; if one wraps, shorten the label rather than forcing `nowrap`,
+     which only moves the overflow somewhere it cannot be seen.
 - **Accent placement on these pages** follows the themed-page rule above:
   metric numbers, the page eyebrow, the active menu underline, and the left
   edge of a decision card. Everything else stays base indigo. The tech-stack row is a deliberate
@@ -328,9 +360,19 @@ decisions behind it are recorded below rather than left in the code.
   deliberate shrink on the assumption the clamps were already generous there,
   and they were not. It put section headings at 25px under a 50px page title
   with 15px labels around them, and the page read as a reduction of itself on
-  exactly the screens it is mostly opened on. Section headings are 31.6px now,
-  the title 56.6px. Marks moved with the type rather than being left behind —
-  tech logos 48→53px, the Members avatar 46→51px, the role monogram 56→62px.
+  exactly the screens it is mostly opened on. Section headings are 31.6px now.
+  Marks moved with the type rather than being left behind — tech logos 48→53px,
+  the Members avatar 46→51px, the role monogram 56→62px.
+
+  **The page title is the one step that came back down: its cap is 3.0rem,
+  rendering 49.9px above 1101px, not the 3.4rem/56.6px the rise had put it at.**
+  The header is already exactly as wide as the sections below it, so a title
+  that would not fit had no width left to claim and the only room was in the
+  type. At 56.6px the two longest project titles each took three lines; at
+  49.9px they take two, and the four shorter titles are unchanged at one or two.
+  The cost is a slightly quieter heading at laptop width, where the cap binds
+  without saving a line. **When a heading does not fit, check its container
+  first, then its type; do not widen a header past the content it heads.**
 
   **One place did not take the rise: the calendar's weekday row.** Every other
   label is free to grow; that one multiplies by seven and then has to fit
@@ -383,11 +425,19 @@ decisions behind it are recorded below rather than left in the code.
   few points of `--name-pop`, and Junhan's colour stays his alone. Measured
   against the page: ink 11.7:1, name 3.9:1, denim 5.1:1 in light; 15:1, 4.4:1
   and 7.5:1 in dark — all clear of the 3:1 the 50px display size needs.
-- **Page heading:** the long descriptive project title is the H1, with the- **Page heading:** the long descriptive project title is the H1, with the
+- **Page heading:** the long descriptive project title is the H1, with the
   short name — the team's, for team projects — above it as a small
   accent-coloured eyebrow. The eyebrow is what ties the page back to the
   sidebar entry the reader clicked; the sidebar itself keeps the short names.
   Long titles are meant to wrap to two lines.
+
+  **A project may override the eyebrow**, and exactly one does. `title` is the
+  team's name and drives the sidebar and the "<Team> Workspace" heading;
+  `eyebrow` is optional and set only where the team built something with a name
+  of its own, so ThisPod-ThatPod's page reads `hailcast` above its title. A
+  project with one name leaves the field off and the eyebrow falls back to
+  `title`. Two names is the exception, not the pattern: do not add the field to
+  give a project a second label it does not have.
 - **Dark mode** is the root app's system, reused rather than rebuilt: the same
   `ThemeToggle` component, the same pre-paint script in `index.html`, the same
   `theme` key in localStorage, and tokens redefined under `[data-theme]`. The

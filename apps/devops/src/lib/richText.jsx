@@ -5,6 +5,7 @@
 //   `code`      monospace on a code-block surface — commands, flags, paths
 //   **text**    bold in the project's accent colour, not default black bold,
 //               so a number or a technology lifts out of the sentence
+//   [text](url) a link, opened in a new tab — only http(s) URLs
 //
 // The README section goes through the real markdown renderer instead; this is
 // for the hand-written prose around it. Both end up on the same inline-code
@@ -12,7 +13,7 @@
 //
 // Code is matched in the same pass as bold and wins where they overlap, so
 // asterisks inside a backtick span stay literal.
-const TOKEN = /`([^`]+)`|\*\*([^*]+?)\*\*/g
+const TOKEN = /`([^`]+)`|\*\*([^*]+?)\*\*|\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g
 
 export default function RichText({ children }) {
   const text = String(children ?? '')
@@ -30,11 +31,17 @@ export default function RichText({ children }) {
           {match[1]}
         </code>
       )
-    } else {
+    } else if (match[2] !== undefined) {
       nodes.push(
         <strong className="mark" key={match.index}>
           {match[2]}
         </strong>
+      )
+    } else {
+      nodes.push(
+        <a href={match[4]} target="_blank" rel="noreferrer" key={match.index}>
+          {match[3]}
+        </a>
       )
     }
     last = match.index + match[0].length

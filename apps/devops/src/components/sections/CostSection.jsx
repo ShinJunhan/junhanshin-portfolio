@@ -22,6 +22,9 @@ import EmptySlot from './EmptySlot.jsx'
 //   series  [{ id, label }, { id, label }] — first grey, second accent
 //   items   [{ label, note, <seriesId>: number, … }]
 //   total   optional { <seriesId>: number } summary row
+//   totalNote
+//           optional one line under the total, saying where its figures
+//           come from — read at the number rather than at the foot of the notes
 //   notes   the bullets beside the chart
 //   caveat  the one line that says these are estimates
 //   measured
@@ -43,7 +46,7 @@ function scaleOf(items, series) {
 // `$0.00` rather than `$0` — a column of money that changes width per row
 // reads as sloppy, and zero is the whole point of several of these rows.
 function money(value, unit) {
-  const symbol = unit?.startsWith('USD') ? '$' : ''
+  const symbol = unit?.includes('USD') ? '$' : ''
   return `${symbol}${Number(value).toFixed(2)}`
 }
 
@@ -134,6 +137,11 @@ export default function CostSection({ project }) {
               ))}
             </dd>
           </dl>
+        )}
+        {cost.totalNote && (
+          <p className="cost__caveat cost__caveat--total">
+            <RichText>{cost.totalNote}</RichText>
+          </p>
         )}
       </div>
 

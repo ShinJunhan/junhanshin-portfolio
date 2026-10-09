@@ -89,6 +89,47 @@ export const CloseIcon = () => (
   </svg>
 )
 
+// Two hosts joined by a dashed link: the on-premises lab and the cloud VPC on
+// one private network. The workspace's Infrastructure tile.
+export const HybridIcon = () => (
+  <svg {...base}>
+    <rect x="2" y="5" width="7" height="14" rx="1.5" />
+    <rect x="15" y="5" width="7" height="14" rx="1.5" />
+    <path d="M9 12h6" strokeDasharray="2 2" />
+  </svg>
+)
+
+// Row marks for the Notion panel: a page, a database table, a group of
+// people, an archive box.
+export const PageIcon = () => (
+  <svg {...base} strokeWidth={1.7}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
+  </svg>
+)
+
+export const TableIcon = () => (
+  <svg {...base} strokeWidth={1.7}>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18M9 10v10" />
+  </svg>
+)
+
+export const PeopleIcon = () => (
+  <svg {...base} strokeWidth={1.7}>
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3.5 19c.8-3 3-4.5 5.5-4.5s4.7 1.5 5.5 4.5" />
+    <circle cx="17" cy="9" r="2.4" />
+    <path d="M15.5 14.6c2.3-.3 4.3 1 5 3.6" />
+  </svg>
+)
+
+export const ArchiveIcon = () => (
+  <svg {...base} strokeWidth={1.7}>
+    <path d="M3 7h18v13H3zM2 4h20v3H2zM10 11h4" />
+  </svg>
+)
+
 // Two stacked planes — the same drawing held at two levels of detail, which
 // is what the Clean / Detailed toggle switches between.
 export const LayersIcon = () => (
@@ -96,5 +137,14 @@ export const LayersIcon = () => (
     <path d="M12 3 3 7.5l9 4.5 9-4.5z" />
     <path d="M3 12.5 12 17l9-4.5" />
     <path d="M3 17.5 12 22l9-4.5" />
+  </svg>
+)
+
+// The section menu's disclosure caret. Drawn small and thin against the rest
+// of this set: it sits inside a 12.5px uppercase label, where the standard
+// 2px stroke reads as a second letter rather than a hint.
+export const ChevronDownIcon = () => (
+  <svg {...base} strokeWidth={2.6} viewBox="0 0 24 24">
+    <path d="M6 9.5l6 6 6-6" />
   </svg>
 )

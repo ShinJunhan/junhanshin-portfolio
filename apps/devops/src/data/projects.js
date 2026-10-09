@@ -45,6 +45,74 @@ import hcIrsa from '../content/hailcast/code/terraform/eks/irsa.tf?raw'
 import hcGlue from '../content/hailcast/code/terraform/storage/glue.tf?raw'
 import hcReplaceValues from '../content/hailcast/code/manifests/replace_rebuild_values.sh?raw'
 
+// ShimonVault's, and the one set here that needed no translation pass at all:
+// it is a solo repository and its comments were already written in English, so
+// these eight are byte-for-byte copies with nothing changed, comments included.
+//
+// Chosen to be evidence for the decisions the page argues rather than to
+// inventory the repository. Three Python, four Terraform, one workflow, in the
+// order the section reads them: what detects, what responds, what wires the
+// response up, what the network permits, and how a release reaches it.
+//
+// `terraform/main.tf` is deliberately absent. It holds a provider block, the
+// S3 backend and three data sources, and declares no resources at all, so on a
+// project whose 89 resources are spread across 27 per-concern files it is the
+// one Terraform file with none of the story in it. Lock-N-Lock omits its own
+// for the same reason. It also hardcodes the account id, which `scripts/
+// destroy.sh` does too, and which is why that script is not here either.
+import svAuditMiddleware from '../content/individual-project-two/code/app/audit_middleware.py?raw'
+import svRateLimit from '../content/individual-project-two/code/app/rate_limit.py?raw'
+import svBlockIp from '../content/individual-project-two/code/lambda/block_ip_handler.py?raw'
+import svLambdaTf from '../content/individual-project-two/code/terraform/lambda.tf?raw'
+import svVpcTf from '../content/individual-project-two/code/terraform/vpc.tf?raw'
+import svSecurityGroupsTf from '../content/individual-project-two/code/terraform/security_groups.tf?raw'
+import svAlbTf from '../content/individual-project-two/code/terraform/alb.tf?raw'
+import svAcmTf from '../content/individual-project-two/code/terraform/acm.tf?raw'
+import svCdWorkflow from '../content/individual-project-two/code/workflows/cd.yml?raw'
+
+// Project1-Self-Build's, on the same terms as the three above: comments and
+// the prose a human is meant to read are translated, everything that is
+// behaviour is byte-for-byte what the repository holds. Two of the seven had
+// Korean in them. `webhook_server.py` carried it in its comments and in the
+// Slack and log messages an operator reads, and `nginx_selfheal.yml` in its
+// comments and `debug` output; every module argument, identifier and flag in
+// both is untouched.
+//
+// Five carry the page's argument rather than inventorying the repository. The
+// Terraform and the workflow are the two halves of "one push builds it and
+// then destroys it"; the webhook is the mechanism the Alert-to-restart diagram
+// draws; the bootstrap script is the Tailscale subnet router with the comment
+// explaining why it must not accept routes; and the self-heal role is the one
+// decision on this page that systemd makes instead of the alert pipeline.
+//
+// Two are deliberately absent and the omission is not an oversight.
+// `chaos/inject.sh` and `roles/prometheus_bot/tasks/main.yml` both embed a
+// working Telegram bot token. No file under any project's `code/` directory
+// carries a redaction, and neither story is load bearing enough to be the
+// first one that does.
+import ipoMainTf from '../content/individual-project-one/code/terraform/main.tf?raw'
+import ipoMgmtBootstrap from '../content/individual-project-one/code/terraform/mgmt_bootstrap.sh?raw'
+import ipoWorkflow from '../content/individual-project-one/code/workflows/deploy.yml?raw'
+import ipoWebhook from '../content/individual-project-one/code/recovery/webhook_server.py?raw'
+import ipoSelfheal from '../content/individual-project-one/code/roles/nginx_selfheal.yml?raw'
+import ipoAlertRules from '../content/individual-project-one/code/monitoring/alert.rules.yml?raw'
+import ipoAlertmanager from '../content/individual-project-one/code/monitoring/alertmanager.yml?raw'
+
+// The Cloud Resume Challenge's, and the one set here that is not a copy at
+// all. That project's infrastructure lives in this repository, so these read
+// the real files out of infra/ and backend/ rather than a mirror under
+// content/. Every other project's source genuinely is in another repo, which
+// is what makes a copy the only option there and the wrong one here: this
+// page's whole claim is that it describes the infrastructure this site runs
+// on, and a mirror can drift from that silently. vite.config.js carries the
+// server.fs.allow entry the dev server needs to read outside its own root.
+import crcLambdaTf from '../../../../infra/lambda.tf?raw'
+import crcIamTf from '../../../../infra/iam.tf?raw'
+import crcDynamodbTf from '../../../../infra/dynamodb.tf?raw'
+import crcDeployPolicyTf from '../../../../infra/bootstrap/deploy_policy.tf?raw'
+import crcHandler from '../../../../backend/functions/counter/handler.py?raw'
+import crcInfraWorkflow from '../../../../.github/workflows/infra.yml?raw'
+
 // The single source of truth for every project page on this app. Nothing in
 // the page components is per-project — a new project is one entry here plus a
 // folder under src/content/<slug>/ for its README files.
@@ -123,7 +191,20 @@ export const ACCENTS = {
   emerald: 'var(--c-emerald)',
   steel: 'var(--c-steel)',
   forest: 'var(--c-forest)',
+  // Still mapped, and still a trap worth naming. --c-indigo is the same
+  // #3E5C89 as --accent-base in light mode, so a page choosing it is painted
+  // in the site's default chrome and reads as unthemed. The Cloud Resume
+  // Challenge sat here until teal below replaced it. Reach for it only if the
+  // base accent ever moves off that hex.
   indigo: 'var(--c-indigo)',
+  teal: 'var(--c-teal)',
+  // The eighth, added rather than reusing a seventh page's worth of an
+  // existing accent. See the token in global.css for why it is a violet.
+  // Was ShimonVault's, then free for one change, now Kubernetes Challenge's.
+  // Spending it there is what ended forest's double duty, so every project on
+  // the site now has an accent of its own.
+  plum: 'var(--c-plum)',
+  burgundy: 'var(--c-burgundy)',
 }
 
 // The sidebar buckets, in the order they appear. Adding another one is an
@@ -157,10 +238,13 @@ const LOCK_N_LOCK_DIAGRAMS = [
   ['architecture-03-user-request-flow.svg', 'User Request Flow'],
   ['architecture-04-operations-backup-flow.svg', 'Operations & Backup Flow'],
   ['architecture-05-blue-green-deployment.svg', 'Blue-Green Deployment'],
-].map(([file, title]) => ({
+].map(([file, title], i) => ({
   src: `${LOCK_N_LOCK_DIAGRAM_DIR}${file}`,
   tab: title,
   alt: title,
+  // Numbered to match the tab badges: the drawn overall view is 01, so these
+  // exports run 02 to 06 rather than the 01 to 05 in their file names.
+  address: `lock-n-lock/architecture/${String(i + 2).padStart(2, '0')}-${file.replace(/^architecture-\d+-|\.svg$/g, '')}`,
 }))
 
 export const PROJECTS = [
@@ -190,11 +274,159 @@ export const PROJECTS = [
     // with. Fixed labels on purpose: every project answers the same three
     // questions in the same order, so two of them can be compared without
     // reading two write-ups. Rendered beside the workspace links.
+    //
+    // Each line takes one of four shapes, and LinksSection picks the renderer
+    // from the shape: a string is a paragraph, an array of strings is a dotted
+    // list, `{ flow }` is the build-detect-recover diagram, and `{ figures }`
+    // is a row of number tiles.
     glance: {
-      why: 'Unplanned downtime costs money the moment it happens. This project builds infrastructure that detects a failure and repairs itself automatically, without waiting for a human to respond.',
-      how: 'Terraform and Ansible codify the entire stack, Prometheus and AlertManager detect failures, and a custom Recovery Controller runs the fix, all connected across a hybrid VMware/AWS environment over Tailscale.',
-      result: 'Recovers from failure in **30\u201360 seconds**, validated across **4 automated failure scenarios**, with the full infrastructure deployable from scratch in about **10 minutes**.',
+      why: 'Unexpected downtime costs money the moment it happens. We aimed to address this problem by building infrastructure that detects a failure and repairs itself automatically.',
+      // Three steps in order, then the loop back from Recover to Detect that
+      // makes the system self-healing. Tailscale is the network under all
+      // three rather than a fourth step, so it is drawn as a base layer.
+      how: {
+        flow: {
+          steps: [
+            { key: 'Build', tools: 'Terraform + Ansible', caption: 'codify the stack' },
+            { key: 'Detect', tools: 'Prometheus + AlertManager', caption: 'catch failures' },
+            { key: 'Recover', tools: 'Recovery Controller', caption: 'runs the fix' },
+          ],
+          loop: 'healthy again, back to watching',
+          base: { name: 'Tailscale', text: 'connects the hybrid VMware/AWS environment' },
+        },
+      },
+      result: {
+        figures: [
+          { value: '30\u201360s', label: 'recovery from failure' },
+          { value: '4', label: 'automated failure scenarios validated' },
+          { value: '~10 min', label: 'full deploy from scratch' },
+        ],
+      },
     },
+    // The workspace as four tiles beside At a Glance: one per place the work
+    // lived. Each tile names its tool, leads with one figure, and opens into a
+    // panel when the reader points at it. A project with `workspace` set gets
+    // the tile grid in place of the plain link icons; LinksSection reads it.
+    //
+    // `link` names a key in `links` above, so a URL is written once. `body`
+    // picks a panel by `type`: git, docs, network or slides.
+    workspace: [
+      {
+        id: 'github',
+        name: 'GitHub',
+        headline: 'Our Git workflow',
+        figure: { value: '27', label: 'pull requests reviewed' },
+        link: 'github',
+        linkLabel: 'Open repo',
+        footnote: 'Merges keep one clean history across branches.',
+        body: {
+          type: 'git',
+          lanes: [
+            {
+              branch: ['main'],
+              who: 'Team Lead',
+              text: 'Merges into the release branch once the full stack passes on dev.',
+            },
+            {
+              branch: ['dev'],
+              who: 'Junhan Shin, PR Owner',
+              text: 'Reviews every pull request and catches conflicts before they merge.',
+              mine: true,
+              note: 'Each change gets its own branch.',
+            },
+            {
+              branch: ['feature/*', 'fix/*', 'docs/*'],
+              who: 'Whole team',
+              text: 'Builds features and fixes on individual branches.',
+            },
+          ],
+          stats: [
+            { value: '27', label: 'PRs handled' },
+            { value: '3', label: 'Merge conflicts resolved' },
+            { value: '2', label: 'Security issues caught' },
+          ],
+        },
+      },
+      {
+        id: 'notion',
+        name: 'Notion',
+        headline: 'Team documentation',
+        figure: { value: '19', label: 'meeting notes' },
+        link: 'notion',
+        linkLabel: 'Open Notion',
+        footnote: 'The team\u2019s shared Notion workspace',
+        body: {
+          type: 'docs',
+          rows: [
+            { icon: 'page', title: 'Project plan', text: 'Goals and roles' },
+            { icon: 'page', title: 'Overview, tools, and architecture', text: 'Shared reference pages' },
+            { icon: 'table', title: 'Meeting notes', text: 'April 21 to May 21', count: 19 },
+            { icon: 'people', title: 'Member workspaces', text: 'One build journal per member', count: 5 },
+            { icon: 'archive', title: 'Archive', text: 'Lab notes and scratch pages' },
+          ],
+        },
+      },
+      {
+        id: 'infrastructure',
+        name: 'Infrastructure',
+        headline: 'Hybrid network',
+        figure: { value: '2', label: 'environments on one network' },
+        link: 'github',
+        linkLabel: 'Open repo',
+        footnote: 'Built with Terraform and bootstrap_tailscale.sh',
+        body: {
+          type: 'network',
+          link: 'Tailscale',
+          // `router` marks the machine that joins its side to the tailnet;
+          // its value is the name it carries on Tailscale.
+          zones: [
+            {
+              name: 'VMware lab',
+              range: '172.16.1.0/24',
+              hosts: [
+                { name: 'proj_mgmt', role: 'HAProxy load balancer', router: 'proj-mgmt' },
+                { name: 'proj_rocky1', role: 'Web server' },
+                { name: 'proj_rocky2', role: 'Web server' },
+                { name: 'proj_ubuntu', role: 'Database' },
+              ],
+            },
+            {
+              name: 'AWS VPC',
+              range: '10.0.0.0/16 in Seoul',
+              hosts: [
+                { name: 'aws-mgmt', role: 'Monitoring and recovery', subnet: 'Public', router: 'aws-mgmt' },
+                { name: 'aws-web1', role: 'Nginx and FastAPI', subnet: 'Public' },
+                { name: 'aws-web2', role: 'Nginx and FastAPI', subnet: 'Public' },
+                { name: 'aws-db', role: 'PostgreSQL 16', subnet: 'Private' },
+                { name: 'NAT instance', role: 'Internet access for aws-db', subnet: 'Public' },
+              ],
+            },
+          ],
+          note: 'Tailscale joins the two sides with no public port open. Terraform creates the join key and approves the routes, and my bootstrap script brings the VMware lab in.',
+        },
+      },
+      {
+        id: 'presentation',
+        name: 'Presentation',
+        headline: 'Presentation highlights',
+        figure: { value: '4', label: 'highlight slides' },
+        link: 'presentation',
+        linkLabel: 'Open slides',
+        footnote: '4 of the 70 slides',
+        body: {
+          type: 'slides',
+          slides: [
+            { number: 13, caption: 'My role' },
+            { number: 20, caption: 'PR Owner workflow' },
+            { number: 25, caption: 'Setup and check scripts' },
+            { number: 26, caption: 'Terraform structure' },
+          ].map((slide) => ({
+            ...slide,
+            src: `/projects/project1_echochallengers/slides/slide-${String(slide.number).padStart(2, '0')}.webp`,
+          })),
+        },
+      },
+    ],
     // My Role as a bento of duties in three tiers, sized by how much of the
     // project each one was. Full sentences, not bullet phrases — "PR Owner
     // \u2014 27 PRs" is a fact about a number, and what a reader needs is what
@@ -237,22 +469,22 @@ export const PROJECTS = [
           // codified in total" on the code-structure slide; this is the one
           // that survives being checked.
           stat: { value: '41', unit: 'Terraform resources' },
-          text: 'Codified every one of them in **Terraform**, and wrote the **Ansible roles** that configure each server automatically.',
+          text: 'Defined the network, servers, load balancer, and Tailscale connection as code in **Terraform** and wrote the **Ansible roles** that configure each server automatically.',
         },
         {
           size: 'medium',
           label: 'PR Owner',
-          text: 'Reviewed and merged all **27 pull requests** into the development branch, catching a **hardcoded secret** before it reached the public repo.',
+          text: 'Reviewed and merged all **27 pull requests** into the `dev` branch, resolving issues such as a **hardcoded secret** before they reached the public repo.',
         },
         {
           size: 'medium',
           label: 'Took Initiative',
-          text: 'Stepped up to build the **on-premises foundation** early, after the assigned team lead was unavailable during the **first week and a half**.',
+          text: 'Took ownership and led the **on-premises foundation** build in the **first week** to give the rest of the team a working base to start from.',
         },
         {
           size: 'small',
           label: 'Hybrid Networking',
-          text: 'Wrote the **Tailscale bootstrap script** that joined the on-premises VMware environment and the AWS VPC into one addressable network.',
+          text: 'Wrote the **Tailscale bootstrap script** that joined on-premises VMware and the AWS VPC into one network.',
         },
         {
           size: 'small',
@@ -262,7 +494,7 @@ export const PROJECTS = [
         {
           size: 'small',
           label: 'Troubleshooting',
-          text: 'Worked through and documented **12 cases**, including the four iterations that ended in the `pkill -x` fix.',
+          text: 'Documented **12 troubleshooting cases** and the four iterations that led to the `pkill -x` fix.',
         },
       ],
     },
@@ -275,32 +507,32 @@ export const PROJECTS = [
         {
           size: 'lead',
           label: 'Business Problem',
-          text: 'Unplanned downtime costs money the moment it happens, through lost transactions and missed SLAs, and costs more again when an engineer has to be paged at 3am to fix it manually.',
+          text: 'Unplanned downtime costs money the moment it happens through lost transactions and missed service-level agreements (SLAs). The cost grows again when an engineer has to be paged at 3am to fix the problem.',
         },
         {
           size: 'lead',
           label: 'Technical Problem',
-          text: 'Most monitoring systems stop at telling you something broke; this project builds infrastructure that detects a failure and repairs itself automatically, without waiting for a human to respond.',
+          text: 'Most monitoring systems only alert someone when a service breaks. We built infrastructure that detects the failure and repairs itself before anyone has to respond.',
         },
         {
           size: 'support',
           label: 'Personal Foundation',
-          text: "This was our team's first project applying cloud infrastructure skills to a real, end-to-end build, testing whether what we'd learned in the classroom actually held up under real deployment conditions.",
+          text: "This was our team's first chance to apply cloud infrastructure skills to a complete, end-to-end build. We wanted to test whether what we learned in the classroom would hold up under real deployment conditions.",
         },
         {
           size: 'support',
           label: 'Core Design Values',
-          text: 'Every part of this system was built to be operated, not just deployed, with each line of code matched to a real operational failure scenario rather than monitoring treated as an afterthought.',
+          text: 'We designed every part of this system for day-to-day operation after launch. Each piece of code maps to a specific failure scenario that the system has to detect and recover from.',
         },
         {
           size: 'support',
           label: 'Goals',
-          text: 'The project aimed to cut incident response time low enough that most failures resolve before a human ever notices, while keeping every redeploy safe and repeatable through idempotent infrastructure.',
+          text: 'We aimed to cut incident response time far enough that most failures resolve before anyone notices. We also made every redeploy safe and repeatable by keeping the infrastructure idempotent.',
         },
         {
           size: 'support',
           label: 'Applicability',
-          text: 'The same self-healing pattern applies to small and mid-sized ops teams automating routine restarts, to organizations mid-migration from on-premises to cloud, and to anyone building a hands-on infrastructure learning environment.',
+          text: 'Small and mid-sized ops teams can use the same self-healing pattern to automate routine restarts. It also fits organizations moving from on-premises to the cloud and anyone building a hands-on environment to learn infrastructure.',
         },
       ],
     },
@@ -367,22 +599,22 @@ export const PROJECTS = [
         // does for that tool, monogram fallback included — the point is that a
         // reader recognises it from the wheel two inches to the left.
         icon: 'Terraform',
-        text: 'Chosen as the industry-standard declarative IaC tool, making the entire **41-resource** infrastructure reproducible from a single command.',
+        text: 'For our project, we chose Terraform because we needed the whole infrastructure to be rebuilt the same way every time. Terraform let us define all **41 resources** as code and bring the environment up with a single command.',
       },
       {
         tool: 'Why Prometheus + Grafana?',
         icon: 'Prometheus',
-        text: 'The standard open-source monitoring pairing, avoiding **vendor lock-in** while providing both alerting and visualization.',
+        text: "Prometheus scrapes every server's exporters every five seconds, and Grafana turns those metrics into dashboards. We chose Prometheus and Grafana because both tools are open source and kept the project free of **vendor lock-in**.",
       },
       {
         tool: 'Why Tailscale?',
         icon: 'Tailscale',
-        text: 'Selected over a traditional site-to-site VPN for connecting on-premises to AWS, because a **mesh VPN** needed almost no manual network configuration to bridge the two environments.',
+        text: 'We chose Tailscale after learning about it in class. Its **mesh VPN** joined the on-premises VMware lab to the AWS VPC without opening a public port. Terraform created the join key and approved the routes, which let us skip most of the manual setup a site-to-site VPN would need.',
       },
       {
         tool: 'Why Flask?',
         icon: 'Flask',
-        text: 'A lightweight framework was enough for a **single-purpose webhook receiver**, with no need for a heavier framework\u2019s overhead.',
+        text: 'We chose Flask because the recovery controller only needed to listen on port 5001 for webhooks from Alertmanager and run the matching fix. Flask let us build this **single-purpose webhook receiver** in a small, lightweight framework.',
       },
     ],
     // Only the main.tf — variables.tf and outputs.tf are supporting files,
@@ -423,7 +655,7 @@ export const PROJECTS = [
         tab: 'Hybrid infrastructure',
         caption:
           'Hybrid infrastructure: the VMware on-premises host and the AWS VPC joined into one addressable network over Tailscale',
-        alt: 'The on-premises VMware host proj-mgmt, running Terraform and Ansible, joined over a Tailscale VPN to an AWS VPC in ap-northeast-2: an internet-facing load balancer on HTTP 80 spread across two availability zones; aws-web1 and the NAT instance with aws-mgmt in the 10.0.1.0/24 public subnet in AZ 1; aws-web2 in the 10.0.2.0/24 public subnet in AZ 2; aws-db running PostgreSQL 16 in the 10.0.11.0/24 private subnet, reaching the internet through the NAT instance and the internet gateway; and aws-mgmt carrying Prometheus, Grafana, Alertmanager and the Flask recovery controller',
+        alt: 'The on-premises VMware host proj-mgmt, running Terraform and Ansible, joined over a Tailscale VPN to an AWS VPC in ap-northeast-2: an internet-facing load balancer on HTTP 80 spread across two availability zones; aws-web1 and the NAT instance with aws-mgmt in the 10.0.1.0/24 public subnet in AZ 1; aws-web2 in the 10.0.2.0/24 public subnet in AZ 2; aws-db running PostgreSQL 16 in the 10.0.11.0/24 private subnet, reaching the internet through the NAT instance and the internet gateway; and aws-mgmt carrying Prometheus, Grafana, Alertmanager, and the Flask recovery controller',
         diagram: {
           width: 1000,
           height: 680,
@@ -507,8 +739,8 @@ export const PROJECTS = [
       {
         tab: 'Self-healing flow',
         caption:
-          'Self-healing flow: detection, the webhook decision, the four recovery scenarios, and the result posted back',
-        alt: 'The self-healing pipeline in four phases: detect, where node and nginx exporters are scraped every five seconds by Prometheus and a rule firing for five seconds reaches Alertmanager; decide, where Alertmanager notifies Slack and posts a webhook to the Flask recovery controller on port 5001, which looks the alertname up in recovery_map.yml; recover, where one of four scripts runs over Ansible (restart nginx, restart the nginx exporter, or pkill the CPU and memory load) and is then verified and retried up to its limit; and report, where the outcome is posted to Slack as SUCCESS, FAILED or NO_MAP',
+          'Detection and recovery path',
+        alt: 'The self-healing pipeline in four phases: detect, where node and nginx exporters are scraped every five seconds by Prometheus and a rule firing for five seconds reaches Alertmanager; decide, where Alertmanager notifies Slack and posts a webhook to the Flask recovery controller on port 5001, which looks the alertname up in recovery_map.yml; recover, where one of four scripts runs over Ansible (restart nginx, restart the nginx exporter, or pkill the CPU and memory load) and is then verified and retried up to its limit; and report, where the outcome is posted to Slack as SUCCESS, FAILED, or NO_MAP',
         diagram: {
           width: 1000,
           height: 680,
@@ -592,7 +824,7 @@ export const PROJECTS = [
           range: 'Apr 20\u201326',
           from: '2026-04-20',
           to: '2026-04-26',
-          text: 'The team formed and selected infrastructure self-healing as the project topic, then practiced individual failure scenarios with instructor feedback.',
+          text: 'We chose **infrastructure self-healing** as our topic and practiced individual failure scenarios with feedback from our instructor. I took ownership of the on-premises foundation during this first week to give the team a working base to build on.',
         },
         {
           id: 'onprem',
@@ -600,7 +832,7 @@ export const PROJECTS = [
           range: 'Apr 27\u2013May 8',
           from: '2026-04-27',
           to: '2026-05-08',
-          text: 'Each team member independently built the same four-server architecture on VMware, automated deployment with HAProxy and Ansible, and validated the build at a mid-project checkpoint presentation.',
+          text: "Each of us built the same four-server VMware architecture and automated its deployment with HAProxy and Ansible. As PR Owner, I reviewed and merged the team's pull requests and kept the shared repository clean ahead of the mid-project checkpoint.",
         },
         {
           id: 'aws',
@@ -608,7 +840,7 @@ export const PROJECTS = [
           range: 'May 9\u201319',
           from: '2026-05-09',
           to: '2026-05-19',
-          text: 'The infrastructure migrated to EC2 with full Terraform and Ansible automation, connected the on-premises and AWS environments over a Tailscale VPN, and merged individual failure scenarios into one team-wide automated recovery system.',
+          text: 'We moved the infrastructure to EC2 and merged our failure scenarios into one automated recovery system. I wrote the Terraform and Ansible code behind that move and the Tailscale bootstrap script that connected the VMware lab to AWS.',
         },
         {
           id: 'polish',
@@ -616,19 +848,52 @@ export const PROJECTS = [
           range: 'May 20\u201322',
           from: '2026-05-20',
           to: '2026-05-22',
-          text: 'The team recorded the demo video, finalized the presentation materials, and rehearsed the final delivery.',
+          text: 'We recorded the demo video, finalized the presentation, and rehearsed the final delivery. My `chaos/inject.sh` script let us trigger all four failure scenarios on command during those rehearsals.',
         },
       ],
     },
     media: {
-      // One tab per chaos scenario, each holding that scenario's before and
-      // after. They used to be a flat list of eight screenshots laid out two
-      // across, which made the pair small and the section long.
+      // One tab per chaos scenario, read straight down: what happened, the
+      // clip of it happening, then the stills for looking closer. No control
+      // switches between the last two. A reader who finds the clip unclear
+      // should get to the sharper evidence by scrolling rather than by
+      // discovering a toggle.
+      //
+      // `lead` carries the explanation and renders above the clip. It sat
+      // under it as a caption first, where it read as a label on a picture.
+      //
+      // The clips are cut from the team's demo recording, which is 198kbps at
+      // 1516x720. Its dashboard text is soft before anything here touches it,
+      // which is exactly why the 2670x1279 stills stayed: the clip shows the
+      // change happening and the stills show what the panels actually said.
+      // The two are from different runs, and `stillsNote` says so rather than
+      // leaving a reader to notice the addresses do not match.
+      //
+      // The two load scenarios are sped up because most of their real
+      // duration is a slow climb toward a threshold. `speed` renders beside
+      // the Demo heading; see public/projects/README.md.
+      //
+      // Written once here rather than on each of the four scenarios: they
+      // describe where this project's footage came from, which is the same
+      // answer every time. A scenario can still override either.
+      clipNote: "Cut from the team's demo recording. Silent, and it loops.",
+      stillsNote:
+        'Captured at 2670x1279, sharper than the loop above. They are from a separate run of the same scenarios, so the addresses differ: **10.0.1.46** and **10.0.2.60** here, **10.0.1.95** and **10.0.2.42** in the recording. Click either to open it full size.',
       scenarios: [
         {
           id: 'scenario-1',
           tab: 'Nginx down',
           label: 'Scenario 1: Nginx down',
+          lead:
+            'Nginx is stopped on **web1**. The service panel turns red, the alert fires, and the controller restarts it. Verified in **5.69s**.',
+          clip: {
+            src: '/projects/project1_echochallengers/clip-01-nginx.mp4',
+            width: 1280,
+            height: 608,
+            poster: '/projects/project1_echochallengers/clip-01-nginx.jpg',
+            speed: '3x',
+            alt: 'The Nginx panel for web server one turning red as the firing alert arrives, then returning to online after the controller restarts the service',
+          },
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario1-nginxdown-before.jpg',
             alt: 'Scenario 1, Nginx down: dashboard and alerts in the failed state',
@@ -642,6 +907,16 @@ export const PROJECTS = [
           id: 'scenario-2',
           tab: 'Exporter down',
           label: 'Scenario 2: Exporter down',
+          lead:
+            'The exporter on **web1** is stopped. Nginx keeps serving, so only the exporter panel turns red. Restarted in **5.49s**.',
+          clip: {
+            src: '/projects/project1_echochallengers/clip-02-exporter.mp4',
+            width: 1280,
+            height: 608,
+            poster: '/projects/project1_echochallengers/clip-02-exporter.jpg',
+            speed: '3x',
+            alt: 'The Nginx service panel for web server one staying green while its exporter panel turns red, then the exporter returning to online',
+          },
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario2-exporterdown-before.jpg',
             alt: 'Scenario 2, exporter down: dashboard and alerts in the failed state',
@@ -655,6 +930,24 @@ export const PROJECTS = [
           id: 'scenario-3',
           tab: 'High CPU',
           label: 'Scenario 3: High CPU',
+          // Kept to the length and register of the other three. The long
+          // version of this one carried the `pkill -f` story, which the
+          // "Exact-match pkill" decision card further down already tells in
+          // full — so the narration was retelling a story the page makes
+          // better elsewhere, and reading longer and more explanatory than
+          // its three neighbours while doing it. What stays is the part only
+          // this scenario has: the failure is load, so the fix ends a process
+          // rather than restarting a service.
+          lead:
+            'A CPU burn pins **web1** at 100%. Nothing has crashed, so the controller ends the load process instead of restarting Nginx. Recovered in **3.65s**.',
+          clip: {
+            src: '/projects/project1_echochallengers/clip-03-cpu.mp4',
+            width: 1280,
+            height: 608,
+            poster: '/projects/project1_echochallengers/clip-03-cpu.jpg',
+            speed: '13x',
+            alt: 'The CPU chart for web server one climbing from idle past the eighty percent threshold and pinning at one hundred percent, then falling back to idle after the controller ends the load process',
+          },
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario3-highcpu-before.jpg',
             alt: 'Scenario 3, high CPU: dashboard and alerts in the failed state',
@@ -668,6 +961,16 @@ export const PROJECTS = [
           id: 'scenario-4',
           tab: 'High memory',
           label: 'Scenario 4: High memory',
+          lead:
+            '`stress-ng` drives **web1** memory past 70%. The load is ended and the result verified in **3.02s**.',
+          clip: {
+            src: '/projects/project1_echochallengers/clip-04-memory.mp4',
+            width: 1280,
+            height: 608,
+            poster: '/projects/project1_echochallengers/clip-04-memory.jpg',
+            speed: '10x',
+            alt: 'The memory chart for web server one rising past the seventy percent threshold, then returning to its baseline near 63 percent after the controller ends the load',
+          },
           before: {
             src: '/projects/project1_echochallengers/screenshot-scenario4-highmemory-before.jpg',
             alt: 'Scenario 4, high memory: dashboard and alerts in the failed state',
@@ -731,67 +1034,67 @@ project1-aws/
     decisions: [
       {
         keyword: 'NAT instance',
-        title: 'Outbound traffic leaves the private subnets through a NAT instance.',
+        title: 'Outbound internet access for the private subnets runs through a low-cost NAT instance.',
         glyph: 'route',
         chose: 'A **NAT instance** for outbound routing',
         over: 'AWS’s managed NAT Gateway',
         why:
-          'The instance costs less to run and answered faster at this scale of workload. A managed gateway prices in throughput and availability sized for production traffic, so the extra cost pays for capacity this environment never reaches.',
+          "A NAT instance was cheaper than AWS's managed NAT Gateway and responded faster for our small workload. The NAT Gateway is built for **large production traffic**, which this project did not have.",
       },
       {
         keyword: 'Exact-match pkill',
-        title: 'The recovery scripts match a process name exactly, using `pkill -x`.',
+        title: 'Exact process-name matching with `pkill -x` keeps the recovery script from stopping itself.',
         glyph: 'process',
         chose: '`pkill -x`, exact process-name matching only',
         over: '`pkill -f`, which matches anywhere in the command line',
         why:
-          'The memory-recovery script went through **4 iterations** before we reached a safe approach. Early versions used `pkill -f stress-ng`, which also matched the Ansible shell command line running the recovery script itself, so the recovery process terminated itself mid-run. Switching to `pkill -x` fixed it. One flag on one shell command carried a **real operational consequence**.',
+          'The first versions of the memory-recovery script used `pkill -f stress-ng`. This command also stopped the Ansible process that was running the script, and the recovery ended before it finished. After **4 iterations**, `pkill -x` fixed the problem by matching only the exact process name.',
       },
       {
         keyword: 'Split alert channels',
-        title: 'Detection alerts and recovery results go to two separate Slack channels.',
+        title: 'Detection alerts and recovery results each have their own Slack channel.',
         glyph: 'channels',
         chose: 'Two channels, `#monitoring` for detection and `#recovery` for results',
         over: 'one combined feed',
         why:
-          'A single feed stays readable only while the volume is low. Splitting it keeps each channel answering one question, so an engineer on call can separate **what broke** from **what the system already fixed** without reading every message in order.',
+          'Detection alerts go to `#monitoring`, and recovery results go to `#recovery`. Keeping them apart makes it easy to see **what failed** and **what the system has already fixed**.',
       },
       {
         keyword: 'PR Owner role',
-        title: 'A three-tier branch strategy runs through a named PR Owner.',
+        title: 'A PR Owner reviews every pull request for security issues and conflicts before it merges.',
         glyph: 'branch',
         chose: '`main ← dev ← feature/*`, with a named **PR Owner**',
         // No competing option to name: this was a way of working, not a fork.
         over: null,
         why:
-          'The PR Owner is answerable for pre-merge security review and for conflict resolution, which puts one named person in front of every merge. In that role I caught a **hardcoded Slack webhook URL** before it reached the public repository.',
+          'We used a `main ← dev ← feature/*` branch strategy where one PR Owner reviewed every merge for security issues and conflicts. This review found a **hardcoded Slack webhook URL** before it reached the public repository.',
       },
       {
         keyword: 'Demo over CI/CD',
-        title: 'The team spent its remaining time rehearsing a reliable demonstration.',
+        title: 'A reliable final demonstration came before a CI/CD pipeline.',
         glyph: 'pipeline',
         chose: 'Rehearsing a **reliable demo**',
         over: 'building a CI/CD pipeline',
         why:
-          'A pipeline would have run a handful of times before the project ended. The demonstration was the one thing every reviewer would see, so the remaining time went to the deliverable that carried the result.',
+          'A CI/CD pipeline would have run only a few times before the project ended. Every reviewer would see the final demonstration, and we used the remaining time to make sure it worked **reliably**.',
       },
       {
         keyword: 'Depth over breadth',
-        title: 'Four failure scenarios each detect, recover and verify on their own.',
+        title: 'Each of the four failure scenarios recovers from start to finish without help.',
         glyph: 'depth',
         chose: '**Four** failure scenarios, each fully self-healing',
         over: 'more failure types covered shallowly',
         why:
-          'Each of the four detects, recovers and then verifies without a person in the loop. Covering more failure types on the same budget would have left every one of them half finished. Production concerns such as auto-scaling and multi-AZ are named in the write-up as **clear next steps**.',
+          'Each of the four failure scenarios detects the problem, fixes it, and checks the result without anyone stepping in. Finishing four scenarios completely mattered more than adding more failure types, and auto-scaling and multi-AZ are listed as **next steps**.',
       },
       {
         keyword: 'Injected failures',
-        title: 'A chaos script triggers each failure on demand.',
+        title: '`chaos/inject.sh` creates each failure on command for repeatable testing.',
         glyph: 'inject',
         chose: '`chaos/inject.sh`, triggering failures **on demand**',
         over: 'waiting for something to break on its own',
         why:
-          '`chaos/inject.sh` triggers each failure on command, so the recovery system can be tested repeatedly and safely. On-demand injection let us rehearse all four scenarios before the demonstration and repeat any of them on request.',
+          '`chaos/inject.sh` causes each failure on command. It let us test the recovery system as many times as we needed and practice all four scenarios before the demonstration.',
       },
     ],
     // placeholder \u2014 EVERY NUMBER BELOW IS AN ESTIMATE, not billing data.
@@ -805,66 +1108,85 @@ project1-aws/
     // Rows are ordered by the size of the gap, largest first \u2014 the chart
     // should lead with the decision that saved the most.
     cost: {
-      unit: 'USD / month',
+      unit: 'Estimated USD / month',
+      // The comparison column is the same design with managed services, priced
+      // from AWS's own price list files for ap-northeast-2 (checked October
+      // 2026) over a 730-hour month: NAT Gateway $0.059/h, t3.micro $0.013/h,
+      // RDS db.t3.micro PostgreSQL $0.028/h plus 20 GB at $0.131/GB-month, ALB
+      // $0.0225/h, public IPv4 $0.005/h, EBS gp3 $0.0912/GB-month. Usage-based
+      // charges (data processing, LCUs, transfer) are left out. Every server
+      // ran on t3.micro (`var.instance_type`, confirmed by Junhan; its value is
+      // not in the repo). Root volumes are assumed to be 8 GB, the AMI
+      // default, since the Terraform sets no size. Monitoring stays self-hosted on both sides —
+      // managed monitoring bills by usage and has no honest flat figure.
+      // The project's own column is $0: it ran on AWS Free Plan credits.
       series: [
-        { id: 'typical', label: 'Typical unoptimized build' },
-        { id: 'actual', label: 'This project' },
+        { id: 'typical', label: 'Same design with managed services' },
+        { id: 'actual', label: 'This project (AWS Free Plan)' },
       ],
       items: [
         {
           label: 'Outbound routing',
-          note: 'NAT instance vs. managed NAT Gateway',
-          typical: 38.0,
+          note: 'managed NAT Gateway, 730 hours',
+          typical: 43.07,
           actual: 0.0,
         },
         {
           label: 'Compute',
-          note: '4 instances: mgmt, web x2, db',
-          typical: 34.0,
+          note: '3 \u00d7 t3.micro: mgmt, web1, web2',
+          typical: 28.47,
           actual: 0.0,
         },
         {
           label: 'Database',
-          note: 'PostgreSQL on EC2 vs. managed RDS',
-          typical: 25.0,
+          note: 'RDS db.t3.micro with 20 GB storage',
+          typical: 23.06,
           actual: 0.0,
         },
         {
-          label: 'Monitoring',
-          note: 'self-hosted Prometheus + Grafana vs. managed',
-          typical: 22.0,
+          label: 'Public IPv4',
+          note: '5 addresses at $0.005 per hour',
+          typical: 18.25,
           actual: 0.0,
         },
         {
-          label: 'Storage & transfer',
-          note: 'EBS beyond the 30 GB free tier',
-          typical: 9.0,
-          actual: 1.2,
+          label: 'Load balancer',
+          note: 'Application Load Balancer, 730 hours',
+          typical: 16.43,
+          actual: 0.0,
+        },
+        {
+          label: 'Storage',
+          note: 'EBS gp3, 3 \u00d7 8 GB root volumes',
+          typical: 2.19,
+          actual: 0.0,
         },
       ],
-      total: { typical: 128.0, actual: 1.2 },
+      total: { typical: 131.47, actual: 0.0 },
+      totalNote: 'Estimated from AWS on-demand prices for Seoul (`ap-northeast-2`) as of October\u00a02026.',
       notes: [
-        'The largest single saving is the **NAT instance**: a managed NAT Gateway bills by the hour whether or not anything is routed through it, and at this volume of outbound traffic a `t3.micro` doing the same job costs nothing inside the free tier.',
-        'Running **PostgreSQL and the monitoring stack on instances the project already had** removes two managed-service line items. That is a real trade. There are no automated backups, there is no failover, and patching becomes the team\u2019s job. It is the right trade for a project that is demonstrated over four weeks.',
-        'Compute reaches zero because the whole fleet fits inside the **750-hour free tier** across four `t3.micro` instances. The same architecture on `t3.small` on-demand is roughly **$34 a month**, which is the honest number for anyone rebuilding this outside a free-tier account.',
-        'The only figure that is not zero is **EBS**: four root volumes exceed the 30 GB the free tier covers. Nothing was optimized away here, and pretending otherwise would have made every other row less believable.',
+        "The **NAT instance** made the biggest difference. AWS's managed NAT Gateway charges for every hour it runs, and a `t3.micro` NAT instance handled this project's outbound traffic for a fraction of that cost.",
+        'PostgreSQL and the monitoring stack ran on servers the project already had, which removed **two managed services** from the bill. The trade-off is real: there are no automated backups or failover, and the team handled patching.',
+        "The project ran on the **AWS Free Plan**, which gives new accounts credits for their first six months. All of the project's usage stayed within those credits, and the final bill was **$0**.",
+        'The comparison column shows what the same design would cost with managed services at on-demand prices. Anyone rebuilding this design outside the Free Plan would pay on-demand prices for the same servers, which is still well below that column.',
       ],
       caveat:
-        'Estimated figures, based on free-tier AWS usage in `ap-northeast-2` over the project period. Every figure is an estimate. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
+        "The comparison column is an estimate for illustration and does not reflect a real bill. Prices assume a 730-hour month before data-processing and traffic charges, and the [AWS Pricing Calculator](https://calculator.aws/) gives current rates. The project's own costs were covered by AWS Free Plan credits.",
     },
     links: {
       github: 'https://github.com/EchoChallengers/project1-aws',
-      notion: null, // TODO: not finalized
-      presentation: null, // TODO: not finalized
+      notion: 'https://app.notion.com/p/Echo-Challenger-3499e3e335cc80c8bea6f4aae0c9c3bd',
+      presentation:
+        'https://docs.google.com/presentation/d/1yW_hFAQn3GWZqACOejwITO8O59hOU7eMKi8izpSkySs/edit',
       // Rendered as the link under the Terraform Code viewer rather than as a
       // resource tile. TODO: assumes the default branch is `main`.
       terraform: 'https://github.com/EchoChallengers/project1-aws/tree/main/terraform',
     },
     reflection: {
       learned:
-        'Building for **operations** meant designing for **idempotency** and human-error prevention from the first Terraform file onward. The `pkill -x` vs. `pkill -f` issue in particular taught me that small shell-command differences can have outsized operational consequences, and that some failure modes only show up under real infrastructure conditions. I could not have predicted the **AWS OOM killer** behavior without testing on actual AWS.',
+        "This project taught me lessons about both systems and teamwork. On the technical side, designing for **idempotency** from the first Terraform file made every redeploy safe to repeat, and a single flag in `pkill` decided whether a recovery script worked. Some problems, such as the Linux **OOM killer** on the 1 GB `t3.micro` instances, appear only when testing on real AWS. On the team side, I learned that having a working environment ready early lets the rest of the team start on their own tasks sooner. I am still new to learning about **cost optimization**, and estimating this project's design showed me that cloud infrastructure decisions are also budget decisions. I learned that every infrastructure choice has a price.",
       differently:
-        'We did not build a **CI/CD pipeline** for this iteration, because we prioritized demo stability over pipeline setup given the timeline. I\u2019d also want to add containerization, auto-scaling/multi-AZ high availability, and fully automated Grafana dashboard provisioning. My near-term next steps would be finishing Grafana auto-provisioning, adding GitHub Actions CI/CD, and automating HTTPS renewal; longer-term, containerizing with ECR/ECS and eventually expanding to EKS.',
+        'With limited time, the team chose a stable demo over a **CI/CD pipeline**. Next, I would finish Grafana auto-provisioning, add GitHub Actions for CI/CD with **automatic secret scanning**, and automate HTTPS renewal. I would also add **scheduled PostgreSQL backups**, since the self-hosted database has none today. After that, I would move the services into containers with ECR and ECS, add auto-scaling and multi-AZ high availability, and eventually run them on EKS.',
     },
   },
 
@@ -894,28 +1216,224 @@ project1-aws/
       { name: 'Jongwon Lim', initials: 'JW', title: 'CI/CD & Deployment' },
       { name: 'Jiyoon Lee', initials: 'JY', title: 'Monitoring & Recovery' },
     ],
-    // The three sentences a reader who never scrolls should still come away
-    // with, drawn from the sections below rather than written separately.
+    // The three answers a reader who never scrolls should still come away with.
+    //
+    // Hyphenated words are written with U+2011, the non-breaking hyphen, so a
+    // justified line never splits "on-prem" or "real-world" at the hyphen.
+    // It renders exactly like "-".
     glance: {
-      why: 'A financial service cannot bolt security on at the end. A brute-force login run or a flood of API calls costs money the moment it lands, in fraud, in downtime, and in regulatory exposure. This platform makes every layer of defense a build step that runs unattended.',
-      how: 'Terraform defines a two-AZ AWS stack joined to an on-premise Rocky Linux server over a Tailscale tunnel, GitHub Actions runs Bandit, Trivy, and OWASP ZAP on every push, and a Recovery Controller restarts and re-verifies any container Prometheus reports as failed.',
-      result: 'Four independent security layers over **~60 Terraform-defined AWS resources** and **19 running containers**, with **5 attack and failure scenarios** demonstrated live against real attack traffic rather than described.',
+      why: 'In this project, our team wanted to practice running cloud infrastructure for a service with real‑world demands. We chose a financial service platform because it is a high‑stakes environment where downtime is costly. We built a demo banking app called LockBank on AWS, connected it to our on‑premise server, and designed the infrastructure to deploy, monitor, recover, and secure the app.',
+      // `rail` is the Build, Ship, Run accordion. Each phase shows its
+      // one-line summary closed and its detail open. A phase's detail is
+      // either `split` (AWS and on-premise columns joined by Tailscale) or
+      // `pair` (two entries side by side). `soft` marks an entry that reports
+      // without blocking. Every claim traces to the source repository:
+      // infra/terraform, infra/ansible, the Makefile, .github/workflows,
+      // docker/nginx, docker/fail2ban and monitoring/recovery.
+      how: {
+        rail: {
+          link: 'Tailscale',
+          hops: ['on push to dev or main', 'after each deploy'],
+          phases: [
+            {
+              key: 'Build',
+              tools: 'Terraform + Ansible',
+              summary:
+                'Terraform and Ansible build the AWS network, servers, and database, then join them to the on‑prem server.',
+              split: {
+                aws: [
+                  { name: 'Two‑AZ VPC', text: 'Public, app, and database subnets are spread across two availability zones.' },
+                  { name: 'ALB + Auto Scaling', text: 'A load balancer spreads traffic across one to three app servers.' },
+                  { name: 'PostgreSQL main', text: 'Ansible deploys the primary database on a private AWS server.' },
+                  // Each teammate ran their own copy of the stack, so state
+                  // was a personal S3 bucket and lock table (README, "개인별
+                  // S3 backend"), not one shared state.
+                  { name: 'S3 + DynamoDB', text: 'Each teammate keeps a separate, locked copy of the Terraform state.' },
+                ],
+                onPrem: [
+                  { name: 'make full‑service', text: 'One command builds the AWS stack, the database, and monitoring.' },
+                  { name: 'Tailscale node', text: 'The on‑premise server joins the AWS VPC over an encrypted tunnel.' },
+                  { name: 'PostgreSQL replica', text: 'A replica keeps a copy of the AWS database on this server.' },
+                ],
+              },
+            },
+            {
+              key: 'Ship',
+              tools: 'GitHub Actions',
+              summary: 'Every push is scanned before the image ships, and every deploy is scanned live.',
+              pair: [
+                { name: 'Bandit + Trivy', text: 'Both scan the code and the image. A failed scan stops the push.' },
+                // `fail_action: false` in deploy.yml: ZAP reports, it does
+                // not block.
+                {
+                  name: 'OWASP ZAP',
+                  text: 'After each deploy, ZAP scans the live site and files its findings as a GitHub issue.',
+                  soft: true,
+                },
+              ],
+            },
+            {
+              key: 'Run',
+              tools: 'AWS + on‑prem',
+              summary: 'The app and its defenses run on AWS while monitoring and recovery run on‑prem.',
+              split: {
+                aws: [
+                  { name: 'LockBank app', text: 'The FastAPI banking app runs in containers behind the load balancer.' },
+                  {
+                    name: 'Nginx + fail2ban',
+                    text: 'Nginx limits request rates, and fail2ban bans IPs that keep failing or flooding.',
+                  },
+                ],
+                onPrem: [
+                  { name: 'Prometheus + Loki', text: 'Both collect metrics and logs from AWS over the tunnel.' },
+                  {
+                    name: 'Recovery Controller',
+                    text: 'When the app goes down, it restarts the container on AWS and checks it again.',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      // Two figures side by side. `lock` draws a padlock with one bar per
+      // security layer (the deck's 4중 잠금, slides 28 and 56); `ring` draws
+      // a ring with one segment per stack layer verified live (slide 56).
+      result: {
+        lock: {
+          value: '4 layers',
+          label: 'independent security layers',
+          layers: [
+            { name: 'code', tool: 'Bandit' },
+            { name: 'image', tool: 'Trivy' },
+            { name: 'site', tool: 'ZAP', soft: true },
+            { name: 'traffic', tool: 'Nginx, fail2ban' },
+          ],
+        },
+        ring: {
+          value: '6 of 6',
+          label: 'stack layers verified live',
+          layers: [
+            { key: 'L1', name: 'infrastructure' },
+            { key: 'L2', name: 'network' },
+            { key: 'L3', name: 'app' },
+            { key: 'L4', name: 'database' },
+            { key: 'L5', name: 'security path' },
+            { key: 'L6', name: 'monitoring' },
+          ],
+        },
+      },
+    },
+    // The workspace as four cards beside At a Glance: GitHub across the top,
+    // Notion and Network side by side, Presentation across the bottom. Each
+    // card ends in a link. `link` names a key in `links` below.
+    //
+    // The GitHub figures come from the repository's merged pull requests:
+    // 38 merged in total, 11 authored and 12 reviewed by ShinJunhan. Of the
+    // four merges into main, Junhan approved and merged the release (#62,
+    // 190 commits from dev); the other three were early CI/CD chores, which
+    // is why the main lane names the release and not every merge.
+    workspaceCards: {
+      github: {
+        title: 'GitHub',
+        subtitle: 'Three-tier branch flow, every merge reviewed',
+        lanes: [
+          {
+            branch: 'main',
+            who: 'Junhan Shin, Team Lead',
+            text: 'Approved and merged the final dev → main release.',
+            mine: true,
+          },
+          { branch: 'dev', who: 'CI/CD Lead', text: 'Integrates every track into dev.' },
+          { branch: 'feature/a–e', who: 'Every track', text: 'Works on track-prefixed branches.' },
+        ],
+        stats: [
+          { value: '38', label: 'merged PRs' },
+          { value: '11', label: 'authored by me' },
+          { value: '12', label: 'reviewed by me' },
+        ],
+        foot: 'Lock-N-Lock / project2-security',
+        link: 'github',
+        linkLabel: 'Open in GitHub',
+      },
+      // Counts from the team Notion workspace: the daily activity calendar
+      // runs Sprint 01 to 20, the member section has five workspaces, and the
+      // design section holds four architecture diagrams.
+      notion: {
+        title: 'Notion',
+        subtitle: 'Team workspace',
+        figure: { value: '20', label: 'sprints' },
+        rows: [
+          { label: 'Project summary', href: 'https://app.notion.com/p/Lock-Lock-36d19ea7e5d880f7a507fb9c1ca5c952' },
+          { label: 'Meeting notes', href: 'https://app.notion.com/p/Lock-Lock-36d19ea7e5d880c7b8bbcb9b31aabcae' },
+          { label: 'Daily sprint log', count: '20' },
+          { label: 'Member workspaces', count: '5' },
+          { label: 'Design documents', count: '4' },
+        ],
+        foot: 'Team Notion.',
+        link: 'notion',
+        linkLabel: 'Open Notion',
+      },
+      // From Junhan's docs/network-design.md, kept in sync with the .tf files:
+      // the request path through three security groups, and the two side
+      // doors (the Bastion's SSH and the NAT instance's outbound route).
+      network: {
+        title: 'Network',
+        subtitle: 'My design doc',
+        figure: { value: '5', label: 'groups' },
+        path: [
+          { name: 'Internet', edge: true },
+          { name: 'lb-alb-sg', port: ':80/443' },
+          { name: 'lb-app-sg', port: ':80' },
+          { name: 'lb-db-sg', port: ':5432' },
+        ],
+        sideDoors: [
+          { key: ':22', text: 'Bastion, admin IP only' },
+          { key: 'NAT', text: 'Outbound only' },
+        ],
+        foot: 'network-design.md',
+        href: 'https://github.com/Lock-N-Lock/project2-security/blob/main/docs/network-design.md',
+        linkLabel: 'View doc',
+      },
+      // The three slides from Junhan's own track: 22 is the Track A
+      // deliverables slide that names him, 19 the hybrid infrastructure, and
+      // 11 the Git workflow.
+      presentation: {
+        title: 'Presentation',
+        subtitle: '3 slides from my track',
+        figure: { value: '3', label: 'of 72' },
+        slides: [
+          { number: 22, caption: 'Track A' },
+          { number: 19, caption: 'Hybrid' },
+          { number: 11, caption: 'Git flow' },
+        ].map((slide) => ({
+          ...slide,
+          src: `${LOCK_N_LOCK_DIAGRAM_DIR}slides/slide-${String(slide.number).padStart(2, '0')}.webp`,
+        })),
+        foot: 'Final presentation with 72 slides.',
+        link: 'presentation',
+        linkLabel: 'Open slides',
+      },
     },
     // My Role as a bento of duties sized by how much of the project each one
-    // was — same three tiers and same six-tile fill as EchoChallengers: one
-    // lead (3x2), two medium (3x1) and three small (2x1) tile the six-column
-    // grid exactly over three rows.
+    // was: one lead, two medium and four small tiles in the `mosaic` layout
+    // (see `layout` below for how they fill the grid).
     //
-    // `label` is the tile's key and is deliberately not rendered; the emphasis
-    // lives inside the sentence instead. One or two marks per tile.
+    // `label` is the tile's key. Only the lead tile renders it, as the small
+    // eyebrow above its sentence; on every other tile it stays hidden and the
+    // emphasis lives inside the sentence instead. One or two marks per tile.
+    //
+    // The sentences lead with the outcome and drop the subject ("Let five
+    // people deploy…", "Kept the hybrid link private…"), one sentence a tile.
     //
     // Scoped to Track A. An earlier draft of this section claimed CI/CD &
     // DevSecOps as a second track, which the deck contradicts: its team table
     // and its section header both put Track C under Jongwon Lim. What the deck
     // does put here is the lead role (slide 1's opening line) and final
     // approval on `main` (slide 11), so those are what the lead tile carries.
-    // Every other tile traces to slide 22 or slide 23 — the two slides that
-    // list this track's own deliverables.
+    // Every other tile traces to slide 22 or slide 23, the two slides that
+    // list this track's own deliverables, or to the README where the deck is
+    // looser than the code (Remote State).
     role: {
       title: 'Team Lead and Infrastructure Track Owner',
       // The three counts this track is measured by, across the top of the
@@ -927,10 +1445,18 @@ project1-aws/
       // repository has 67 `resource` blocks across 15 `.tf` files, so the
       // rounding is downward and the unit is Terraform resources rather than
       // AWS resources: what is counted is what the code declares.
+      //
+      // `3` is the public, app and database tiers in `network.tf`, each with
+      // its own subnets and security group (see `network-design.md`). The DB
+      // tier has one subnet where the other two have two, so this is not a
+      // claim about Availability Zones. It replaced "6 commands, whole
+      // lifecycle", which neither the deck nor the README backs, and a
+      // make-command count would credit Makefile targets teammates wrote.
+      // Units stay short enough to hold one line at a ~720px viewport.
       figures: [
         { value: '~60', unit: 'Terraform resources' },
         { value: '5', unit: 'parallel tracks' },
-        { value: '6', unit: 'commands, whole lifecycle' },
+        { value: '3', unit: 'network tiers' },
       ],
       // `mosaic` — the lead takes four columns of the first row and the smalls
       // back-fill around it. It was 4x3 while it carried the figures; with the
@@ -943,85 +1469,112 @@ project1-aws/
           // No figure of its own. The sentence used to end "on a five-person
           // team working five parallel tracks", which the band above counts
           // now, and the team size is already in the page header.
-          text: 'Held **final approval on every merge** to `main`, the last check before anything reached the running platform.',
+          //
+          // Not "every merge": `main` took four merges in total. JW merged #5,
+          // #17 and #18; Junhan approved and merged #62, the 190-commit
+          // dev → main release. Matches the GitHub card in At a Glance.
+          text: 'Signed off on the **final dev → main release** of 190 commits as the team\'s designated approver for `main`.',
         },
         {
           size: 'medium',
           label: 'Infrastructure',
-          text: 'Designed the **VPC, multi-AZ subnets, five security groups, and the Blue/Green Auto Scaling Group** in Terraform, with a NAT instance and Bastion in place of managed equivalents.',
+          text: 'Cut managed-service costs with a **NAT instance and Bastion host** inside a multi-AZ VPC and Blue/Green Auto Scaling Group defined in Terraform.',
         },
+        // State is per person. Each teammate deploys into their own AWS
+        // account with their own bucket and lock table (README "개인별 S3
+        // backend"). Slide 22's speaker notes imply one shared state; the code
+        // does not. Junhan's part was #25, which moved the hard-coded bucket
+        // into a gitignored `hcl/backend.hcl`; `init/` and the workflows'
+        // per-actor MY_BUCKET wiring are JW's.
         {
           size: 'medium',
           label: 'Remote State',
-          text: 'Put the Terraform state on an **S3 backend with DynamoDB locking**, so five people could run `apply` against one infrastructure without overwriting each other.',
+          text: 'Let five people deploy without touching each other\'s work by giving everyone **their own S3 state bucket and DynamoDB lock**.',
         },
+        // The on-premise node runs `accept-routes=false` and reaches the AWS
+        // nodes on their 100.x addresses, so it is linked to those nodes and
+        // not joined to the VPC's routes. Worded with short words because the
+        // tile is narrow and justified: the earlier "replication and
+        // monitoring traffic without a single public port" left two-word
+        // lines with gaps near 80px on a laptop. Avoid "every port closed":
+        // the ALB's 80 and 443 are public. What is encrypted is the link
+        // (WireGuard under Tailscale), not the servers at either end.
         {
           size: 'small',
           label: 'Hybrid Networking',
-          text: 'Joined the on-premise Rocky Linux server to the AWS VPC over a **Tailscale L3 tunnel**, with `accept-routes=false` to stop it breaking Remote-SSH.',
+          text: 'Encrypted the on-premise and AWS link with a **Tailscale L3 tunnel** that allowed database and monitoring traffic to stay off the public internet.',
         },
         {
           size: 'small',
           label: 'Branch Strategy',
-          text: 'Set the `feature` → `dev` → `main` flow with **no direct pushes and mandatory review**, and a Gemini review bot passing over each PR before a human did.',
+          text: 'Protected `main` and `dev` with **branch rules that blocked direct pushes** and required a human approval after a Gemini bot review.',
         },
         {
           size: 'small',
           label: 'Shared Interface',
-          text: 'Kept `outputs.tf` as the **single contract** the other four tracks consumed: ALB DNS, target-group ARNs, security-group IDs, DB addresses.',
+          text: 'Kept `outputs.tf` as **the single contract** that the other four tracks read for the load balancer address, target groups, security groups, and database IPs.',
         },
         // The seventh, and the half of this track the section never said out
         // loud: the deck's team slide calls the role "Infrastructure and
         // documentation" and lists the project-wide guide as a deliverable.
         // `docs/guides/` holds one file per track, a-infra-terraform through
-        // e-security, beside the setup guide and the network design.
+        // e-security, beside the setup guide and the network design. Every
+        // commit to `docs/` is Junhan's; b, c, d and e were drafts for their
+        // track owners to review.
         {
           size: 'small',
           label: 'Documentation',
-          text: 'Wrote the **setup guide, the network design and a guide per track**, so five people running one infrastructure worked from one set of instructions.',
+          text: 'Got every teammate building from **one set of instructions** with a setup guide, a network design, and a guide for each track.',
         },
       ],
     },
-    // An idea board rather than a paragraph. Seven notes: one lead spanning
-    // two of the four columns plus two supports fills the first row, and four
-    // supports fill the second — the board comes out square rather than
-    // ragged. Every note is a complete sentence that stands on its own.
+    // An idea board rather than a paragraph, with the same six notes and
+    // layout as EchoChallengers: two leads across the top, four supports under them.
+    // Goals takes the second lead slot because it is the longest note; in a
+    // narrow support slot it ran to thirteen lines and towered over the row.
+    // Its last sentence is trimmed to hold five lines on a desktop, where the
+    // column runs 459 to 494px wide; the longer wording needed about 520px.
+    // Two or three sentences a note in "we" voice. Marks go on keywords only, one list
+    // item at a time, never on "and" or the commas between them.
+    //
+    // Sources: slide 4 (the three incidents and the goal), slide 70 (401 →
+    // 429 → fail2ban), slide 10 (four weeks), slide 69 (applicability). The
+    // older board's Hybrid note put the main DB in two AZs; the DB tier is
+    // one subnet in one AZ, which is why no note here claims it.
     context: {
       notes: [
         {
           size: 'lead',
           label: 'Business Problem',
-          text: 'A financial service cannot treat security as something added at the end: **credential stuffing drains real accounts**, an API flood takes the service down during business hours, and a single container failure at 3am becomes an outage nobody is awake to fix. Each of them costs money, customer trust and regulatory standing the moment it lands.',
+          text: 'The three most common incidents that hurt a financial service are **stolen logins**, **API floods**, and **crashed containers**. Each one costs money, customer trust, and regulatory standing the moment a defense fails.',
+        },
+        {
+          size: 'lead',
+          label: 'Goals',
+          text: 'We set three goals: **block the attack**, **heal the failure**, and **prove both under load**. Locust would supply the load, and Grafana would keep the score. A **Recovery Controller** would catch a failed container in **Prometheus**, check a **YAML-defined policy**, restart it, re-verify its health, and report to **Telegram**.',
+        },
+        {
+          size: 'support',
+          label: 'Personal Foundation',
+          text: 'Five people had **four weeks** to build the platform, and each of us owned one track. We wanted to prove that classroom security skills could hold up against **real attack traffic**.',
+        },
+        {
+          size: 'support',
+          label: 'Core Design Values',
+          // The board's one lede: the pun is the line worth reading first,
+          // and a larger opening breaks the run of four same-sized cards.
+          lede: 'We called our defense the **4-layer lock** after our team, Lock & Lock.',
+          text: 'A flaw has to get past code analysis, image scanning, dynamic testing, and runtime blocking before it reaches a user.',
         },
         {
           size: 'support',
           label: 'What We Built',
-          text: 'We built **LockBank**, a demo banking app with login, balance, and transfers, and wrapped it in a security-first cloud platform designed around **three incidents we expected to actually face**: brute-force login attempts, API request flooding, and container failure.',
+          text: 'We built a demo financial service that **defends itself** against all three incidents. A brute-force login should earn a **401**, then a **429**, then a **fail2ban** ban, with no human in the loop. Each response runs on its own and reports to **Telegram** when it finishes.',
         },
         {
           size: 'support',
-          label: 'Proved, Not Claimed',
-          text: 'We attacked our own platform with **Locust**-generated traffic and read back what the dashboards said, so every control on this page was demonstrated live under load.',
-        },
-        {
-          size: 'support',
-          label: 'Hybrid by Design',
-          text: 'AWS runs the app tier across two Availability Zones: the **ALB, Auto Scaling Group, Bastion, and the Main DB**. An on-premise Rocky Linux server holds the Replica DB and the monitoring stack, and the two halves meet over a **Tailscale Layer-3 tunnel with no public port open on either side**.',
-        },
-        {
-          size: 'support',
-          label: 'The 4-Layer Lock',
-          text: 'Security runs on four independent layers: **static code analysis, container image scanning, dynamic application testing, and runtime defense**. We called it the **"4-layer lock,"** a deliberate nod to the team name, because a vulnerability has to get past four different kinds of scrutiny before it reaches a user.',
-        },
-        {
-          size: 'support',
-          label: 'A Real Attacker, Uninvited',
-          text: 'Minutes after the EC2 went public, **automated scans for WordPress and PHP webshell paths** started arriving on their own. That traffic arrived unsolicited from the open internet, and Nginx turned it away before a request ever reached the application.',
-        },
-        {
-          size: 'support',
-          label: 'Self-Healing',
-          text: 'When something fails, a **Recovery Controller** detects it through Prometheus, checks a YAML-defined policy, restarts the affected container, re-verifies health, then logs and reports the outcome to **Telegram**, so the 3am failure resolves itself before anyone is paged for it.',
+          label: 'Applicability',
+          text: 'The same pattern can fit any fintech team that cannot afford an **account takeover**. It can also fit companies that keep some servers **in-house** and run the rest in the **cloud**.',
         },
       ],
     },
@@ -1030,46 +1583,48 @@ project1-aws/
     // big tile's second row plus the wide tile (2) and the last square.
     //
     // The big tile is the four-layer lock because that is the project's whole
-    // thesis, not because four is the largest number here. The recovery figure
-    // is labelled as a design target rather than a measurement — it was not
-    // independently timed across every failure type, and stating it as an
-    // achieved MTTR would be a claim the project cannot back.
+    // thesis, not because four is the largest number here. Labels and hints are
+    // kept short, as on EchoChallengers. "6 Cases Resolved" is deck slide 60's
+    // six troubleshooting cases; it replaced "6 Layers Verified E2E", which At
+    // a Glance already shows. 23.24s is one timed run from the recovery log,
+    // and the hint says so.
+    metricsStyle: 'hero',
     metrics: [
       {
         size: 'big',
         value: '4',
-        label: 'Independent Security Layers',
-        detail: 'SAST → image scan → DAST → runtime block',
+        label: 'Security Layers',
+        detail: 'SAST, image scan, DAST, and runtime blocking',
       },
       {
         size: 'square',
         value: '~60',
-        label: 'AWS Resources',
-        hint: 'VPC, subnets, ALB, Auto Scaling Group, EC2, S3, IAM and CloudWatch, all defined in Terraform',
+        label: 'Terraform Resources',
+        hint: 'Defined in code and provisioned automatically',
       },
       {
         size: 'square',
         value: '19',
         label: 'Running Containers',
-        hint: 'App (4) + DB (4) + monitoring and security (11)',
+        hint: 'App (4), database (4), and monitoring and security (11)',
       },
       {
         size: 'square',
         value: '6',
-        label: 'Layers Verified E2E',
-        hint: 'Infra → network → app → DB → security path → monitoring, each live-verified rather than just configured',
+        label: 'Cases Resolved',
+        hint: 'Troubleshooting cases found and fixed during testing',
       },
       {
         size: 'wide',
         value: '5',
-        label: 'Scenarios Demonstrated Live',
-        detail: 'Normal operation, login brute-force, API flooding, container failure, and a secure-deploy gate, each triggered and resolved on camera',
+        label: 'Live Demo Scenarios',
+        detail: 'from normal traffic to a blocked deploy',
       },
       {
         size: 'square',
         value: '23.24s',
         label: 'Measured Recovery',
-        hint: 'One timed run: the recovery log reads verify success at 23.24s on the first attempt, against a ≤5 min RTO/RPO design target. The figure covers that single run',
+        hint: 'One timed run, within the 5-minute recovery target',
       },
     ],
     // Grouped by what each tool is for, with no `tint` overrides — the
@@ -1093,31 +1648,39 @@ project1-aws/
     // one answers "why a 401 instead of a 302". Five, not twenty: the wheel
     // already lists every tool and a note against each would be a second
     // inventory rather than an argument.
+    //
+    // Written in EchoChallengers' "We chose X because…" voice, Terraform
+    // aside, with "I" where the call was Junhan's (Tailscale, his hybrid
+    // track) and "I supported" where it was another track's (monitoring is
+    // Track D, Jiyun Lee's). Locust credits the security track (E) with the
+    // pick and Junhan with the rule that every defense be attack-tested. The earlier Terraform note said two people running `apply` at
+    // once queued behind one shared DynamoDB lock; state was per person, each
+    // in their own AWS account. 15 files: 13 in infra/terraform, 2 in init/.
     stackNotes: [
       {
         tool: 'Why Terraform?',
         icon: 'Terraform',
-        text: 'The whole **~60-resource** footprint had to be reproducible by any of five people. With the state on an **S3 backend behind a DynamoDB lock**, two of them running `apply` at once are serialised into a queue.',
+        text: '**Terraform** let five people apply, destroy, and rebuild the same **~60-resource** environment from 15 Terraform files.',
       },
       {
         tool: 'Why Tailscale?',
         icon: 'Tailscale',
-        text: 'The on-premise server had to reach into the VPC with **no public port open on either side**. A mesh VPN gave that for almost no network configuration, where a site-to-site tunnel would have meant static addressing on a machine behind NAT.',
+        text: 'I chose **Tailscale** after using it in my first project to join two networks without a public port. This time, it carried database replication and monitoring between the on-premise server and AWS over an **encrypted tunnel**.',
       },
       {
-        tool: 'Why Prometheus, Grafana and Loki?',
+        tool: 'Why Prometheus, Grafana, and Loki?',
         icon: 'Prometheus',
-        text: 'Metrics alone could not answer the questions this project asks. Loki and Promtail put the **Nginx access log beside the metrics** in one console, which is what lets a 401 spike and the request that caused it be read together.',
+        text: 'As team lead, I supported the monitoring track\'s pick of **Prometheus** and **Grafana** because both tools are open source and all my team members had hands-on practice with them in class labs. I also backed adding **Loki**, which puts the Nginx access log beside the metrics and traces a 401 spike back to its requests.',
       },
       {
         tool: 'Why Locust?',
         icon: 'Locust',
-        text: 'A defense nobody has attacked is a configuration, not a control. Three scripted profiles, **normal traffic, credential brute-force, and API flooding**, made every claim on this page something we could trigger on demand and watch fail or hold.',
+        text: 'I set the rule that every defense had to be tested with real attack traffic, and the security track chose **Locust** to run those tests. Three Locust scripts simulate normal users, **brute-force logins**, and **API flooding** on demand.',
       },
       {
         tool: 'Why Telegram?',
         icon: 'Telegram',
-        text: 'Alerts had to reach a phone without standing up an on-call platform for a four-week project. Two independent paths end there: **Alertmanager** for anything Prometheus sees, and **CloudWatch → SNS → Lambda** for anything that happens to the instances themselves.',
+        text: 'Our team decided on **Telegram** because its bot API sends an alert to a phone at no cost. Two paths end there, one from **Alertmanager** and one from **CloudWatch** through SNS and Lambda. Alerts arrive from Alertmanager for anything Prometheus sees and from CloudWatch for anything that happens to the instances.',
       },
     ],
     // Drawn from this description rather than pasted in as an export \u2014 see
@@ -1127,13 +1690,17 @@ project1-aws/
     // path with its Lambda and SNS, and the on-premises replica all come from
     // it, and the NAT is an EC2 instance rather than a managed gateway.
     //
-    // One thing the export does not settle: it labels the on-premises box
-    // 'Monitoring' without naming what runs in it. Prometheus and Grafana are
-    // kept here from the earlier reconstruction and are the only unverified
-    // labels left in this diagram.
+    // Checked against the code as well, which corrected the export in two
+    // places. Blue and green are two Auto Scaling Groups that both span both
+    // app subnets (compute.tf), and green sits at desired_capacity 0; they are
+    // not one AZ each. The alert path is CloudWatch alarms → the lb-alerts SNS
+    // topic → the cloudwatch-telegram-notifier Lambda → Telegram; nothing in
+    // the repository fires a Lambda from S3. The three on-premise boxes are
+    // containers on the one proj-mgmt host (README, Makefile), and the
+    // monitoring compose file confirms Prometheus and Grafana.
     architecture: [
       {
-        alt: 'AWS and on-premises joined over Tailscale: Route 53 and an ACM-terminated HTTPS listener on the load balancer, blue and green application instances under an auto scaling group in the 10.0.11.0/24 and 10.0.12.0/24 private subnets, a bastion and a NAT instance in the 10.0.1.0/24 public subnet, a PostgreSQL host in the 10.0.21.0/24 private subnet backing up to S3 with Lambda and SNS beside it, CloudWatch driving the scaling alarms, and an on-premises monitoring host and database replica reached over Tailscale',
+        alt: 'AWS and an on-premise host joined over Tailscale: Route 53 and an ACM-terminated HTTPS listener on the load balancer, blue and green Auto Scaling Groups across the 10.0.11.0/24 and 10.0.12.0/24 private subnets with green on standby at zero instances, a bastion and a NAT instance in the 10.0.1.0/24 public subnet, a PostgreSQL host in the 10.0.21.0/24 private subnet backing up to S3 nightly, CloudWatch alarms sent through SNS and Lambda to Telegram, and the proj-mgmt host running monitoring and the database replica over Tailscale',
         // "Security architecture" undersold it: the drawing is the whole
         // system \u2014 network, compute, data, backups and the on-premises side \u2014
         // and security is the lens the project looks at it through, not the
@@ -1141,7 +1708,8 @@ project1-aws/
         // calls the same view of itself, and it leaves "System Overview" free
         // for the export tab that carries that name inside its own file.
         tab: 'Overall architecture',
-        caption: 'Overall architecture: AWS, blue/green under one auto scaling group, and the on-premises hosts over Tailscale',
+        address: 'lock-n-lock/architecture/01-overall-architecture',
+        caption: 'AWS blue/green deployment with an on-premise host over Tailscale',
         diagram: {
           width: 1000,
           height: 760,
@@ -1151,7 +1719,7 @@ project1-aws/
             { id: 'public', label: 'Public subnet', note: '10.0.1.0/24', x: 196, y: 192, w: 480, h: 92, tone: 'region' },
             { id: 'asg', label: 'Auto Scaling group \u00b7 blue / green', x: 196, y: 296, w: 480, h: 100, tone: 'focus' },
             { id: 'dbsub', label: 'Private subnet', note: '10.0.21.0/24', x: 196, y: 402, w: 480, h: 88, tone: 'region' },
-            { id: 'onprem', label: 'On-premises \u00b7 reached over Tailscale', x: 150, y: 552, w: 836, h: 186, tone: 'onprem' },
+            { id: 'onprem', label: 'On-premise \u00b7 one proj-mgmt host over Tailscale', x: 150, y: 552, w: 836, h: 186, tone: 'onprem' },
           ],
           nodes: [
             { id: 'visitor', label: 'Client', glyph: 'user', x: 76, y: 248, w: 132, h: 52 },
@@ -1164,11 +1732,11 @@ project1-aws/
             // A NAT instance, not a managed NAT gateway \u2014 the export is
             // explicit about it, and it is the cheaper of the two.
             { id: 'nat', label: 'NAT', sub: 'EC2 instance', glyph: 'cloud', x: 596, y: 248, w: 150, h: 54 },
-            { id: 'blue', label: 'App: blue', sub: 'live \u00b7 AZ 2a \u00b7 10.0.11.0/24', glyph: 'container', x: 310, y: 352, w: 210, h: 58 },
-            { id: 'green', label: 'App: green', sub: 'standby \u00b7 AZ 2c \u00b7 10.0.12.0/24', glyph: 'container', x: 550, y: 352, w: 210, h: 58 },
+            { id: 'blue', label: 'App: blue', sub: 'live \u00b7 both app subnets', glyph: 'container', x: 310, y: 352, w: 210, h: 58 },
+            { id: 'green', label: 'App: green', sub: 'standby \u00b7 0 instances', glyph: 'container', x: 550, y: 352, w: 210, h: 58 },
             { id: 'db', label: 'PostgreSQL', sub: 'EC2', glyph: 'database', x: 430, y: 456, w: 190, h: 50 },
             { id: 'cw', label: 'CloudWatch', sub: 'alarms drive the ASG', glyph: 'monitor', x: 850, y: 248, w: 190, h: 54 },
-            { id: 'lambda', label: 'Lambda', glyph: 'service', x: 770, y: 352, w: 120, h: 46 },
+            { id: 'lambda', label: 'Lambda', sub: 'to Telegram', glyph: 'service', x: 777, y: 352, w: 134, h: 54 },
             { id: 'sns', label: 'SNS', glyph: 'alert', x: 920, y: 352, w: 120, h: 46 },
             { id: 's3', label: 'S3', sub: 'pg_dump backups', glyph: 'bucket', x: 850, y: 456, w: 190, h: 52 },
             { id: 'monitor', label: 'Monitoring', sub: 'Prometheus \u00b7 Grafana', glyph: 'monitor', x: 300, y: 614, w: 210, h: 54 },
@@ -1224,8 +1792,11 @@ project1-aws/
             },
             { from: 'nat', to: 'igw', dash: true },
             { from: 'db', to: 's3', label: 'pg_dump nightly', dash: true },
-            { from: 's3', to: 'lambda', dash: true },
-            { from: 'lambda', to: 'sns', dash: true },
+            // CloudWatch alarms → SNS → Lambda, which posts to Telegram. Down
+            // the right-hand column from CloudWatch, then back left into the
+            // Lambda that subscribes to the topic.
+            { from: 'cw', to: 'sns', label: 'alarms', dash: true },
+            { from: 'sns', to: 'lambda', dash: true },
             // The two Tailscale paths the export's legend names. Both leave
             // the diagram's boxed area entirely rather than threading between
             // the subnets \u2014 which is what a VPN into the VPC looks like.
@@ -1276,6 +1847,8 @@ project1-aws/
         id: 'mine',
         label: 'My track',
         root: 'project2-security/infra/',
+        // Same path style as the diagram tabs, without their numbers.
+        address: 'lock-n-lock/folder-structure/my-track',
         tree: `
 project2-security/
 ├── setup.sh                      # Rocky 8 toolchain: AWS CLI v2, Terraform, Ansible, Docker
@@ -1307,6 +1880,7 @@ project2-security/
         id: 'all',
         label: 'Whole repository',
         root: 'project2-security/',
+        address: 'lock-n-lock/folder-structure/whole-repository',
         tree: `
 project2-security/
 ├── .github/
@@ -1508,6 +2082,13 @@ project2-security/
     // the deck's schedule slide \u2014 including that week three runs eight days
     // (6/10\u20136/17) where the other three run seven, which is what the slide
     // says rather than something smoothed over here.
+    //
+    // Each phase pairs the team's work ("We…") with Junhan's ("I…"), as
+    // EchoChallengers does. Every "I" sentence is backed by his commits inside
+    // that phase's dates: the scaffold and setup scripts (5/30\u20136/1), the
+    // Terraform, the VXLAN-to-Tailscale switch and PR #25 (6/3\u20136/7), the NAT
+    // egress and DB tailnet fixes (6/10), and the teardown hardening, the
+    // guides and PR #62 (6/22\u20136/24).
     implementation: {
       months: ['2026-05', '2026-06'],
       span: { from: '2026-05-27', to: '2026-06-24' },
@@ -1518,7 +2099,7 @@ project2-security/
           range: 'May 27 \u2013 Jun 2',
           from: '2026-05-27',
           to: '2026-06-02',
-          text: 'The team picked the topic, defined the three incident scenarios it would defend against, split the work into the five tracks, and designed the architecture.',
+          text: 'We picked a financial service as our topic, defined **three incident scenarios**, and split the work into five tracks. I set up the shared repository and wrote the setup scripts and Tailscale bootstrap that gave every teammate the same starting environment.',
         },
         {
           id: 'build',
@@ -1526,7 +2107,7 @@ project2-security/
           range: 'Jun 3\u20139',
           from: '2026-06-03',
           to: '2026-06-09',
-          text: 'Mentor feedback was folded back into the design, the CI/CD collaboration setup went in, and the AWS infrastructure went up alongside the FastAPI app and its PostgreSQL pair.',
+          text: 'We incorporated mentor feedback, set up the CI/CD workflow, and built the FastAPI app with its PostgreSQL pair. I wrote the **Terraform** for the AWS infrastructure, replaced the VXLAN overlay with node-to-node Tailscale, and gave each teammate their own remote state.',
         },
         {
           id: 'secure',
@@ -1534,7 +2115,7 @@ project2-security/
           range: 'Jun 10\u201317',
           from: '2026-06-10',
           to: '2026-06-17',
-          text: 'With the app service running, the observability stack and the security scenarios were built on top of it. That layer is where detection, blocking and automated recovery became demonstrable.',
+          text: 'We built the monitoring stack and the security scenarios on top of the running app, which made detection, blocking, and automated recovery demonstrable. I fixed the NAT egress and the database\u2019s Tailscale join that the monitoring depended on.',
         },
         {
           id: 'verify',
@@ -1542,7 +2123,7 @@ project2-security/
           range: 'Jun 18\u201324',
           from: '2026-06-18',
           to: '2026-06-24',
-          text: 'Final code review, an end-to-end run of the demo flow, recording the demo footage, and writing the report.',
+          text: 'We reviewed the final code, ran the demo flow end to end, recorded the demo, and wrote the report. I hardened `make destroy`, wrote the guide for each track, and approved the **final dev \u2192 main release**.',
         },
       ],
     },
@@ -1586,15 +2167,42 @@ project2-security/
         content: lnlAlertRules,
       },
     ],
+    // Checked against the screenshots: Trivy reports HIGH 3, CRITICAL 0 (an
+    // earlier lead said CRITICAL); the Locust table's 111 failures include one
+    // failed login, so the tag counts the 110 refused transfers; and 23.24s is
+    // the controller's detect-to-verified duration, not time since the kill.
     media: {
+      // Cut from the team's demo recording, which is 1866kbps at 960x540 and
+      // displays at 0.90x in this column, so these clips sit close to their
+      // native pixels. That recording carries the team's own Korean captions
+      // burned in; they are left alone for the same reason the Korean
+      // dashboards are, and `clipNote` says whose they are.
+      //
+      // The stills are the same runs rather than a separate session: the
+      // container capture and the clip both report 23.24s. They are kept
+      // because they are full-resolution frames of moments the clip passes
+      // through, and because scenarios 1 to 3 have only one each.
+      clipNote:
+        "Cut from the team's demo recording. The Korean captions are the team's own. Silent, and it loops.",
+      stillsNote:
+        'Full-resolution captures of the same scenarios. Click one to open it at full size.',
       scenarios: [
         {
           id: 'normal',
           tab: 'Normal operation',
           label: 'Scenario 1: Normal operation',
+          lead:
+            'A user signs in to **LockBank** and submits a transfer. Every Security Center panel reads green and no alerts are active.',
+          clip: {
+            src: '/projects/lock-n-lock/clip-01-normal.mp4',
+            width: 960,
+            height: 540,
+            poster: '/projects/lock-n-lock/clip-01-normal.jpg',
+            alt: 'The LockBank login page, a successful sign-in, and a transfer submitted against a healthy service',
+          },
           before: {
             src: '/projects/lock-n-lock/normal-operation-console.png',
-            state: 'Baseline: every panel green',
+            state: 'Zero alerts at baseline',
             alt: 'The Security Center console on its Normal Operation tab: App Health UP, DB Status UP, zero active alerts, ALB target health HEALTHY, one ASG instance, and CPU and network charts tracking a quiet service',
           },
         },
@@ -1602,9 +2210,19 @@ project2-security/
           id: 'login-bruteforce',
           tab: 'Login brute-force',
           label: 'Scenario 2: Credential brute-force',
+          lead:
+            'Locust runs a credential brute-force against `/login`. Each failure logs a **401**, the alert fires once the rate crosses its threshold, and **Fail2Ban** bans the source IP.',
+          clip: {
+            src: '/projects/lock-n-lock/clip-02-login.mp4',
+            width: 960,
+            height: 540,
+            poster: '/projects/lock-n-lock/clip-02-login.jpg',
+            speed: '3x',
+            alt: 'A Locust brute-force run driving the login failure count up, the dashboard alert turning active, and Fail2Ban reporting the attacking IP banned',
+          },
           before: {
             src: '/projects/lock-n-lock/login-bruteforce-401-log.png',
-            state: 'Under attack: a 401 logged per failed attempt',
+            state: '401 per failed login',
             alt: 'Application logs during a Locust brute-force run: repeated SECURITY LOGIN_FAILURE warnings naming the source IP and attempted username, each paired with a POST /login returning 401 Unauthorized, interleaved with health checks still returning 200',
           },
         },
@@ -1612,9 +2230,19 @@ project2-security/
           id: 'api-flood',
           tab: 'API flooding',
           label: 'Scenario 3: API request flooding',
+          lead:
+            'A flood of transfer requests hits the API. Nginx refuses them at the rate limit with **429**, the blocked-IP count climbs, and the alert clears once the policy has absorbed the attack.',
+          clip: {
+            src: '/projects/lock-n-lock/clip-03-flood.mp4',
+            width: 960,
+            height: 540,
+            poster: '/projects/lock-n-lock/clip-03-flood.jpg',
+            speed: '3x',
+            alt: 'A transfer flood driving the HTTP 429 count up on the API Flooding dashboard, the blocked IP count rising to two, and the active alert returning to zero',
+          },
           before: {
             src: '/projects/lock-n-lock/api-flood-locust.png',
-            state: 'Under attack: 99% of requests refused at the rate limit',
+            state: '110 of 110 transfers refused',
             alt: 'The Locust statistics table mid-run: 112 aggregated requests against 111 failures, a 99% failure rate reported in the header, with the GET /transfer row showing 108 requests and 108 failures as the rate limit refuses them',
           },
         },
@@ -1622,14 +2250,24 @@ project2-security/
           id: 'container-recovery',
           tab: 'Container failure',
           label: 'Scenario 4: Container failure and self-healing',
+          lead:
+            'The application container is force-stopped. The health check fails, the recovery runs without anyone touching it, and the service is verified healthy **23.24s** after the failure is detected.',
+          clip: {
+            src: '/projects/lock-n-lock/clip-04-container.mp4',
+            width: 960,
+            height: 540,
+            poster: '/projects/lock-n-lock/clip-04-container.jpg',
+            speed: '2.5x',
+            alt: 'The Container Recovery dashboard moving from one recovery attempt to two at a 100 percent success rate, with the recovery log reporting verify success for BankAppDown in 23.24 seconds',
+          },
           before: {
             src: '/projects/lock-n-lock/container-failure-before.png',
-            state: 'Before the failure',
+            state: 'Healthy before the kill',
             alt: 'The Security Center console before the container is killed, showing the service healthy on its Normal Operation tab',
           },
           after: {
             src: '/projects/lock-n-lock/container-recovery-after.png',
-            state: 'Recovered unattended in 23.24s',
+            state: 'Recovered in 23.24 seconds',
             alt: 'The console on its Container Recovery tab after the failure: App Health back to UP, two recovery attempts, a 100% recovery success rate, and a recovery log reading verify success for BankAppDown at 23.24 seconds on the first attempt, above a critical log entry showing the failed health check that triggered it',
           },
         },
@@ -1637,19 +2275,29 @@ project2-security/
           id: 'secure-deploy',
           tab: 'Secure deploy',
           label: 'Scenario 5: The security gate on a deploy',
+          lead:
+            '**Trivy** finds three **HIGH** vulnerabilities in the image, and the job ends on `exit code 1` before the deploy can run. The same pipeline passes only once the dependency is fixed.',
+          clip: {
+            src: '/projects/lock-n-lock/clip-05-deploy.mp4',
+            width: 960,
+            height: 540,
+            poster: '/projects/lock-n-lock/clip-05-deploy.jpg',
+            alt: 'The Trivy scan step failing the GitHub Actions job with exit code 1, then the same steps completing with green checks after the dependency is updated',
+          },
           before: {
             src: '/projects/lock-n-lock/secure-deploy-bandit-sast.png',
-            state: 'Stage 1: Bandit, static analysis',
+            state: 'B310 findings flagged',
             alt: 'Bandit output in the pipeline listing B310 blacklist findings at medium severity and high confidence, each mapped to CWE-22 and pinned to a file and line number in the application source',
           },
           after: {
             src: '/projects/lock-n-lock/secure-deploy-trivy-blocked.png',
-            state: 'Stage 2: Trivy, and the build stops',
+            state: 'Build blocked on three CVEs',
             alt: 'Trivy image-scan output listing three HIGH severity CVEs in Python packages with their installed and fixed versions, followed by the job ending on Error: Process completed with exit code 1',
           },
         },
       ],
-      // TODO: the deck links five demo recordings, which are not in the file.
+      // No separate demo video: the recording the deck links is what the five
+      // clips above are cut from, so the section already carries it.
       video: null,
     },
     // `glyph` names a mark from components/sections/decisionGlyphs.jsx. It is
@@ -1660,69 +2308,88 @@ project2-security/
     // something designed and deliberately not shipped, and the `outputs.tf`
     // card records a way of working — both carry `over` where there was a real
     // alternative and leave the rest to the sentence.
+    //
+    // Each `why` is two or three plain sentences, matching EchoChallengers,
+    // and was checked against the deck's troubleshooting slides (61–66) and
+    // the code. Three earlier claims were wrong: outputs.tf assumed one shared
+    // Terraform state (state was per person); the Tailscale card blamed VXLAN
+    // for the Remote-SSH breakage (that came from accepting VPC routes, and
+    // VXLAN went because replication and monitoring only needed TCP); and the
+    // ZAP card said Bandit blocks on Critical/High (it runs with `-l` and
+    // fails on any finding; only Trivy filters by severity).
+    //
+    // A mark inside `chose` cannot wrap, so a long one runs off the card.
+    // Mark single keywords there.
+    //
+    // Each `title` is the bubble's open summary. Like EchoChallengers', it
+    // states the decision and what it achieves in one sentence; all seven
+    // open to two lines at a laptop width.
+    //
+    // `chose` and `over` are short noun phrases, as in EchoChallengers; the
+    // detail they used to carry lives in `why`, which sits right under them.
     decisions: [
       {
         keyword: 'Real 401 on failure',
-        title: 'A failed login returns a real HTTP 401.',
+        title: 'Failed logins return a real HTTP 401 that the dashboard and `fail2ban` can both detect.',
         glyph: 'process',
-        chose: 'A real **401** on login failure, read by both the Nginx log and the app’s own metrics',
-        over: 'a **302** redirect the detection pipeline could not see',
+        chose: 'A real **401** for failed logins',
+        over: 'a **302** redirect that hid each failure',
         why:
-          'Login failures were returning a 302, so no 401 ever reached the Nginx access log and the detection pipeline reported **zero failed logins during a live brute-force run**. Switching the failure response to a real 401, and pointing both the log and the metrics at it, made the attempts visible to `fail2ban` and to the dashboard at the same moment.',
+          'Login failures returned a 302 redirect instead of a 401. As a result, the dashboard showed **zero failed logins** during a live brute-force run, and switching to a real 401 let both `fail2ban` and the dashboard see every attempt.',
       },
       {
         keyword: 'Blackbox probing',
-        title: 'Health is measured by probing the path a real user takes through Nginx.',
+        title: 'A Blackbox probe tests whether a real user can reach the app through Nginx.',
         glyph: 'process',
-        chose: '**Blackbox Exporter**, probing the path a real user takes through Nginx',
-        over: 'a container-level health check, blind to the proxy in front of it',
+        chose: '**Blackbox Exporter**, probing through Nginx',
+        over: 'a container-only health check',
         why:
-          'After the Nginx reverse proxy went in, Prometheus could see that a container was running but not whether the app was reachable through it. An end-to-end probe defines a failure as **a request a user cannot complete**.',
+          'After we added Nginx as a reverse proxy, Prometheus could see the container running but not whether users could reach the app. A **Blackbox Exporter** probe through Nginx now defines a failure as a request a user cannot complete.',
       },
       {
         keyword: 'Repo-local Docker login',
-        title: 'Docker credentials are pinned to a repository-local config folder.',
+        title: 'A repository-local Docker config keeps builds working the same on every machine.',
         glyph: 'note',
-        chose: '`DOCKER_CONFIG` pinned to a repo-local folder in the Makefile',
-        over: 'the host’s global Docker login',
+        chose: '`DOCKER_CONFIG` in a repo-local folder',
+        over: 'the host\u2019s global Docker login',
         why:
-          'Docker Hub credentials collided with whatever was already logged in on the host, so a build that worked on one machine **failed silently on another**. Pinning the config to the repository, and parsing the login ID out of it, made the build reproducible on any machine.',
+          'Docker Hub credentials collided with the host\u2019s own login, and a build that worked on one machine **failed on another**. Pinning `DOCKER_CONFIG` to a folder inside the repository made the build behave the same on every machine.',
       },
       {
         keyword: 'Tailscale L3 tunnel',
-        title: 'The on-premise server reaches AWS over a Tailscale Layer 3 tunnel.',
+        title: 'The on-premise server reaches AWS through a Tailscale tunnel with no inbound port open.',
         glyph: 'channels',
-        chose: 'A pure **Tailscale Layer-3** tunnel with `accept-routes=false`, brought up by originating traffic from inside the network',
-        over: 'a **VXLAN** L2 overlay, and an inbound firewall rule to go with it',
+        chose: 'A **Tailscale** Layer 3 tunnel',
+        over: 'a **VXLAN** Layer 2 overlay',
         why:
-          'Connecting the on-premise server to AWS needed a tunnel that would not fight the rest of our remote-access tooling. The Layer 3 route avoided the routing conflicts that kept breaking **VS Code Remote-SSH**, at the cost of the flat Layer 2 segment VXLAN would have given. Bringing it up was its own problem. Behind NAT the tunnel never initialised, and the login page rendered while logins hung. Pinging out from the replica host **created the state the firewall needed** to pass the return path, so the peers connected directly with nothing opened inbound.',
+          'We dropped the VXLAN overlay because replication and monitoring only needed TCP, and a Layer 3 **Tailscale** tunnel was simpler to run. When NAT kept the tunnel from starting, a ping from the replica host **punched a hole** in the firewall without opening any inbound port.',
       },
       {
         keyword: 'ZAP after deploy',
-        title: 'OWASP ZAP scans the live application after every deployment.',
+        title: 'OWASP ZAP scans the live app after each deployment and reports findings in a GitHub issue.',
         glyph: 'note',
-        chose: '**OWASP ZAP** scanning the live app after deployment and filing a GitHub issue with what it finds',
-        over: 'blocking every deploy on any ZAP finding',
+        chose: '**OWASP ZAP** after each deploy, reporting to GitHub',
+        over: 'blocking every deploy on a ZAP finding',
         why:
-          'Bandit and Trivy both block the pipeline on Critical and High findings **before an image ships**. ZAP runs after deployment and produces a standing report on the running system. Promoting it to a blocking check is the next step, once it is reliable enough not to fail a demonstration app that is meant to look attackable.',
+          '**Bandit** fails the build on any code finding, and **Trivy** blocks Critical and High image vulnerabilities before an image ships. ZAP scans the live app after each deploy and reports its findings in a GitHub issue. The next step is to let ZAP stop a deploy when it finds a high-risk issue, which would give the running app the same gate the image already has.',
       },
       {
         keyword: 'One outputs.tf contract',
-        title: 'A single `outputs.tf` is the interface between the five tracks.',
+        title: 'A single `outputs.tf` file holds every value the other four tracks depend on.',
         glyph: 'branch',
-        chose: '`outputs.tf` as the **one contract** the other four tracks consumed',
-        over: 'each track reading and editing the infrastructure code directly',
+        chose: '`outputs.tf` as the **one contract**',
+        over: 'each track reading the Terraform code directly',
         why:
-          'Five people working five tracks against one Terraform state is where a project usually starts breaking, because a small edit inside someone else’s module quietly moves the resource everyone depends on. Publishing IDs and endpoints through `outputs.tf` gave every other track a **stable name to build against** and left exactly one person answerable for what those names pointed at.',
+          'A change in the Terraform code could break another track\u2019s setup without warning. I listed every value the other tracks needed in `outputs.tf`, which kept them in **one place**.',
       },
       {
         keyword: 'Recovery checks dependencies',
-        title: 'A recovery succeeds only once the database connectivity and the network path both answer.',
+        title: 'A recovery counts only after the databases, the network, and the app all respond.',
         glyph: 'process',
-        chose: 'Verifying **Main and Replica DB connectivity and the network path** before declaring a recovery successful',
-        over: 'restarting the app container and calling it done',
+        chose: 'Checking the **databases** and **network** before success',
+        over: 'restarting the container and calling it done',
         why:
-          'The first version of the controller restarted the failed container and stopped there, so the service came back **still broken**. The container was running while its database dependencies were still unreachable. Adding connectivity checks, replica correction and a closing health check turned “the container is running again” into “a user can log in again”, which is the claim that matters.',
+          'There was an incident where a restarted container was in a **broken state** because it could not reach its databases. The controller now checks the databases, the network, and the app\u2019s health before it reports a recovery.',
       },
     ],
     // EVERY NUMBER BELOW IS AN ESTIMATE, not billing data — same basis as
@@ -1736,70 +2403,88 @@ project2-security/
     // two, which are the rows that do not close. A cost table where every line
     // saves money is a sales sheet.
     cost: {
-      unit: 'USD / month',
+      unit: 'Estimated USD / month',
+      // Priced the way EchoChallengers is: AWS on-demand rates for
+      // ap-northeast-2 (checked October 2026) over a 730-hour month, with
+      // usage-based charges (data processing, LCUs, transfer) left out. RDS
+      // db.t3.small PostgreSQL is $0.056/h from the AWS price list file, plus
+      // 20 GB at $0.131/GB-month; the read replica prices the on-premise one.
+      // NAT Gateway $0.059/h, t3.small $0.026/h, t3.micro $0.013/h, ALB
+      // $0.0225/h, public IPv4 $0.005/h (Bastion, NAT, and the ALB in two AZs),
+      // EBS gp3 $0.0912/GB-month. Instance sizes are the variables.tf defaults:
+      // app and DB t3.small, NAT and Bastion t3.micro. Monitoring is
+      // self-hosted on both sides, as on EchoChallengers, because managed
+      // monitoring bills by usage and has no honest flat figure. This
+      // project's own column is $0: every teammate ran on AWS Free Plan
+      // credits. The earlier version used round guesses and priced managed
+      // monitoring; both are gone.
       series: [
-        { id: 'typical', label: 'Typical unoptimized build' },
-        { id: 'actual', label: 'This project' },
+        { id: 'typical', label: 'Same design with managed services' },
+        { id: 'actual', label: 'This project (AWS Free Plan)' },
       ],
       items: [
         {
           label: 'Database',
-          note: 'PostgreSQL on EC2 + on-premise replica vs. managed RDS with a read replica',
-          typical: 50.0,
-          actual: 0.0,
-        },
-        {
-          label: 'Monitoring & logging',
-          note: '11 self-hosted containers vs. managed Prometheus, Grafana and log ingestion',
-          typical: 45.0,
+          note: 'RDS db.t3.small with 20 GB, plus a read replica',
+          typical: 87.0,
           actual: 0.0,
         },
         {
           label: 'Outbound routing',
-          note: 'NAT instance vs. managed NAT Gateway',
-          typical: 38.0,
+          note: 'managed NAT Gateway, 730 hours',
+          typical: 43.07,
           actual: 0.0,
         },
         {
-          label: 'Compute: app tier',
-          note: 'Auto Scaling Group, Bastion, NAT: free-tier instances against on-demand',
-          typical: 34.0,
+          label: 'Compute',
+          note: 'app t3.small and Bastion t3.micro',
+          typical: 28.47,
           actual: 0.0,
-        },
-        {
-          label: 'Storage, state & alerting',
-          note: 'S3 backups and logs, DynamoDB state lock, CloudWatch alarms, SNS, Lambda',
-          typical: 12.0,
-          actual: 2.5,
         },
         {
           label: 'Load balancer',
-          note: 'ALB with ACM termination and two target groups, with no cheaper equivalent',
-          typical: 18.0,
-          actual: 18.0,
+          note: 'Application Load Balancer, 730 hours',
+          typical: 16.43,
+          actual: 0.0,
+        },
+        {
+          label: 'Public IPv4',
+          note: '4 addresses at $0.005 per hour',
+          typical: 14.6,
+          actual: 0.0,
+        },
+        {
+          label: 'Storage',
+          note: 'EBS gp3 root volumes',
+          typical: 1.46,
+          actual: 0.0,
         },
       ],
-      total: { typical: 197.0, actual: 20.5 },
+      total: { typical: 191.03, actual: 0.0 },
       notes: [
-        'The two largest savings are the same decision made twice: **the replica database and the entire observability stack run on an on-premise machine the team already owned**, which removes two managed line items outright. That is a real trade and not a free one. There are no managed backups and no failover, patching becomes somebody’s job, and a **Tailscale tunnel becomes a thing that has to stay up** for either of them to be reachable.',
-        'The **NAT instance** is the single clearest cloud saving. A managed NAT Gateway bills by the hour whether or not anything routes through it, and at this volume of outbound traffic a `t3.micro` doing the same job costs nothing inside the free tier. The price is an instance the team patches and a single point of failure, and **a second NAT instance is the stated fix for it**.',
-        'Compute reaches zero because the whole fleet fits inside the **750-hour free tier**. The honest number for anyone rebuilding this outside a free-tier account is roughly **$34 a month**, and that figure is what the comparison column prices.',
-        'The **load balancer is the row that does not move**, and it is here for that reason. The ALB terminates HTTPS, health-checks two target groups, and is the entry point every demo scenario runs through; there is no cheaper equivalent that does those three things. A table where every line saved money would be less believable, not more.',
+        'The **on-premise server** made the biggest difference. The replica database ran on hardware the team already had, which removed a managed read replica from the bill. The trade-off is real: there are no automated backups or failover, and the team handled patching.',
+        'The **NAT instance** replaced AWS\u2019s managed NAT Gateway, which charges for every hour it runs. A `t3.micro` NAT instance handled this project\u2019s outbound traffic for about a fifth of that cost.',
+        'Each teammate deployed into their own account on the **AWS Free Plan**, and the credits covered every account\u2019s usage. The final bill was **$0**.',
+        'The comparison column shows the same design with managed services at on-demand prices. Monitoring is self-hosted on both sides because managed monitoring bills by usage and has no honest flat figure.',
       ],
       caveat:
-        'Estimated figures for `ap-northeast-2` over the four-week project period, on a free-tier account. Every figure is an estimate. The comparison column prices the same architecture built with managed equivalents at on-demand rates.',
+        'The comparison column is an estimate for illustration and does not reflect a real bill. Prices come from AWS on-demand rates for Seoul (`ap-northeast-2`) as of October 2026, over a 730-hour month before data-processing and traffic charges.',
     },
     links: {
-      github: null, // placeholder
-      notion: null, // placeholder
+      github: 'https://github.com/Lock-N-Lock/project2-security',
+      notion: 'https://app.notion.com/p/Lock-Lock-c7d9e3e335cc82f5962301bc134e1782',
       terraform: null,
-      presentation: null,
+      // The original Korean deck on Google Drive.
+      presentation: 'https://drive.google.com/file/d/1b5Gv5LPWC6y7GiMDyee932mFes6Kgx1M/view',
     },
     reflection: {
+      // In EchoChallengers' reflection voice: plain sentences moving from the
+      // technical side to the team side. The earlier version claimed final
+      // approval on every merge to main; only #62, the final release, was his.
       learned:
-        'Building LockBank moved security from something I added at the end to the **default from the first Terraform file**. Public and private subnets are split before a single EC2 instance exists, a security group is scoped per tier before the app is written, and a CI pipeline scans before it builds. The four-layer lock was never really about Bandit, Trivy, ZAP, and `fail2ban` individually; it was about forcing a vulnerability past **four different kinds of scrutiny** before it could reach a real user. The most useful lesson came from a bug rather than a feature: our login-failure detection reported zero attacks during a live brute-force run because the app returned a redirect instead of a 401. Every dashboard reported correctly on the signal it was given. The pipeline was watching the wrong signal. I check for that pattern by default now: **"configured" and "actually working" are two different claims**, and the only way to close the gap is to attack your own system and read what the monitoring says back.',
+        'This project changed how I think about security and cloud infrastructure. On the security side, I learned to make security the **default from the first Terraform file**, with public and private subnets, a security group for each tier, and a scan in the CI pipeline before any build. The most useful lesson came from a bug. Our login-failure detection reported zero attacks during a live brute-force run because the app returned a redirect instead of a 401, and I learned that **\u201cconfigured\u201d and \u201cactually working\u201d are two different claims**. On the infrastructure side, I learned to design for five people running the same code in five AWS accounts. I kept the Terraform state per person and published shared values through `outputs.tf`, which gave every track **one place** to read from. Choosing a NAT instance over a NAT Gateway also showed me how much a single routing decision changes the bill. On the team side, I was chosen as **team lead** when everything I knew about cloud infrastructure came from our class. I often felt unqualified because the project asked for more than what the class covered. I worked through that by learning what the build needed as it came up, such as Terraform remote state, NAT routing, and Blue/Green Auto Scaling. Each problem I solved made the next review easier, and I learned that confidence as a lead comes from **understanding enough of each track** to review it well.',
       differently:
-        'I would promote **OWASP ZAP** from an observation stage to a blocking gate once its findings are tuned against a demo app built to look attackable, and finish the **Blue-Green** stabilization testing that ran out of runway inside four weeks. Three more sit behind those: failure and recovery scenarios for the **database** rather than only the app tier, a **second NAT instance** so the cheap outbound path stops being the single point of failure I made it, and **L7/WAF filtering** in front of the rate limit. I would also start reading across the other tracks earlier. Holding final approval on every merge to `main` for a five-person, five-track project meant being the last check before anything shipped, which meant learning enough of **every track** to know what I was approving rather than only my own. I grew into that job partway through the project.',
+        'With only four weeks to complete the project, the team left some planned work unfinished. Next, I would finish testing the **Blue-Green** deployment and make **OWASP ZAP** a blocking check once its findings are tuned for a demo app built to look attackable. I would also add failure and recovery scenarios for the **database**, a second NAT instance to remove the single point of failure, and L7/WAF filtering in front of the rate limit. As team lead, I would start reading the other tracks\u2019 code earlier. Signing off on the final release meant learning enough of every track to know what I was approving, and I would rather build that understanding from the first week.',
     },
   },
 
@@ -2158,7 +2843,7 @@ project2-security/
     architecture: [
       {
         tab: 'Overall architecture',
-        caption: 'Overall architecture: VPC, EKS, and the managed services around them',
+        caption: 'VPC and EKS layout',
         alt: 'Full AWS layout in ap-northeast-2: a passenger app and the external Open-Meteo API reaching a 10.0.0.0/16 VPC through Route 53, CloudFront and an internet gateway; an EKS cluster spanning availability zones 2a and 2c behind an ALB ingress, with a fixed system node group and Karpenter nodes that scale from zero; a single NAT gateway in 2a and a VPC gateway endpoint that carries S3 and DynamoDB traffic past it; and RDS, SQS, S3, DynamoDB and the management services alongside',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -2241,7 +2926,7 @@ project2-security/
       },
       {
         tab: 'Request flow',
-        caption: 'Flow 1: a ride request, from the app to the queue',
+        caption: 'Flow 1: ride request path from the app to the processing queue',
         alt: 'A ride request travelling from the passenger app through Route 53, CloudFront and the load balancer to the call API pod, which queues the job on SQS and answers the passenger immediately; below the line, a worker pod consumes the job from the queue and records the call to RDS while the passenger waits for none of it',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -2381,7 +3066,7 @@ project2-security/
       },
       {
         tab: 'Predictive scaling',
-        caption: 'Flow 4: the forecast ahead of the traffic, and the safety net behind it',
+        caption: 'Flow 4: predictive scaling with the KEDA queue trigger as fallback',
         alt: 'Predicted demand becoming capacity: the forecast scheduler writing to the prediction table every four hours, a scaling scheduler patching the KEDA scaled object minimum replica count every sixty seconds, KEDA also reacting to SQS queue length, Karpenter provisioning a node when the existing ones have no room, and the HPA that KEDA creates catching whatever the forecast missed',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -2427,7 +3112,7 @@ project2-security/
       },
       {
         tab: 'GitOps flow',
-        caption: 'GitOps: three repositories, from pull request to cluster sync',
+        caption: 'GitOps promotion across three repositories from pull request to cluster sync',
         alt: 'The three-repository GitOps path: a feature branch reaching dev through a pull request approved by one peer, then splitting to the infra repo, which plans on every pull request and applies only after the infra-apply environment is approved, the app repo, which builds an image tagged with the commit SHA and writes that tag into the manifests repo, and ArgoCD, which watches the manifests repo, syncs to the cluster and reverts any drift back to Git',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -2474,7 +3159,7 @@ project2-security/
       },
       {
         tab: 'Cluster topology',
-        caption: 'Cluster topology: control plane, node groups, and the networking around them',
+        caption: 'EKS control plane and node group layout with cluster networking',
         alt: 'Cluster topology: the AWS-managed EKS control plane outside the user VPC, system node groups and Karpenter-managed EC2 nodes in availability zones 2a and 2c, an ALB with a network interface in each public subnet, one NAT gateway in 2a that the 2c private subnet shares by routing, and a VPC gateway endpoint carrying S3 and DynamoDB traffic past it',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -2544,7 +3229,7 @@ project2-security/
       },
       {
         tab: 'Pod architecture',
-        caption: 'Pod architecture: the service layer, the workers, and what they scale on',
+        caption: 'Service and worker pod layout with their scaling metrics',
         alt: 'Pod-level view: Route 53 and the ALB forwarding into ClusterIP services in front of the call API, worker, predict and simulator pods; the call API publishing to SQS and a KEDA-scaled worker deployment consuming from it and writing to RDS; Karpenter provisioning a node for a pending worker pod; the weather-cron pod fetching from the external Open-Meteo API into S3; and Prometheus, Grafana and Alertmanager watching the cluster with alerts leaving for Telegram',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
@@ -3733,14 +4418,41 @@ project3-hailcast-manifests/
     // here rather than only in the cost section because the cost section is
     // this chart rearranged into rows.
     media: {
+      // Two recordings feed this section: the first presentation covers the
+      // three demo scenarios, and the refinement one covers FinOps and the
+      // retraining loop. `clipNote` below is the first presentation's, and
+      // the two refinement scenarios override it, so a reader is always told
+      // which presentation they are watching.
+      //
+      // Two scenarios carry no clip at all and are not missing one. Pod-hour
+      // simulation is a simulation chart, so there is no footage of it in
+      // existence. Closed-loop summary shows the board *after* its rebuild,
+      // which is in the report deck and in neither recording; the first
+      // presentation shows the earlier board, and captioning one board with
+      // another board's clip would be worse than showing no clip. Both still
+      // carry a `lead`, so every tab explains itself whether or not it moves.
+      clipNote:
+        "Cut from the first presentation. The Korean captions are the team's own. Silent, and it loops.",
+      stillsNote:
+        "Full-resolution captures from the team's report deck. Click one to open it at full size.",
       scenarios: [
         {
           id: 'predictive-scaling',
           tab: 'Predictive scaling',
           label: 'Demo 1: The forecast raising the floor',
+          lead:
+            'A forecast of **5,000** calls for 10:00 is written to RDS. KEDA reads it and the worker floor rises to **10** pods before the load arrives.',
+          clip: {
+            src: '/projects/hailcast/clip-01-predict.mp4',
+            width: 1280,
+            height: 720,
+            poster: '/projects/hailcast/clip-01-predict.jpg',
+            speed: '3.6x',
+            alt: 'A forecast run writing predicted demand into RDS, followed by the worker pod count rising to ten ahead of the traffic',
+          },
           before: {
             src: '/projects/hailcast/demo-01-predictive-scaling.png',
-            state: 'Runtime summary: a scaling floor of 3 applied, 10 workers Ready, headroom satisfied',
+            state: 'Ten workers Ready',
             alt: 'The hailcast Grafana dashboard "01 예측 기반 스케일링" showing a runtime summary row: prediction collection available, one predict pod Ready, an applied scaling threshold of 3, ten worker pods Ready, and a Ready-versus-threshold panel reading satisfied, above a five-minute chart of predict container restarts holding flat at zero',
           },
         },
@@ -3748,9 +4460,19 @@ project3-hailcast-manifests/
           id: 'keda-queue',
           tab: 'KEDA queue trigger',
           label: 'Demo 2: The reactive layer catching the overflow',
+          lead:
+            'With the forecast deliberately wrong, traffic climbs to **607** calls. The reactive layer picks up what the prediction missed while the cluster holds at **3** Ready nodes.',
+          clip: {
+            src: '/projects/hailcast/clip-02-keda.mp4',
+            width: 1280,
+            height: 720,
+            poster: '/projects/hailcast/clip-02-keda.jpg',
+            speed: '2x',
+            alt: 'The simulator driving traffic to 607 calls against a stale forecast, with the worker dashboard showing three Ready nodes',
+          },
           before: {
             src: '/projects/hailcast/demo-02-keda-queue.png',
-            state: 'Queue at 107 messages, HPA ceiling 20, KEDA operator available, with replicas already lifted 5 → 6',
+            state: 'Replicas lifted to six',
             alt: 'The hailcast Grafana dashboard "02 처리 대기열 및 KEDA" showing a visible queue depth of 107, a maximum HPA replica count of 20, and the KEDA operator reported available; a timeline panel plots queue depth against the applied threshold and the HPA target and current replicas, all converging on 6, beside a second panel showing zero Pending worker pods against 3 Ready nodes',
           },
         },
@@ -3758,9 +4480,19 @@ project3-hailcast-manifests/
           id: 'worker-runtime',
           tab: 'Worker runtime',
           label: 'Demo 3: What the scaled workers were actually doing',
+          lead:
+            'Under load the workers run at **22.7%** of their CPU request across 12 cores, with **3** nodes Ready and none unschedulable. Once traffic stops they terminate back down.',
+          clip: {
+            src: '/projects/hailcast/clip-03-worker.mp4',
+            width: 1280,
+            height: 720,
+            poster: '/projects/hailcast/clip-03-worker.jpg',
+            speed: '1.5x',
+            alt: 'The worker dashboard reading 22.7 percent of CPU request over twelve cores with three Ready nodes, then worker pods terminating as traffic falls away',
+          },
           before: {
             src: '/projects/hailcast/demo-03-worker-runtime.png',
-            state: 'Six workers running, none Pending, 100% Ready, CPU at 32.3% of request',
+            state: 'Six workers at 32.3 percent',
             alt: 'The hailcast Grafana dashboard "03 Worker 및 Kubernetes" showing six running worker pods, zero Pending, a flat zero container-restart rate over five minutes, and a Worker Ready gauge at 100 percent; a resource row below plots worker CPU rising to roughly 0.5 cores and memory to about 400 MiB, with CPU usage against request shown on a gauge at 32.3 percent',
           },
         },
@@ -3768,9 +4500,11 @@ project3-hailcast-manifests/
           id: 'pod-hour-saving',
           tab: 'Pod-hour simulation',
           label: 'The 26.5% figure, and what it is made of',
+          lead:
+            'The saving is a simulation rather than a measurement: **216** pod-hours run flat against **158.8** scaled to the forecast.',
           before: {
             src: '/projects/hailcast/pod-hour-savings.png',
-            state: 'Not a screenshot: the simulation chart itself, 216 pod-hours against 158.8',
+            state: '216 pod-hours against 158.8',
             alt: 'A chart whose Korean title reads "예측형 스케일링 절감 시뮬레이션", subtitled "하루 워커 파드시간": a dashed horizontal line at nine worker pods marks peak-sized fixed capacity, and a solid line traces the predicted replica count by New York hour, dropping to a minimum of two pods at 5am and climbing back to nine by early afternoon; the area between the two lines is shaded as the saving, a grey band from 14:00 to 20:00 is annotated as unobserved and filled with the peak value, and the subtitle reads 216 pod-hours against 158.8, a 26.5 percent difference',
           },
         },
@@ -3782,25 +4516,75 @@ project3-hailcast-manifests/
           id: 'finops-cost',
           tab: 'FinOps: real billing',
           label: 'The refinement: cost measured rather than modelled',
+          lead:
+            'OpenCost had quietly fallen back to list-price estimates after losing its S3 permission. The refinement points it at the real Cost and Usage Report, and the board reads a billed **$8.71** for the last settled day.',
+          clip: {
+            src: '/projects/hailcast/clip-05-finops.mp4',
+            width: 1280,
+            height: 720,
+            poster: '/projects/hailcast/clip-05-finops.jpg',
+            speed: '3.2x',
+            alt: 'An OpenCost query failing on a denied S3 permission, then the same cost board reading a billed net cost of 8.71 dollars from the real Cost and Usage Report',
+          },
+          clipNote:
+            "Cut from the refinement presentation. The Korean captions are the team's own. Silent, and it loops.",
           before: {
             src: '/projects/hailcast/demo-04-finops-cost.png',
-            state: 'Billed AWS net cost $8.71 for the last settled day, against OpenCost’s Kubernetes split: $70.12 of nodes, $26.44 of it hailcast, $9.28 of that worker',
+            state: '$8.71 billed for a day',
             alt: 'The hailcast Grafana dashboard "04 Hailcast 비용 / FinOps", split into an AWS section reading from the Cost and Usage Report and a Kubernetes section reading from OpenCost: a headline of $8.71 as the most recent settled daily net cost, a daily trend line holding near $16 from August 19 to 23 and falling away on the 24th, a per-service bar chart led by EC2 with EKS, S3, RDS, ELB and smaller services beneath it, and a category doughnut at 58.64 percent compute; below, three seven-day totals of $70.12 for nodes, $26.44 for the hailcast namespace and $9.28 for worker, then per-node and per-namespace breakdowns and a chart plotting worker cost against worker Ready count across five daily cycles',
+          },
+        },
+        {
+          id: 'retraining',
+          tab: 'Retraining loop',
+          label: 'The refinement: a training job that can fail out loud',
+          lead:
+            'Predictions are logged against the demand that actually arrived, and retraining continues the model from **8,000** trees to **8,026**. A failed run now raises **KubeJobFailed** to Telegram, where it used to close quietly as a success.',
+          clip: {
+            src: '/projects/hailcast/clip-06-retraining.mp4',
+            width: 1280,
+            height: 720,
+            poster: '/projects/hailcast/clip-06-retraining.jpg',
+            speed: '3.8x',
+            alt: 'The DynamoDB prediction log holding predicted against actual demand, a continued-training run uploading a new model to S3, and a KubeJobFailed alert arriving in Telegram',
+          },
+          clipNote:
+            "Cut from the refinement presentation. The Korean captions are the team's own. Silent, and it loops.",
+          // The only scenario whose stills are not from the report deck. That
+          // deck has no capture of this material, so these are frames out of
+          // the recording, and the note below says so rather than letting them
+          // pass as deck images like the other six.
+          stillsNote:
+            'Frames from the refinement recording at full resolution, since this scenario is not in the report deck. Click one to open it at full size.',
+          // Two shots rather than one, because the point of this scenario is
+          // that the job reports either outcome. One still could only show it
+          // succeeding, which is the half that was never the problem.
+          before: {
+            src: '/projects/hailcast/demo-06-retraining-run.jpg',
+            state: '8000 trees to 8026',
+            alt: 'The retraining job log ending on continued training complete from 8000 to 8026 trees, an S3 upload of the new model version, twenty prediction records marked as trained, and an in-sample MAE of 921.15',
+          },
+          after: {
+            src: '/projects/hailcast/demo-06-retraining-alert.jpg',
+            state: 'KubeJobFailed in Telegram',
+            alt: 'A Telegram message from the Hailcast Alert bot reporting KubeJobFailed at WARNING severity against hailcast / predict-retraining-failtest, saying the job did not complete successfully and that the alert clears once the job is cleaned up',
           },
         },
         {
           id: 'closed-loop',
           tab: 'Closed-loop summary',
           label: 'The rebuilt summary board: the whole loop on one screen',
+          lead:
+            'The rebuilt board puts the whole loop on one screen: prediction available, HPA asking for **8**, **8** workers Ready, queue at zero, and no Pending pods or restarts.',
           before: {
             src: '/projects/hailcast/demo-05-closed-loop.png',
-            state: 'Prediction available, HPA asking for 8 and 8 workers Ready, queue at 0, zero Pending pods and zero restarts',
+            state: 'Eight asked and eight Ready',
             alt: 'The hailcast Grafana dashboard "99 Hailcast 전체 운영 상태 요약" after its rebuild: a status row reading prediction available, HPA desired 8, Worker Ready 8, a replica-fulfilment gauge at 100 percent, a current queue of 0 and the KEDA operator available; a scaling-flow chart below traces the applied HPA minimum, HPA desired and Worker Ready as one stepped line falling to two pods in the early afternoon and climbing back past eight overnight, with queue depth flat against it; and a stability row of four panels reading zero Pending workers, zero worker restarts in five minutes, zero not-Ready nodes and predict metrics collectable',
           },
         },
       ],
-      // The team recorded a demo video, shown at the presentation. It is not
-      // in the material this page was built from.
+      // No separate demo video: both recordings are what the clips above are
+      // cut from, so the section already carries them.
       video: null,
     },
     // `glyph` names a mark from components/sections/decisionGlyphs.jsx. It is
@@ -4106,114 +4890,1564 @@ project3-hailcast-manifests/
   {
     slug: 'individual-project-one',
     group: 'individual',
-    // placeholder
     // No `team` key: this is solo work, so the Members section and the Notion
     // link never render. That is the whole opt-out — nothing else to switch off.
-    title: 'Individual project one',
-    // placeholder — the descriptive page heading. `title` above stays the
-    // short name the sidebar shows and the eyebrow repeats.
-    fullTitle:
-      'Individual project one: full descriptive title TBD',
+    title: 'Project1-Self-Build',
+    // The descriptive page heading. `title` above stays the short name the
+    // sidebar shows and the eyebrow repeats.
+    fullTitle: 'Self-Directed Study in Hybrid Cloud Infrastructure',
     accent: 'forest',
-    // placeholder
-    period: 'TBD', // placeholder
+    // The same window as EchoChallengers above, because this was built
+    // alongside it rather than after it: the team project's four servers by
+    // day, my own copy of the same four in the evenings.
+    period: 'April 20 – May 22, 2026',
     glance: {
-      why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
-      result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
+      why: 'I owned the infrastructure build on EchoChallengers, which meant there were parts of the system I had reviewed without ever typing them out. So I kept my own repository alongside the team one and built the whole thing again by myself.',
+      how: 'Four servers on VMware and four more on AWS, provisioned by Terraform, configured by 15 Ansible roles, joined into one network by Tailscale, and deployed by a single GitHub Actions workflow.',
+      result: 'One push to `main` provisions the AWS side, configures every host, checks the load balancer, and destroys the whole environment again, so a full rehearsal costs about an hour of instance time.',
     },
-    // placeholder
-    role: 'Placeholder for the contribution line. Solo build, so this is the whole scope rather than a slice of it.',
-    // placeholder
-    context:
-      'Placeholder for what this project is and why it exists. Two or three sentences, written for someone who has not seen the repo. Replace with the real brief.',
+    // Solo, so this is the whole scope rather than a slice of it. Prose rather
+    // than the bento the team pages use: a tile grid divides a contribution
+    // into parts, and there is nobody here to divide it from.
+    role: 'Solo build from an empty repository. I wrote the Terraform, all 15 Ansible roles, the recovery webhook, the chaos script and the GitHub Actions workflow myself. Nothing here was copied across from the team repository.',
+    context: {
+      notes: [
+        {
+          size: 'lead',
+          label: 'Why do it twice',
+          text: 'Owning the infrastructure build on a five-person team meant some parts of the system reached me as a pull request to review rather than as something I had written. Building the whole thing alone was the fastest way to find out which parts those were.',
+        },
+        {
+          size: 'lead',
+          label: 'The rule I set',
+          text: 'I started from an empty repository and wrote every file again from scratch, so the architecture is familiar and the code is my own. Where I could not remember how something worked, I had to go and read the documentation.',
+        },
+        {
+          size: 'support',
+          label: 'What I added',
+          text: 'The team chose to spend its last week rehearsing the demo rather than building a pipeline, so this repository is where the CI/CD went. One GitHub Actions workflow runs the checks, builds the image, deploys to both environments and tears the AWS side down.',
+        },
+        {
+          size: 'support',
+          label: 'What I kept simple',
+          text: 'The recovery service is a small FastAPI webhook that maps an alert name to the command that recovers it and runs that command over SSH. It handles two alerts, one container and one systemd unit, and that was enough to prove the loop closes.',
+        },
+        {
+          size: 'support',
+          label: 'Where it stops',
+          text: 'This is a study build. Secrets sit in GitHub Actions secrets rather than in a vault, Terraform state is local, and the environment is expected to live for the length of a workflow run.',
+        },
+      ],
+    },
+    // Every figure below is counted from the repository tree rather than
+    // estimated: 33 `resource` blocks across terraform/*.tf, 15 directories
+    // under roles/, 17 playbooks, 7 failure cases in chaos/inject.sh besides
+    // `all` and `status`, 4 rules in monitoring/alert.rules.yml and 6 alarms
+    // in terraform/cloudwatch.tf.
     metrics: [
-      { size: 'wide', value: '00', label: 'Metric one' }, // placeholder
-      { size: 'square', value: '0 %', label: 'Metric two' }, // placeholder
-      { size: 'square', value: '0 min', label: 'Metric three' }, // placeholder
+      { size: 'big', value: '33', label: 'Terraform Resource Blocks' },
+      { size: 'square', value: '15', label: 'Ansible Roles' },
+      { size: 'square', value: '17', label: 'Playbooks' },
+      {
+        size: 'square',
+        value: '7',
+        label: 'Failure Injections',
+        hint: 'Failure cases chaos/inject.sh can trigger on demand',
+      },
+      {
+        size: 'wide',
+        value: '2',
+        label: 'Environments',
+        detail: 'VMware and AWS, from one set of roles',
+      },
+      {
+        size: 'square',
+        value: '10',
+        label: 'Alerts Wired',
+        hint: '4 Prometheus rules and 6 CloudWatch alarms',
+      },
     ],
     stack: [
-      { category: 'Cloud/Infrastructure', items: ['AWS'] },
-      { category: 'IaC/Automation', items: ['Terraform'] },
-      { category: 'Containers', items: ['Docker'] },
+      { category: 'Cloud/Infrastructure', items: ['AWS', 'VMware', 'Tailscale', 'Cloudflare'] },
+      { category: 'IaC/Automation', items: ['Terraform', 'Ansible', 'GitHub Actions', 'Bash'] },
+      { category: 'OS/Runtime', items: ['Rocky Linux', 'Ubuntu', 'Python', 'Docker'] },
+      { category: 'Application', items: ['FastAPI', 'PostgreSQL', 'Nginx', 'HAProxy'] },
+      {
+        category: 'Monitoring',
+        items: ['Prometheus', 'Grafana', 'Alertmanager', 'Node Exporter', 'CloudWatch'],
+      },
+      { category: 'Notifications', items: ['Slack', 'Telegram'] },
     ],
-    architecture: null,
-    media: null,
+    stackNotes: [
+      {
+        tool: 'Why Tailscale?',
+        icon: 'Tailscale',
+        text: 'Every instance joins the mesh from its own `user_data` script, before Ansible ever runs. The GitHub Actions runner joins the same mesh with an OAuth key, so it addresses a private EC2 instance by a **100.x address** and needs no jump host.',
+      },
+      {
+        tool: 'Why GitHub Actions?',
+        icon: 'GitHub Actions',
+        text: 'The team project ended without a pipeline, so building one was half the point of this repository. A hosted runner drives AWS and a **self-hosted runner** on the on-premises mgmt node drives VMware, from the same workflow file.',
+      },
+      {
+        tool: 'Why Docker for FastAPI?',
+        icon: 'Docker',
+        text: 'The first version ran uvicorn under systemd and needed a compiler toolchain on every web server just to build `psycopg2`. Moving the app into an image built once in CI made the two web servers **interchangeable**, and Nginx stayed on the host as a plain reverse proxy.',
+      },
+      {
+        tool: 'Why keep HAProxy?',
+        icon: 'HAProxy',
+        text: 'On VMware there is no ALB, so HAProxy is the load balancer. On AWS it stays on the mgmt node with its **stats page on :8404**, which is what lets the on-premises and AWS deployments run the same roles.',
+      },
+    ],
+    // Five files, chosen the way the team pages choose theirs: each one has to
+    // carry part of the page's argument rather than fill out an inventory. The
+    // `path` on each is where the file lives in the repository, which is not
+    // always where it sits under `code/` — the workflow is one directory deep
+    // here and three there, and the display path is the true one.
+    terraform: [
+      { path: 'terraform/main.tf', content: ipoMainTf },
+      { path: '.github/workflows/deploy.yml', content: ipoWorkflow },
+      { path: 'recovery/webhook_server.py', content: ipoWebhook },
+      { path: 'terraform/mgmt_bootstrap.sh', content: ipoMgmtBootstrap },
+      { path: 'roles/nginx_selfheal/tasks/main.yml', content: ipoSelfheal },
+    ],
+    // The two halves of the question the Alert-to-restart diagram answers:
+    // what has to be true before anything fires, and where it goes once it
+    // does. `alertmanager.yml` is the more interesting of the pair, because
+    // the `continue: true` on both severity routes is why one alert reaches
+    // Slack and Telegram and the webhook without being three alerts.
+    recoveryPolicy: [
+      { path: 'monitoring/alert.rules.yml', content: ipoAlertRules },
+      { path: 'monitoring/alertmanager.yml', content: ipoAlertmanager },
+    ],
+    // Three views, drawn from data in the same vocabulary as the team pages:
+    // zones underneath, nodes placed by their centres, edges routed
+    // orthogonally, one accent carried by the glyphs and nothing else.
+    //
+    // Every label traces to the repository. The CIDRs, instance types and the
+    // ALB health check come from terraform/, the ports and intervals from
+    // monitoring/ and recovery/webhook_server.py, and the job order in the
+    // third view from .github/workflows/deploy.yml.
+    architecture: [
+      {
+        tab: 'Two environments',
+        caption:
+          'Hybrid four-server topology (on-premise & AWS) joined over Tailscale',
+        alt: 'Four VMware hosts on 192.168.61.0/24 across the top: proj-mgmt running HAProxy, Prometheus and Ansible, proj-rocky1 and proj-rocky2 running Nginx and FastAPI, and proj-ubuntu1 running PostgreSQL. Below them a Tailscale mesh that the GitHub Actions runner joins with an OAuth key. Below that an AWS VPC in ap-northeast-2 holding the same four machines: an ALB, aws-mgmt and a NAT gateway in the public subnets across two availability zones, and aws-rocky1, aws-ubuntu1 and aws-rocky2 in the private subnets.',
+        diagram: {
+          width: 1000,
+          height: 700,
+          zones: [
+            // Dashed and outside the provider, the convention every other
+            // diagram on this site already uses for anything that is not AWS.
+            { id: 'onprem', label: 'On-premises · VMware', note: '192.168.61.0/24', x: 20, y: 24, w: 960, h: 172, tone: 'onprem' },
+            { id: 'aws', label: 'AWS · ap-northeast-2', note: 'VPC 10.0.0.0/16', x: 20, y: 318, w: 960, h: 320, tone: 'cloud' },
+            // Short labels on purpose: a zone label owns the strip along its
+            // own top edge, and the CIDRs are long enough that spelling them
+            // out here would block the lane the ALB descends through.
+            { id: 'pub', label: 'Public subnets', note: '2 AZs', x: 38, y: 376, w: 924, h: 110, tone: 'region' },
+            { id: 'priv', label: 'Private subnets', note: '2 AZs', x: 38, y: 502, w: 924, h: 118, tone: 'region' },
+          ],
+          nodes: [
+            { id: 'projmgmt', label: 'proj-mgmt', sub: 'HAProxy · Prometheus · Ansible', glyph: 'monitor', x: 160, y: 136, w: 250, h: 56 },
+            { id: 'projrocky1', label: 'proj-rocky1', sub: 'Nginx · FastAPI', glyph: 'server', x: 415, y: 136, w: 195, h: 56 },
+            { id: 'projrocky2', label: 'proj-rocky2', sub: 'Nginx · FastAPI', glyph: 'server', x: 625, y: 136, w: 195, h: 56 },
+            { id: 'projubuntu1', label: 'proj-ubuntu1', sub: 'PostgreSQL', glyph: 'database', x: 845, y: 136, w: 195, h: 56 },
+
+            { id: 'runner', label: 'GitHub Actions runner', sub: 'joins with an OAuth key', glyph: 'pipeline', x: 165, y: 252, w: 250, h: 56 },
+            { id: 'tailnet', label: 'Tailscale mesh', sub: 'every host gets a 100.x address', glyph: 'vpn', x: 560, y: 252, w: 320, h: 56 },
+
+            { id: 'alb', label: 'ALB', sub: 'HTTP 80 · /health every 15s', glyph: 'balancer', x: 210, y: 432, w: 240, h: 52 },
+            { id: 'awsmgmt', label: 'aws-mgmt', sub: 'HAProxy · Prometheus · Grafana', glyph: 'monitor', x: 560, y: 432, w: 300, h: 52 },
+            { id: 'nat', label: 'NAT gateway', sub: 'private egress', glyph: 'cloud', x: 845, y: 432, w: 200, h: 52 },
+
+            { id: 'awsrocky1', label: 'aws-rocky1', sub: 'Nginx · FastAPI in Docker', glyph: 'server', x: 210, y: 574, w: 240, h: 52 },
+            { id: 'awsdb', label: 'aws-ubuntu1', sub: 'PostgreSQL · appdb', glyph: 'database', x: 560, y: 574, w: 300, h: 52 },
+            { id: 'awsrocky2', label: 'aws-rocky2', sub: 'Nginx · FastAPI in Docker', glyph: 'server', x: 840, y: 574, w: 230, h: 52 },
+          ],
+          edges: [
+            // Both environments and the runner meet on the tailnet. One line
+            // each, because every host is on it and drawing all nine would say
+            // the same thing nine times.
+            { from: 'projmgmt', to: 'tailnet', label: 'ansible', labelAt: [330, 194], dash: true, dir: 'both', via: [[160, 200], [560, 200]] },
+            { from: 'runner', to: 'tailnet', label: 'OAuth', dash: true },
+            { from: 'tailnet', to: 'awsmgmt', dash: true, dir: 'both' },
+            // The ALB fans out along the gap between the two subnet bands,
+            // which is the only lane clear of both zone labels.
+            { from: 'alb', to: 'awsrocky1' },
+            { from: 'alb', to: 'awsrocky2', via: [[210, 494], [840, 494]] },
+            { from: 'awsrocky1', to: 'awsdb', label: 'SQL 5432' },
+            { from: 'awsrocky2', to: 'awsdb' },
+            { from: 'awsdb', to: 'nat', label: 'egress', labelAt: [742, 512], dash: true, via: [[720, 574], [720, 432]] },
+          ],
+          captions: [
+            {
+              x: 20,
+              y: 660,
+              tone: 'accent',
+              text: 'One inventory file per environment and one set of 15 roles. The AWS run swaps hosts.ini for hosts_aws_ts.ini and nothing else changes.',
+            },
+            {
+              x: 20,
+              y: 682,
+              text: 'Public subnets are 10.0.1.0/24 and 10.0.2.0/24, private are 10.0.11.0/24 and 10.0.12.0/24. All four instances are t4g.small on Graviton.',
+            },
+          ],
+        },
+      },
+      {
+        tab: 'Alert to restart',
+        caption:
+          'Alert routing and automated recovery',
+        alt: 'A four-band pipeline. Detect: node exporters on port 9100 and FastAPI metrics on port 8000 are scraped by Prometheus every 15 seconds against four alert rules, which reach Alertmanager. Route: Alertmanager sends every alert to Slack and to a Telegram bridge on port 9087, and critical alerts also to the recovery webhook on port 9080. Recover: the webhook matches the alert name and job against its two maps, then either restarts the fastapi container with docker or the node_exporter unit with systemctl over SSH, or flags the alert for manual checking. Report: the outcome is written to /var/log/recovery.log and posted back to Slack.',
+        diagram: {
+          width: 1000,
+          height: 700,
+          // Four bands rather than four columns: a phase is a horizontal slice
+          // of the flow, and a band says so without spending a column on it.
+          zones: [
+            { id: 'detect', label: 'Detect', note: 'scrape 15s', x: 20, y: 20, w: 960, h: 140, tone: 'region' },
+            { id: 'route', label: 'Route', note: 'alertmanager.yml', x: 20, y: 184, w: 960, h: 120, tone: 'region' },
+            // The band the project is actually about.
+            { id: 'recover', label: 'Recover', note: 'webhook_server.py', x: 20, y: 328, w: 960, h: 170, tone: 'focus' },
+            { id: 'report', label: 'Report', x: 20, y: 522, w: 960, h: 86, tone: 'region' },
+          ],
+          nodes: [
+            { id: 'exporters', label: 'Node exporter', sub: ':9100 × 4 hosts', glyph: 'service', x: 160, y: 78, w: 250, h: 44 },
+            { id: 'appmetrics', label: 'FastAPI /metrics', sub: ':8000 × 2 hosts', glyph: 'service', x: 160, y: 130, w: 250, h: 44 },
+            { id: 'prometheus', label: 'Prometheus', sub: '4 rules · 15s eval', glyph: 'monitor', x: 500, y: 104, w: 220, h: 52 },
+            { id: 'alertmanager', label: 'Alertmanager', sub: 'group_wait 5s', glyph: 'alert', x: 800, y: 104, w: 240, h: 52 },
+
+            // Three destinations, each labelled by the channel rather than by
+            // the process serving it. `prometheus_bot :9087` as the headline
+            // read as a service next to a node headlined `Slack`, so the row
+            // looked like one notification channel and two other things.
+            { id: 'slack', label: 'Slack', sub: '#all-mindmug · every severity', glyph: 'chat', x: 165, y: 258, w: 260, h: 52 },
+            { id: 'tgbot', label: 'Telegram', sub: 'prometheus_bot :9087', glyph: 'chat', x: 500, y: 258, w: 260, h: 52 },
+            { id: 'webhook', label: 'Recovery webhook', sub: ':9080 · critical only', glyph: 'pipeline', x: 835, y: 258, w: 270, h: 52 },
+
+            { id: 'lookup', label: 'Match alertname and job', sub: 'RECOVERY_MAP · HOST_MAP', glyph: 'wrench', x: 500, y: 386, w: 420, h: 54 },
+            // Two commands rather than one, because the two services are not
+            // the same kind of thing: FastAPI is a container and node_exporter
+            // is a systemd unit. RECOVERY_MAP carries the command beside the
+            // name for exactly that reason.
+            { id: 'restart', label: 'Restart over SSH', sub: 'docker restart · systemctl restart', glyph: 'server', x: 320, y: 462, w: 300, h: 44 },
+            { id: 'unknown', label: 'No mapping found', sub: 'flagged for manual check', glyph: 'alert', x: 720, y: 462, w: 300, h: 44 },
+
+            { id: 'log', label: '/var/log/recovery.log', sub: 'start, result, failure', glyph: 'service', x: 300, y: 574, w: 320, h: 48 },
+            { id: 'result', label: 'Slack result message', sub: 'recovered or failed', glyph: 'chat', x: 700, y: 574, w: 320, h: 48 },
+          ],
+          edges: [
+            { from: 'exporters', to: 'prometheus' },
+            { from: 'appmetrics', to: 'prometheus' },
+            { from: 'prometheus', to: 'alertmanager', label: 'for: 30s' },
+            // One alert leaves Alertmanager on a single stem and splits in the
+            // gutter between the bands, which is what the routing config does.
+            { from: 'alertmanager', to: 'slack', via: [[800, 172], [165, 172]] },
+            { from: 'alertmanager', to: 'tgbot', via: [[800, 172], [500, 172]] },
+            { from: 'alertmanager', to: 'webhook', label: 'severity: critical', labelAt: [880, 166], via: [[800, 172], [835, 172]] },
+            { from: 'webhook', to: 'lookup' },
+            { from: 'lookup', to: 'restart' },
+            { from: 'lookup', to: 'unknown' },
+            { from: 'restart', to: 'log' },
+            { from: 'restart', to: 'result', via: [[320, 510], [700, 510]] },
+            { from: 'unknown', to: 'result' },
+          ],
+          captions: [
+            {
+              x: 20,
+              y: 640,
+              tone: 'accent',
+              text: 'The webhook restarts a service only when both maps match. Anything it does not recognise is logged and passed to a person instead of guessed at.',
+            },
+            {
+              x: 20,
+              y: 662,
+              text: 'Slack and Telegram both receive every alert. Only Slack receives the recovery result, because that message is posted by the webhook rather than by Alertmanager.',
+            },
+            {
+              x: 20,
+              y: 684,
+              text: 'Nginx sits outside this flow. It carries a Restart=always systemd drop-in, so systemd brings it back in about 5 seconds and no alert ever fires.',
+            },
+          ],
+        },
+      },
+      {
+        tab: 'One workflow',
+        caption:
+          'One GitHub workflow that always ends on a terraform destroy',
+        alt: 'A pipeline triggered by a push to main. Job 1 parses main.py and every playbook and role YAML file. Job 2 builds the FastAPI image and pushes it tagged latest and by commit sha. Job 3A runs on a self-hosted runner: git pull on proj-mgmt, ansible-playbook site.yml against hosts.ini, and a curl of /health. Job 3B runs on a hosted runner: terraform apply of 33 resource blocks, the runner joining the tailnet, ansible-playbook site_aws.yml, a curl of the ALB /health, and terraform destroy, which runs even when an earlier step fails.',
+        diagram: {
+          width: 1000,
+          height: 700,
+          // One band per job, and the two deploy jobs side by side because
+          // that is how they run: both wait on the image and then go at once.
+          zones: [
+            { id: 'j1', label: 'Job 1 · Code checks', x: 20, y: 96, w: 960, h: 96, tone: 'region' },
+            { id: 'j2', label: 'Job 2 · Build and push', x: 20, y: 212, w: 960, h: 96, tone: 'region' },
+            { id: 'j3a', label: 'Job 3A · On-prem', note: 'self-hosted runner', x: 20, y: 328, w: 466, h: 240, tone: 'region' },
+            { id: 'j3b', label: 'Job 3B · AWS', note: 'ubuntu-latest', x: 514, y: 328, w: 466, h: 300, tone: 'focus' },
+          ],
+          nodes: [
+            { id: 'push', label: 'push to main', sub: '.github/workflows/deploy.yml', glyph: 'git', x: 500, y: 60, w: 300, h: 48 },
+            { id: 'checks', label: 'ast.parse and yaml.safe_load', sub: 'every playbook and role', glyph: 'shield', x: 500, y: 152, w: 560, h: 44 },
+            { id: 'image', label: 'docker build and push', sub: 'tagged latest and commit sha', glyph: 'container', x: 500, y: 268, w: 560, h: 44 },
+
+            { id: 'gitpull', label: 'git pull on proj-mgmt', glyph: 'git', x: 253, y: 390, w: 400, h: 44 },
+            { id: 'ansibleop', label: 'ansible-playbook site.yml', sub: 'hosts.ini · 15 roles', glyph: 'wrench', x: 253, y: 458, w: 400, h: 44 },
+            { id: 'healthop', label: 'curl /health on proj-mgmt', glyph: 'shield', x: 253, y: 526, w: 400, h: 44 },
+
+            { id: 'tfapply', label: 'terraform apply', sub: '33 resource blocks', glyph: 'cloud', x: 747, y: 386, w: 400, h: 40 },
+            { id: 'tsjoin', label: 'runner joins the tailnet', sub: 'reads each 100.x address', glyph: 'vpn', x: 747, y: 442, w: 400, h: 40 },
+            { id: 'ansibleaws', label: 'ansible-playbook site_aws.yml', glyph: 'wrench', x: 747, y: 498, w: 400, h: 40 },
+            { id: 'albcheck', label: 'curl the ALB /health', glyph: 'balancer', x: 747, y: 554, w: 400, h: 40 },
+            { id: 'destroy', label: 'terraform destroy', sub: 'runs even when a step fails', glyph: 'chaos', x: 747, y: 604, w: 400, h: 40 },
+          ],
+          edges: [
+            { from: 'push', to: 'checks' },
+            { from: 'checks', to: 'image' },
+            { from: 'image', to: 'gitpull', via: [[500, 316], [253, 316]] },
+            { from: 'image', to: 'tfapply', via: [[500, 316], [747, 316]] },
+            { from: 'gitpull', to: 'ansibleop' },
+            { from: 'ansibleop', to: 'healthop' },
+            { from: 'tfapply', to: 'tsjoin' },
+            { from: 'tsjoin', to: 'ansibleaws' },
+            { from: 'ansibleaws', to: 'albcheck' },
+            { from: 'albcheck', to: 'destroy', label: 'if: always()', labelAt: [862, 582] },
+          ],
+          captions: [
+            {
+              x: 20,
+              y: 660,
+              tone: 'accent',
+              text: 'Both deploy jobs wait on the image build and then run in parallel, so one push updates VMware and AWS from the same commit.',
+            },
+            {
+              x: 20,
+              y: 682,
+              text: 'Slack and Telegram get a message at every outcome: on-prem success, AWS success, destroy complete, and either failure.',
+            },
+          ],
+        },
+      },
+    ],
+    // The same span as EchoChallengers, split by what this repository was
+    // actually built in the order of: hosts first, then the things that watch
+    // them, then the cloud copy, then the pipeline over both.
+    implementation: {
+      months: ['2026-04', '2026-05'],
+      span: { from: '2026-04-20', to: '2026-05-22' },
+      phases: [
+        {
+          id: 'onprem',
+          title: 'On-Premises Base',
+          range: 'Apr 20–May 3',
+          from: '2026-04-20',
+          to: '2026-05-03',
+          text: 'Four VMware machines, then the first roles: PostgreSQL on Ubuntu, Nginx and FastAPI on the two Rocky hosts, and HAProxy on mgmt. This first version ran uvicorn under systemd and needed a compiler toolchain on both web servers.',
+        },
+        {
+          id: 'monitoring',
+          title: 'Monitoring and Recovery',
+          range: 'May 4–10',
+          from: '2026-05-04',
+          to: '2026-05-10',
+          text: 'Node Exporter on every host, Prometheus and Alertmanager on mgmt, four alert rules, and the FastAPI webhook that restarts a service over SSH when a critical alert fires. Nginx got a Restart=always drop-in instead of a place in that pipeline.',
+        },
+        {
+          id: 'aws',
+          title: 'AWS and Tailscale',
+          range: 'May 11–17',
+          from: '2026-05-11',
+          to: '2026-05-17',
+          text: 'Terraform for the VPC, the subnets, the four instances, the ALB and the CloudWatch alarms, with Tailscale installed from user_data so every instance is addressable before Ansible runs. Moving to arm64 here is what broke the binary downloads.',
+        },
+        {
+          id: 'pipeline',
+          title: 'Pipeline and Chaos',
+          range: 'May 18–22',
+          from: '2026-05-18',
+          to: '2026-05-22',
+          text: 'The GitHub Actions workflow that runs the checks, builds the image, deploys both environments and destroys the AWS side, plus chaos/inject.sh so the recovery path can be triggered on demand rather than waited for.',
+        },
+      ],
+    },
+    // Seven scenarios read as one argument rather than seven demonstrations:
+    // the system at rest, then four failures ordered by how much machinery
+    // each recovery needs, then the same loop on the cloud side.
+    //
+    // An eighth tab covered the health endpoint returning 200 with the
+    // database stopped. It was cut deliberately: on a page of recoveries that
+    // work, a tab whose whole content is a thing that does not reads as a
+    // weakness rather than as the honesty it was meant to be. The gap itself
+    // is still owned, in the reflection at the foot of the page, which is
+    // where a limitation belongs.
+    //
+    // Four tabs carry no clip and none of them is missing one. The nginx step
+    // is in the recording, but the pane holding its `watch` loop is never on
+    // screen, so the capture in that tab is the only proof the unit came back.
+    // The AWS side was never recorded at all. Every tab carries a `lead`, so
+    // a tab explains itself whether or not it moves.
+    media: {
+      clipNote:
+        'Cut from one screen recording of the on-premises run, at 1440 rather than 1280 because four panes of console text are what there is to read. Silent, and it loops.',
+      // Said once, because a reader who compares two stills will notice the
+      // clocks before the page gets a chance to explain them.
+      stillsNote:
+        'Full-resolution captures from several runs of the same environment across two days, so the clocks in them do not line up with each other or with the clips. Click one to open it at full size.',
+      scenarios: [
+        {
+          id: 'baseline',
+          tab: 'Baseline',
+          label: 'Scenario 1: Baseline monitoring across both environments',
+          lead:
+            'Seven jobs up on both environments. On VMware Prometheus reaches them at `192.168.61.x`. On AWS it reaches the same seven at **100.x** over the Tailscale mesh, with no jump host in between.',
+          before: {
+            src: '/projects/project1-self-build/demo-01-onprem-targets.png',
+            state: 'Prometheus has all seven jobs up on the VMware hosts',
+            alt: 'The Prometheus targets page for the VMware environment, listing fastapi-rocky1 and fastapi-rocky2 on port 8000, node-mgmt, node-rocky1, node-rocky2 and node-ubuntu1 on port 9100, and Prometheus scraping itself, every one of them 1/1 up and labelled environment="onprem"',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-02-aws-targets.png',
+            state: 'The same seven jobs report up over the Tailscale mesh',
+            alt: 'The Prometheus targets page for the AWS environment, listing the same seven jobs all 1/1 up and labelled environment="aws", with every endpoint addressed by a 100.x Tailscale address rather than a VPC address, except node-mgmt which Prometheus reaches on 10.0.1.206 because it runs on the same host',
+          },
+        },
+        {
+          id: 'terraform',
+          tab: 'Terraform',
+          label: 'Scenario 2: The AWS environment under Terraform',
+          lead:
+            'Four `t4g.small` instances across two availability zones, and the application answering through the ALB. Everything here is created and destroyed inside **one workflow run**.',
+          before: {
+            src: '/projects/project1-self-build/demo-03-ec2-instances.png',
+            state: 'Four instances run across two availability zones',
+            alt: 'The EC2 console listing four running teamproject01 instances, all t4g.small with 3/3 status checks passed, three in availability zone ap-northeast-2a and one in 2b, with no instance alarms and EC2 service health operating normally',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-04-app-through-alb.png',
+            state: 'The ALB serves the FastAPI landing page',
+            alt: 'The application landing page headed "Cloud Infrastructure Project" with a green Live status pill, four API endpoints listed as interactive docs, health check, list items and Prometheus metrics, and a tech stack row reading Docker, FastAPI, PostgreSQL, Nginx and Cloudflare',
+          },
+        },
+        {
+          id: 'nginx-selfheal',
+          tab: 'Nginx self-heal',
+          label: 'Scenario 3: Nginx self-healing through systemd',
+          lead:
+            '`sudo pkill nginx` on rocky1, sampled every half second. systemd holds the unit in `activating` for five seconds and brings it back on a **new PID**. Nothing else in the stack takes part, and no rule ever fires.',
+          // The only tab whose capture is from a different day than everything
+          // else here, which the section note already covers in general and
+          // this one names, because the reader can read the date off the
+          // status output itself.
+          stillsNote:
+            'Captured the day after the other stills, on the same build. Click it to open at full size.',
+          before: {
+            src: '/projects/project1-self-build/demo-05-nginx-selfheal.png',
+            state:
+              'systemd brings nginx back six seconds after the kill',
+            alt: 'Two panels of terminal output. The first is headed nginx self-heal for proj-rocky01 at 192.168.61.134, subtitled Restart=always, RestartSec=5s, sampled every 0.5s after sudo pkill nginx, and lists the unit state at half-second intervals: active on main PID 5184 at t=0, activating with no main PID from t=1.0 through t=5.5, and active again on main PID 7149 at t=6.0, closing with the line "healed: new PID 7149 (was 5184)". The second panel is systemctl status nginx taken straight afterwards, showing the drop-in at /etc/systemd/system/nginx.service.d/restart.conf, the unit active and running for 14 seconds, main PID 7149, and a control group holding one master and two worker processes',
+          },
+        },
+        {
+          id: 'backend-down',
+          tab: 'Backend down',
+          label: 'Scenario 4: HAProxy backend failover',
+          lead:
+            'rocky1 stops answering and HAProxy marks it **DOWN** on the next L4 check. The backend stays up on rocky2, so the site keeps serving while one of the two web servers is gone.',
+          before: {
+            src: '/projects/project1-self-build/demo-06-haproxy-both-up.png',
+            state: 'HAProxy has both app servers up and serving',
+            alt: 'The HAProxy statistics report for the app_servers backend, with rocky1 and rocky2 both on a green UP row, each last checked L7OK/200 in around 35 milliseconds, and the backend line reading 2/2 active servers',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-07-haproxy-backend-down.png',
+            state: 'HAProxy drops rocky1 and keeps serving on rocky2',
+            alt: 'The same HAProxy statistics report with the rocky1 row turned red and reading DOWN after an L4CON connection failure, 2 minutes 45 seconds of downtime recorded against it, while rocky2 stays green and the backend line reads 1/1 active servers and keeps serving',
+          },
+        },
+        {
+          id: 'cpu-overload',
+          tab: 'CPU overload',
+          label: 'Scenario 5: CPU threshold alerting to Slack',
+          lead:
+            '`chaos/inject.sh cpu1` pins rocky1 at **100%**. HighCPU waits out its one minute window, fires, and reaches Slack. Nothing restarts, because a busy CPU is a warning rather than something the webhook should act on.',
+          clip: {
+            src: '/projects/project1-self-build/clip-01-cpu-alert.mp4',
+            width: 1440,
+            height: 904,
+            poster: '/projects/project1-self-build/clip-01-cpu-alert.jpg',
+            speed: '6x',
+            alt: 'Four panes at once. The CPU gauge on rocky1 sits at 100 percent while the Prometheus alert list is still all green, then HighCPU turns pink and the rule group badge flips to firing, a Slack message arrives reading High CPU on onprem-rocky1 at 100 percent, and once the load falls away the rule returns to inactive and a resolved message follows it at 63.9 percent',
+          },
+          before: {
+            src: '/projects/project1-self-build/demo-08-cpu-node-exporter.png',
+            state: 'rocky1 sits at 100 percent CPU under the stress run',
+            alt: 'The Node Exporter Full dashboard for proj-rocky01, its CPU Busy gauge at 100 percent in the red band, system load at 81.5 percent, RAM at 19.1 percent and root filesystem at 32.8 percent, with the CPU Basic chart underneath climbing from flat to full in the last two minutes',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-09-highcpu-firing.png',
+            state: 'HighCPU fires while the other three rules stay inactive',
+            alt: 'The Prometheus alerts page for project_alerts, showing three inactive rules and one firing: FastAPIDown, NodeDown and HighMemory all on green rows reading 0 active, and HighCPU on a pink row reading 1 active',
+          },
+        },
+        {
+          id: 'container-recovery',
+          tab: 'Container recovery',
+          label: 'Scenario 6: Automated container recovery',
+          lead:
+            'The container is stopped on rocky1. FastAPIDown fires as **critical**, Alertmanager sends it to Slack and to the webhook at the same time, and the webhook restarts the container over SSH. The alert clears on the next scrape.',
+          clip: {
+            src: '/projects/project1-self-build/clip-02-recovery.mp4',
+            width: 1440,
+            height: 904,
+            poster: '/projects/project1-self-build/clip-02-recovery.jpg',
+            speed: '3x',
+            alt: 'The FastAPIDown rule expanded in Prometheus, showing severity critical and a thirty second window, then the rule going active while Slack receives the critical alert, a line saying automatic recovery has started on 192.168.61.134, and a line saying recovery is complete, after which the alert list returns to all four rules inactive',
+          },
+          before: {
+            src: '/projects/project1-self-build/demo-10-fastapidown-firing.png',
+            state: 'FastAPIDown goes active and the other three stay quiet',
+            alt: 'The Prometheus alerts page for project_alerts with FastAPIDown on a pink row reading 1 active, and NodeDown, HighCPU and HighMemory all on green rows reading 0 active, with the filter bar counting three inactive, none pending and one firing',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-11-alertmanager-fanout.png',
+            state: 'Alertmanager hands the same alert to two receivers',
+            alt: 'The Alertmanager alerts page showing the same FastAPIDown alert grouped twice, once under the slack-and-recovery receiver and once under telegram, each reading one alert, which is what the continue flag on the severity routes produces',
+          },
+        },
+        {
+          id: 'aws-recovery',
+          tab: 'Recovery on AWS',
+          label: 'Scenario 7: Automated recovery on AWS',
+          lead:
+            'The AWS run posts the whole sequence into one channel: the critical alert, the recovery starting, **one attempt that failed** and asked for a person, then the retry that finished. HighCPU fires and resolves underneath it.',
+          before: {
+            src: '/projects/project1-self-build/demo-12-aws-slack-thread.png',
+            state:
+              'The AWS thread runs from alert to failed attempt to recovery',
+            alt: 'The Slack channel all-mindmug holding the AWS recovery sequence in order: several [AWS][CRITICAL] FastAPIDown alerts naming aws-rocky1 in ap-northeast-2, a line saying automatic recovery has started against 100.83.68.94, a line reporting the recovery failed and needs manual intervention, a second recovery start, a line reporting recovery complete, and below them an [AWS][FIRING] HighCPU at 100 percent followed by its [AWS][RESOLVED] at 67.6 percent',
+          },
+          after: {
+            src: '/projects/project1-self-build/demo-13-aws-selfheal-board.png',
+            state: 'The self-healing board shows the same event on AWS',
+            alt: 'The self-healing demo dashboard pointed at the AWS environment, its CPU chart flat near zero across all four hosts, its mean response time dropping from about two minutes to zero, and its threshold event timeline marking the FastAPI Down rows for aws-rocky1 and aws-rocky2 as events against an otherwise normal band, while the four CPU rows stay normal throughout',
+          },
+        },
+      ],
+    },
+    folderStructure: `
+teamproject01-hybrid-cloud-infra/
+├── terraform/
+│   ├── main.tf                  # VPC, subnets, 4 instances, ALB
+│   ├── variables.tf
+│   ├── outputs.tf               # generates the Ansible inventory
+│   ├── locals.tf
+│   ├── cloudwatch.tf            # 6 alarms, SNS, dashboard
+│   ├── tailscale.tf
+│   ├── mgmt_bootstrap.sh        # user_data: subnet router
+│   └── app_bootstrap.sh         # user_data: joins the tailnet
+├── playbooks/
+│   ├── site.yml                 # on-prem, imports 12 in a fixed order
+│   ├── site_aws.yml             # AWS, Tailscale first
+│   ├── docker_install.yml
+│   ├── db.yml
+│   ├── mgmt.yml
+│   ├── docker_web.yml
+│   ├── nginx_selfheal.yml
+│   ├── monitoring.yml
+│   ├── prometheus_bot.yml
+│   ├── prometheus_connect.yml   # promtool check, then restart
+│   ├── recovery_service.yml
+│   ├── cloudflared.yml
+│   ├── certbot.yml
+│   └── notify.yml
+├── roles/                       # 15 roles, tasks and handlers each
+│   ├── docker/
+│   ├── docker_fastapi/          # image build, container, app/
+│   ├── nginx/
+│   ├── nginx_selfheal/          # Restart=always drop-in
+│   ├── postgresql/
+│   ├── haproxy/
+│   ├── node_exporter/
+│   ├── monitoring/              # Prometheus, Grafana, Alertmanager
+│   ├── prometheus_bot/          # compiled from source for arm64
+│   ├── recovery_service/
+│   ├── tailscale/
+│   ├── cloudflared/
+│   ├── certbot/
+│   ├── fastapi/                 # the systemd version, kept for reference
+│   └── telegram/
+├── inventory/
+│   ├── hosts.ini                # VMware, 192.168.61.133-136
+│   └── hosts_aws_ts.ini         # AWS, rewritten by the workflow
+├── monitoring/
+│   ├── prometheus.yml
+│   ├── prometheus_aws.yml.j2
+│   ├── alert.rules.yml          # 4 rules
+│   ├── alertmanager.yml         # 3 receivers
+│   ├── docker-compose.yml
+│   └── grafana/dashboards/
+│       └── project1-selfheal.json   # the 3-panel demo board
+├── recovery/
+│   ├── webhook_server.py        # :9080, alert name to a restart command
+│   └── scripts/
+│       └── restart_service.sh
+├── chaos/
+│   └── inject.sh                # 7 failures, plus all and status
+├── .github/workflows/
+│   └── deploy.yml               # checks, image, on-prem, AWS, destroy
+├── ansible.cfg
+├── deploy_aws.sh                # the same flow, run by hand
+└── README.md
+`,
     decisions: [
       {
-        // placeholder
-        keyword: 'Short keyword',
-        title: 'The decision stated in one sentence.',
-        chose: 'The option that shipped',
-        over: 'The option that did not',
-        why: 'One or two sentences on the trade-off actually being made, and what it cost.',
+        keyword: 'Destroy every run',
+        title: 'The AWS half of the pipeline tears itself down at the end of every run.',
+        glyph: 'pipeline',
+        chose: 'A `terraform destroy` step marked `if: always()`',
+        over: 'leaving the environment running between runs',
+        why: 'This is a study environment, and an idle NAT gateway bills by the hour whether anything routes through it or not. Making destroy unconditional means a **failed run costs the same as a successful one**. The trade is that nothing survives a run, so every debugging session starts from an empty account.',
+      },
+      {
+        keyword: 'Tailscale, no jump host',
+        title: 'The CI runner reaches private instances over a Tailscale mesh instead of hopping through mgmt.',
+        glyph: 'route',
+        chose: 'A **Tailscale mesh** joined from `user_data`, with the runner joining by OAuth',
+        over: '`ProxyJump` through the mgmt node on every Ansible task',
+        why: 'The first version used ProxyJump, so every task paid for a second SSH hop. That made a full playbook run slow and made one failed hop look like a broken host. Once mgmt advertises the VPC CIDR and the runner accepts routes, the runner talks to a private instance directly. The workflow keeps the ProxyJump path only for reading each Tailscale address on first boot.',
+      },
+      {
+        keyword: 'Graviton everywhere',
+        title: 'All four instances are arm64, which changed how several roles install their binaries.',
+        glyph: 'depth',
+        chose: '`t4g.small` on **Graviton** for all four instances',
+        over: 'x86 instances, where every prebuilt binary already works',
+        why: 'The instance is cheaper, and the cost of that showed up immediately. Node Exporter and Prometheus needed their download URLs switched on `ansible_architecture`, and `prometheus_bot` had **no arm64 image at all**, so its role installs Go and compiles the binary from source. That is the most useful thing this project taught me about reading somebody else’s install instructions.',
+      },
+      {
+        keyword: 'systemd before webhooks',
+        title: 'Nginx recovers through a systemd drop-in rather than through the alert pipeline.',
+        glyph: 'process',
+        chose: 'A `Restart=always` drop-in with `RestartSec=5s`',
+        over: 'routing an Nginx alert through Alertmanager to the recovery webhook',
+        why: 'systemd already knows the process died and can act in about **five seconds**. Sending that through Prometheus, Alertmanager and an SSH call would add a minute and three more things that can fail. The webhook is kept for failures systemd cannot see on its own, which is why it handles `FastAPIDown` and `NodeDown` and nothing else.',
+      },
+      {
+        keyword: 'Container the app only',
+        title: 'FastAPI runs in a container while Nginx and PostgreSQL stay on the host.',
+        glyph: 'branch',
+        chose: 'FastAPI in an image built once in CI, **Nginx and PostgreSQL on the host**',
+        over: 'containerising the whole stack',
+        why: 'The systemd version needed gcc, python3-devel and postgresql-devel on both web servers just to build `psycopg2`, which left room for the two hosts to drift apart. Building the image once in CI removed that. Nginx and PostgreSQL stayed on the host because containerising them would have added volumes, networks and a compose file for no gain at four servers.',
+      },
+      {
+        keyword: 'One chaos script',
+        title: 'A single failure-injection script covers both environments through one flag.',
+        glyph: 'inject',
+        chose: '`chaos/inject.sh --aws`, reading whichever inventory matches',
+        over: 'a separate injection script per environment',
+        why: 'The script discovers host addresses from the same inventory Ansible uses, so the two can never drift apart. `--aws` swaps the inventory file and adds the SSH key and ProxyJump options. `./inject.sh all` restores every service and `./inject.sh status` prints the state of all ten, which is what made rehearsing a failure cheap enough to do repeatedly.',
       },
     ],
     links: {
-      github: null, // placeholder
-      terraform: null,
+      github: null, // TODO: repository URL
+      terraform: null, // TODO: <repo>/tree/main/terraform
       presentation: null,
     },
     reflection: {
-      // placeholder
-      learned: 'What the project taught me.',
-      differently: "What I'd do differently with the same brief again.",
+      learned:
+        'Building the same architecture a second time on my own showed me exactly which parts I had understood and which parts I had only reviewed. The **architecture** I could redraw from memory. The **install details** I could not: switching every binary download on `ansible_architecture`, compiling `prometheus_bot` from source because the published image is x86 only, and finding out that `httpd_can_network_connect` is why Nginx returns 502 when it proxies to a container under SELinux. The other lesson was about ordering. `site.yml` imports twelve playbooks and that order is load bearing, because Docker has to exist before the container role runs and Prometheus has to exist before its rules can be validated.',
+      differently:
+        'Terraform state is local, so a second machine cannot pick up where the first left off. An **S3 backend with a lock table** is the first thing I would add. I would also stop writing Tailscale addresses into an inventory file mid-run and use a **dynamic inventory** instead, since the current workflow spends several minutes polling each instance for its address. The recovery webhook covers two alert names and restarts a service once with no retry and no cooldown, which is enough to show the loop closes and short of something I would trust unattended.',
     },
   },
 
   {
     slug: 'individual-project-two',
     group: 'individual',
-    // placeholder
-    title: 'Individual project two',
-    // placeholder — the descriptive page heading. `title` above stays the
-    // short name the sidebar shows and the eyebrow repeats.
+    // No `team` key: solo work, so the Members section and the Notion link
+    // never render, the same opt-out individual-project-one uses.
+    title: 'ShimonVault',
+    // The descriptive page heading. `title` above stays the short name the
+    // sidebar shows and the eyebrow repeats. Deliberately parallel to the
+    // Lock-N-Lock title above: same brief, and "Event-Driven" against that
+    // page's "Self-Healing" is the whole difference between the two builds.
+    // Trimmed by one word from "...for a Hybrid Cloud Operations Platform",
+    // which is a real constraint rather than a preference: at 93 characters it
+    // wrapped to three lines where Lock-N-Lock's title, also 93 characters,
+    // packs into two, and DESIGN.md's rule is to fix the type or the text and
+    // never to widen a header past the content it heads. "Operations" was the
+    // word the sentence could lose without losing a claim.
     fullTitle:
-      'Individual project two: full descriptive title TBD',
-    accent: 'indigo',
-    // placeholder
-    period: 'TBD', // placeholder
+      'Event-Driven Security Detection and Automated Response for a Hybrid Cloud Platform',
+    // Plum, the palette's eighth accent. Steel sat here first and was wrong
+    // twice: it is a grey, so the eyebrow over the title read as uncoloured
+    // where every other project page has a hue there, and it was already the
+    // KT fellowship page's accent.
+    accent: 'burgundy',
+    // The same four weeks as Lock-N-Lock, because this was built alongside it
+    // rather than after it: the team platform by day, my own copy of the same
+    // brief in the evenings. The week boundaries below match that page's
+    // schedule exactly.
+    period: 'May 27 – June 24, 2026',
     glance: {
-      why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
-      result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
+      why: 'I led Lock-N-Lock and owned the infrastructure track, so several parts of that platform reached me as a pull request to approve rather than as code I wrote. I built a second platform against the same brief, on my own, to find out which parts I actually understood.',
+      how: 'ShimonVault is an internal operations platform with documents, meetings and a live audit stream, standing on 90 Terraform resource blocks: a two-AZ VPC, RDS, S3, DynamoDB, five Lambda functions, SNS and EventBridge, with the monitoring stack on my own on-premises server over Tailscale.',
+      result: 'One dispatch of the CD workflow builds the image, launches a green instance, waits for it to pass the ALB health check and then moves the listener. Every attack this page claims to defend against can be fired from a button inside the admin console and watched land in the audit feed.',
     },
-    // placeholder
-    role: 'Placeholder for the contribution line. Solo build, so this is the whole scope rather than a slice of it.',
-    // placeholder
-    context:
-      'Placeholder for what this project is and why it exists. Two or three sentences, written for someone who has not seen the repo. Replace with the real brief.',
+    // Solo, so this is the whole scope. Prose rather than the bento the team
+    // pages use: a tile grid divides a contribution into parts, and there is
+    // nobody here to divide it from.
+    role: 'Solo build from an empty repository. I wrote the 27 Terraform files, the FastAPI application, the React console, the five Lambda handlers, the monitoring stack and both GitHub Actions workflows. The rule I set was that the brief could be the same as the team project and the mechanism had to be different, so nothing here is a copy of the Lock-N-Lock repository. Where the team ran a container and a controller on a VM, I had to pick the AWS service that owns that job and learn it properly.',
+    context: {
+      notes: [
+        {
+          size: 'lead',
+          label: 'Why do it twice',
+          text: 'Being team lead on Lock-N-Lock meant I reviewed more of that platform than I typed. Reviewing a pull request teaches you what a thing is called. Building it alone teaches you what breaks. This repository is where I found out the difference.',
+        },
+        {
+          size: 'lead',
+          label: 'The rule I set',
+          text: 'Same brief, different mechanism. Lock-N-Lock answered every problem with a container on an EC2 instance. Here every problem had to be answered with the AWS service that owns it, so detection sits in application middleware, response sits in Lambda, scheduling sits in EventBridge and the audit trail sits in DynamoDB.',
+        },
+        {
+          size: 'support',
+          label: 'What the app is',
+          text: 'Three modules on one FastAPI app. SecureDocs stores files in S3 with role-based access and 15-minute download links. ShimonMeet schedules meetings and hands each one a join token. AuditStream is the live feed of everything the other two did.',
+        },
+        {
+          size: 'support',
+          label: 'Where the security lives',
+          text: 'One middleware sits outside every route and writes each request to DynamoDB, so no endpoint can forget to log. It also counts. Five access-denied responses from one account suspends the account. The first rate-limited download from an address writes an incident report to S3 and posts to Slack and Telegram.',
+        },
+        {
+          size: 'support',
+          label: 'The demo is in the product',
+          text: 'The five attack simulations are admin-only endpoints inside the app rather than scripts on my laptop. Each one logs in as a real seeded account and calls real endpoints over HTTP, so the audit trail on screen is the actual application code running. `DEMO_ENABLED=false` turns all of them into 403s.',
+        },
+        {
+          size: 'support',
+          label: 'Where it stops',
+          text: 'This is a study build. The environment is expected to live for the length of a session and `scripts/destroy.sh` takes it down again. Secrets are GitHub Actions secrets, the auto scaling group sits at `desired_capacity = 0` so it costs nothing while idle, and the test suite covers auth and audit and not much else.',
+        },
+      ],
+    },
+    // Every figure below is counted from the repository tree rather than
+    // estimated: 90 `resource` blocks across 27 files in terraform/, 5
+    // directories under lambda/ with a handler each, 26 `@router` decorators
+    // across app/routers/, 13 members of AuditEventType in app/models.py, 5
+    // POST routes in demo_router.py, and 4 rules in
+    // monitoring/prometheus/rules/shimonvault.yml plus 5 aws_cloudwatch_metric_alarm
+    // blocks across cloudwatch.tf and asg.tf.
     metrics: [
-      { size: 'wide', value: '00', label: 'Metric one' }, // placeholder
-      { size: 'square', value: '0 %', label: 'Metric two' }, // placeholder
-      { size: 'square', value: '0 min', label: 'Metric three' }, // placeholder
+      { size: 'big', value: '90', label: 'Terraform Resource Blocks', hint: 'Across 27 .tf files' },
+      {
+        size: 'square',
+        value: '5',
+        label: 'Lambda Functions',
+        hint: 'block_ip, log_incident, validate_file, meeting_notify, meeting_expire',
+      },
+      { size: 'square', value: '26', label: 'API Endpoints', hint: 'Across 6 routers' },
+      {
+        size: 'square',
+        value: '9',
+        label: 'Alerts Wired',
+        hint: '4 Prometheus rules and 5 CloudWatch alarms',
+      },
+      {
+        size: 'wide',
+        value: '5',
+        label: 'Attack Simulations',
+        detail: 'Credential stuffing, access control, exfiltration, request flooding and a notification test, each firing real requests at real endpoints',
+      },
+      {
+        size: 'square',
+        value: '13',
+        label: 'Audit Event Types',
+        hint: 'Every one written to DynamoDB and PostgreSQL both',
+      },
     ],
     stack: [
-      { category: 'Cloud/Infrastructure', items: ['AWS'] },
-      { category: 'Containers', items: ['Kubernetes'] },
-      { category: 'CI/CD', items: ['GitHub Actions'] },
+      {
+        category: 'Cloud/Infrastructure',
+        items: ['AWS', 'EC2', 'RDS', 'S3', 'DynamoDB', 'Lambda', 'SNS', 'EventBridge', 'CloudWatch'],
+      },
+      { category: 'IaC/Automation', items: ['Terraform', 'Ansible', 'Bash'] },
+      { category: 'CI/CD', items: ['GitHub Actions', 'Docker', 'Docker Hub'] },
+      { category: 'Application', items: ['FastAPI', 'Python', 'SQLAlchemy', 'React', 'Vite', 'PostgreSQL'] },
+      {
+        category: 'Monitoring',
+        items: ['Prometheus', 'Grafana', 'Alertmanager', 'Node Exporter', 'cAdvisor', 'Portainer'],
+      },
+      { category: 'Network & Delivery', items: ['Tailscale', 'Cloudflare'] },
+      { category: 'Notifications', items: ['Slack', 'Telegram'] },
     ],
-    architecture: null,
-    media: null,
+    stackNotes: [
+      {
+        tool: 'Why Lambda and SNS?',
+        icon: 'Lambda',
+        text: 'Lock-N-Lock answered a failure with a Flask controller running on a machine that also had to stay up. Here the response is five Lambda functions behind two SNS topics, so **the thing that reacts to an outage is not itself part of the outage**. The trade is five cold starts and five inline IAM policies to get right, against one process I could have opened a shell on.',
+      },
+      {
+        tool: 'Why DynamoDB next to PostgreSQL?',
+        icon: 'DynamoDB',
+        text: 'Every request writes an audit row, and I did not want that write queueing in front of the same RDS instance the application depends on. DynamoDB is **on-demand with no capacity to plan**, the partition key is the event id and the sort key is the timestamp, and a 90-day TTL clears it out on its own.',
+      },
+      {
+        tool: 'Why EventBridge?',
+        icon: 'EventBridge',
+        text: 'A meeting reminder fires ten minutes before the meeting, and the instance that created the meeting may not exist by then. An `at()` rule created through boto3 **runs outside my application** and survives a deploy, a scale-out and a crash. A background thread dies with the process.',
+      },
+      {
+        tool: 'Why a NAT instance?',
+        // EC2 rather than AWS: `ec2.svg` exists and `aws.svg` does not, and
+        // the point of the note is that the NAT *is* an EC2 instance.
+        icon: 'EC2',
+        text: 'A managed NAT gateway bills roughly **$33 a month** whether or not anything routes through it. A `t3.micro` with `source_dest_check = false` and one iptables masquerade rule does the same job inside the free tier. This is the one decision I kept identical to the team project, because it was right there too.',
+      },
+      {
+        tool: 'Why replicate to my own server?',
+        icon: 'Tailscale',
+        text: 'RDS is the write primary and a PostgreSQL container on my on-premises `proj-ubuntu01` subscribes to it over Tailscale. The application holds **two engines, one write and one read**, so the hybrid half of the brief is a real data path rather than a line on a diagram.',
+      },
+    ],
+    // Nine files, and the section reads them in that order as an argument:
+    // the middleware that sees everything, the 22 lines that made its download
+    // counter count the right key, the Lambda that answers, the Terraform that
+    // wires five of those Lambdas to SNS and S3, the network they run in, the
+    // groups that reference each other rather than CIDRs, the listener where
+    // blue/green physically switches, the certificate that listener serves, and
+    // the workflow that drives the whole thing.
+    //
+    // `alb.tf` earns its place on one ternary: the listener forwards to
+    // whichever target group `var.active_color` names, which is the whole
+    // "switch is a variable" decision as a line of code rather than as a claim.
+    // `acm.tf` follows it because the 443 listener is meaningless without the
+    // certificate, and because the file is where the grey-cloud decision is
+    // written down: the record is DNS only, so the ALB has to end TLS itself.
+    // `cd.yml` last is the caller, so the three are read together.
+    terraform: [
+      { path: 'app/middleware/audit_middleware.py', content: svAuditMiddleware },
+      { path: 'app/rate_limit.py', content: svRateLimit },
+      { path: 'lambda/block_ip/handler.py', content: svBlockIp },
+      { path: 'terraform/lambda.tf', content: svLambdaTf },
+      { path: 'terraform/vpc.tf', content: svVpcTf },
+      { path: 'terraform/security_groups.tf', content: svSecurityGroupsTf },
+      { path: 'terraform/alb.tf', content: svAlbTf },
+      { path: 'terraform/acm.tf', content: svAcmTf },
+      { path: '.github/workflows/cd.yml', content: svCdWorkflow },
+    ],
+    // Null rather than absent: the alert routing does exist in the repository
+    // (four Prometheus rules and an alertmanager.yml with an inhibit rule),
+    // but there is no recovery logic to sit beside it — no controller, no
+    // alert-to-script map, nothing that restarts anything. The heading claims
+    // both, so the section drops out entirely and the alert routing is
+    // carried by the second diagram and the README instead.
+    recoveryPolicy: null,
+    // Three views, drawn from data in the same vocabulary as every other page:
+    // zones underneath, nodes placed by their centres, edges routed
+    // orthogonally, one accent carried by the glyphs and nothing else.
+    //
+    // Every label traces to the repository. The CIDRs, instance classes and
+    // the ALB health check come from terraform/, the counters and thresholds
+    // from app/middleware/audit_middleware.py and app/services/rate_limiter.py,
+    // and the job order in the third view from .github/workflows/cd.yml.
+    architecture: [
+      {
+        tab: 'Platform',
+        caption:
+          'AWS and on-premises joined into one Tailscale network',
+        alt: 'An AWS VPC in ap-northeast-2 on 10.0.0.0/16. Traffic arrives at shimonvault.junhanshin.com, a DNS-only Cloudflare record, so the load balancer terminates TLS itself with an ACM certificate. Public subnets across two availability zones hold that application load balancer, serving port 80 and port 443 with a health check on /health every 30 seconds, a bastion reachable only from the operator IP, and a NAT instance running iptables masquerade on a t3.micro. Private subnets hold the blue application instance, the green instance created only during a deploy, and an RDS PostgreSQL 16 instance on db.t3.micro with logical replication enabled. Below the VPC, a serverless band holds the S3 docs and reports buckets, five Lambda functions, the SNS topics with EventBridge, and three DynamoDB tables. Below AWS, a Tailscale mesh on 100.64.0.0/10 joins two on-premises hosts: proj-mgmt running Prometheus, Grafana and Alertmanager, and proj-ubuntu01 running the PostgreSQL read replica on port 5433.',
+        diagram: {
+          width: 1000,
+          // 836 before the captions were broken into four lines instead of two.
+          height: 902,
+          zones: [
+            { id: 'aws', label: 'AWS · ap-northeast-2', x: 20, y: 70, w: 960, h: 520, tone: 'cloud' },
+            { id: 'vpc', label: 'VPC', note: '10.0.0.0/16', x: 48, y: 130, w: 904, h: 340, tone: 'region' },
+            // Short notes on purpose: a zone label owns the strip along its own
+            // top edge, and spelling all four CIDRs out here would block the
+            // lane the load balancer descends through.
+            { id: 'pub', label: 'Public subnets', note: '2 AZs', x: 64, y: 186, w: 872, h: 96, tone: 'region' },
+            { id: 'priv', label: 'Private subnets', note: '2 AZs', x: 64, y: 300, w: 872, h: 150, tone: 'region' },
+            { id: 'serverless', label: 'Managed services', x: 48, y: 480, w: 904, h: 90, tone: 'region' },
+            // Dashed and outside the provider, the convention every other
+            // diagram on this site already uses for anything that is not AWS.
+            { id: 'onprem', label: 'On-premises · always on', x: 20, y: 654, w: 960, h: 130, tone: 'onprem' },
+          ],
+          nodes: [
+            // Cloudflare is DNS only here. The record is grey-clouded, so
+            // nothing proxies and the ALB is the thing that ends TLS, using the
+            // ACM certificate acm.tf issues and validates through the same zone.
+            { id: 'client', label: 'Client · Cloudflare DNS', sub: 'shimonvault.junhanshin.com', glyph: 'user', x: 180, y: 32, w: 250, h: 44 },
+
+            { id: 'alb', label: 'ALB', sub: '80 and 443 · ACM cert · /health every 30s', glyph: 'balancer', x: 180, y: 240, w: 220, h: 52 },
+            { id: 'bastion', label: 'Bastion', sub: 'SSH from my IP only', glyph: 'key', x: 470, y: 240, w: 220, h: 52 },
+            { id: 'nat', label: 'NAT instance', sub: 't3.micro · masquerade', glyph: 'cloud', x: 800, y: 240, w: 230, h: 52 },
+
+            { id: 'blue', label: 'App EC2 blue', sub: 'Docker · uvicorn :8000', glyph: 'server', x: 180, y: 360, w: 210, h: 52 },
+            { id: 'green', label: 'App EC2 green', sub: 'created on deploy only', glyph: 'server', x: 440, y: 360, w: 210, h: 52 },
+            { id: 'rds', label: 'RDS PostgreSQL 16', sub: 'db.t3.micro · logical replication', glyph: 'database', x: 780, y: 360, w: 290, h: 52 },
+
+            { id: 's3', label: 'S3', sub: 'docs · reports', glyph: 'bucket', x: 180, y: 532, w: 200, h: 48 },
+            { id: 'lam', label: 'Lambda × 5', sub: 'response · scheduling', glyph: 'pipeline', x: 400, y: 532, w: 200, h: 48 },
+            { id: 'sns', label: 'SNS · EventBridge', sub: '3 topics · at() rules', glyph: 'queue', x: 620, y: 532, w: 200, h: 48 },
+            { id: 'ddb', label: 'DynamoDB', sub: '3 tables, on-demand', glyph: 'database', x: 840, y: 532, w: 200, h: 48 },
+
+            { id: 'tailnet', label: 'Tailscale mesh', sub: '100.64.0.0/10 · no public ports', glyph: 'vpn', x: 500, y: 616, w: 420, h: 48 },
+
+            { id: 'mgmt', label: 'proj-mgmt', sub: 'Prometheus · Grafana · Alertmanager', glyph: 'monitor', x: 300, y: 726, w: 400, h: 52 },
+            { id: 'replica', label: 'proj-ubuntu01', sub: 'PostgreSQL replica :5433 · NFS', glyph: 'database', x: 720, y: 726, w: 380, h: 52 },
+          ],
+          edges: [
+            { from: 'client', to: 'alb', label: 'HTTPS · TLS ends here' },
+            { from: 'alb', to: 'blue', label: ':8000' },
+            { from: 'alb', to: 'green', dash: true },
+            // Both application instances reach the database, drawn as one lane
+            // under the row rather than a line each through the middle of it.
+            { from: 'blue', to: 'rds', label: 'SQL 5432', labelAt: [480, 406], via: [[180, 415], [780, 415]] },
+            { from: 'green', to: 'rds' },
+            { from: 'blue', to: 's3', label: 'documents' },
+            { from: 'blue', to: 'ddb', label: 'audit rows', labelAt: [520, 466], via: [[180, 475], [840, 475]] },
+            { from: 's3', to: 'lam', label: 'PUT' },
+            { from: 'sns', to: 'lam', label: 'invoke' },
+            // Down the right-hand gutter, between the VPC boundary and the
+            // provider boundary, which is the only lane clear of both rows.
+            { from: 'rds', to: 'replica', label: 'logical replication', labelAt: [956, 545], labelAnchor: 'end', via: [[966, 360], [966, 726]] },
+            // The mesh reaches the private instance directly, so Prometheus
+            // scrapes it with no jump host in the path.
+            { from: 'tailnet', to: 'blue', label: 'scrape :9100 · :8000', labelAt: [44, 500], labelAnchor: 'start', dash: true, dir: 'both', via: [[280, 616], [34, 616], [34, 360]] },
+            { from: 'mgmt', to: 'tailnet', dash: true, dir: 'both' },
+            { from: 'replica', to: 'tailnet', dash: true, dir: 'both' },
+          ],
+          // A caption is one SVG <text> at a fixed baseline with no wrapping, so
+          // anything past the 1000-unit viewBox is clipped and simply never
+          // read. Every caption below is therefore hand-broken at roughly 135
+          // characters, which is where the 11px monospace runs out of canvas.
+          captions: [
+            {
+              x: 20,
+              y: 808,
+              tone: 'accent',
+              text: 'Security groups reference each other rather than CIDR ranges.',
+            },
+            {
+              x: 20,
+              y: 830,
+              tone: 'accent',
+              text: 'The app group accepts 8000 only from the ALB group, and the RDS group accepts 5432 only from the app group.',
+            },
+            {
+              x: 20,
+              y: 852,
+              text: 'Outbound traffic from the private subnets leaves through the NAT instance, a t3.micro running one iptables masquerade rule in place of a',
+            },
+            {
+              x: 20,
+              y: 874,
+              text: 'managed NAT gateway. Ports 9100, 2376 and 2049 are open to the Tailscale range and to nothing else.',
+            },
+          ],
+        },
+      },
+      {
+        tab: 'Attack to response',
+        caption:
+          'One middleware sees it and three counters decide the response',
+        alt: 'A four-band flow. Detect: every request except /health and /metrics passes through AuditMiddleware, which maps the status code to an event type and writes one row to the DynamoDB audit log. Decide: three counters, 5 login failures per address with an incident at 8, 5 access denials per account, and 10 downloads in 60 seconds per address. Respond: an incident record in the incidents table, the account suspended in the users table, and an incident report written to the reports bucket, all three converging on one notify_all call, with a dashed edge to the SNS security-alert topic marked as still to do, and the block_ip Lambda inserting a network ACL deny rule. Report: Slack and Telegram, and the AuditStream feed in the admin console polled every four seconds.',
+        diagram: {
+          width: 1000,
+          // 730 before the captions were broken into four lines instead of two.
+          height: 786,
+          // Four bands rather than four columns: a phase is a horizontal slice
+          // of the flow, and a band says so without spending a column on it.
+          zones: [
+            { id: 'detect', label: 'Detect', note: 'outside every route', x: 20, y: 24, w: 960, h: 116, tone: 'region' },
+            { id: 'decide', label: 'Decide', note: 'three counters, all in process', x: 20, y: 164, w: 960, h: 116, tone: 'region' },
+            // The band the project is actually about.
+            { id: 'respond', label: 'Respond', x: 20, y: 304, w: 960, h: 220, tone: 'focus' },
+            { id: 'report', label: 'Report', x: 20, y: 548, w: 960, h: 110, tone: 'region' },
+          ],
+          nodes: [
+            { id: 'req', label: 'HTTP request', sub: 'every path but /health and /metrics', glyph: 'user', x: 175, y: 102, w: 270, h: 44 },
+            { id: 'mw', label: 'AuditMiddleware', sub: 'status code → event type', glyph: 'shield', x: 500, y: 102, w: 280, h: 44 },
+            { id: 'log', label: 'DynamoDB audit-log', sub: 'one row per request', glyph: 'database', x: 830, y: 102, w: 270, h: 44 },
+
+            // 5 and 8, from auth_router.py. NOT the 20-and-50 pair in
+            // services/rate_limiter.py: nothing imports that module, so its
+            // thresholds never run. Read the router, not the service.
+            { id: 'f401', label: '5 login failures', sub: 'per address · incident at 8', glyph: 'alert', x: 175, y: 242, w: 250, h: 44 },
+            { id: 'f403', label: '5 access denials', sub: 'per account', glyph: 'alert', x: 500, y: 242, w: 250, h: 44 },
+            { id: 'f429', label: '10 downloads', sub: '60 seconds, per address', glyph: 'alert', x: 825, y: 242, w: 250, h: 44 },
+
+            { id: 'incident', label: 'Incident record', sub: 'incidents table', glyph: 'database', x: 175, y: 382, w: 270, h: 48 },
+            { id: 'suspend', label: 'Account suspended', sub: 'users.suspended = true', glyph: 'key', x: 500, y: 382, w: 270, h: 48 },
+            { id: 's3report', label: 'Incident report', sub: 'reports bucket · 30-day expiry', glyph: 'bucket', x: 825, y: 382, w: 270, h: 48 },
+
+            { id: 'notify', label: 'notify_all()', sub: 'one call, two channels', glyph: 'chat', x: 175, y: 464, w: 270, h: 48 },
+            { id: 'snstopic', label: 'SNS security-alert', sub: 'two subscribed functions', glyph: 'queue', x: 500, y: 464, w: 270, h: 48 },
+            { id: 'block', label: 'block_ip Lambda', sub: 'NACL DENY · rule 1 to 99', glyph: 'pipeline', x: 825, y: 464, w: 270, h: 48 },
+
+            { id: 'chans', label: 'Slack + Telegram', sub: 'every severity', glyph: 'chat', x: 230, y: 612, w: 300, h: 48 },
+            { id: 'feed', label: 'AuditStream feed', sub: 'admin console · polled every 4s', glyph: 'monitor', x: 660, y: 612, w: 340, h: 48 },
+          ],
+          edges: [
+            { from: 'req', to: 'mw' },
+            { from: 'mw', to: 'log' },
+            { from: 'mw', to: 'f401', label: '401' },
+            { from: 'mw', to: 'f403', label: '403' },
+            { from: 'mw', to: 'f429', label: '429' },
+            // Each counter drops straight into the action it triggers, which is
+            // why the respond row is ordered to match the decide row above it.
+            { from: 'f401', to: 'incident' },
+            { from: 'f403', to: 'suspend' },
+            { from: 'f429', to: 's3report' },
+            // All three converge on one lane and one call. That convergence is
+            // the point of the band: three different detections, one notifier.
+            { from: 'incident', to: 'notify' },
+            { from: 'suspend', to: 'notify', via: [[500, 424], [175, 424]] },
+            { from: 's3report', to: 'notify', via: [[825, 424], [175, 424]] },
+            // Dashed because it is the one edge that is wiring rather than
+            // code: nothing in app/ publishes to this topic yet.
+            { from: 'incident', to: 'snstopic', label: 'publish: still a TODO', dash: true },
+            { from: 'snstopic', to: 'block', label: 'invoke' },
+            { from: 'notify', to: 'chans' },
+            { from: 'block', to: 'chans', via: [[825, 508], [230, 508]] },
+            { from: 'log', to: 'feed', label: 'read back', labelAt: [958, 350], labelAnchor: 'end', via: [[975, 102], [975, 612]] },
+          ],
+          captions: [
+            {
+              x: 20,
+              y: 692,
+              tone: 'accent',
+              text: 'A security group has allow rules only, so the automatic block had to move to a network ACL. block_ip takes the lowest free rule number',
+            },
+            {
+              x: 20,
+              y: 714,
+              tone: 'accent',
+              text: 'between 1 and 99 and inserts a DENY for that address.',
+            },
+            {
+              x: 20,
+              y: 736,
+              text: 'The dashed edge is honest. The SNS publish that would invoke block_ip from the login path is still a TODO in auth_router.py, so the',
+            },
+            {
+              x: 20,
+              y: 758,
+              text: 'function is deployed, subscribed and authorised with no live trigger. The alert text it sends still claims the block fired.',
+            },
+          ],
+        },
+      },
+      {
+        tab: 'Blue/green deploy',
+        caption:
+          'Checks on every push and a deploy that waits for green',
+        alt: 'Two workflows run from two different triggers. On the left, every push runs the CI workflow: flake8 over app/ at 120 columns, then pytest against SQLite in memory with a 50 percent coverage floor, then a Docker build that verifies the image and is never pushed. On the right, a manual workflow_dispatch runs the CD workflow, which builds and pushes the green image for amd64 and arm64 tagged by commit sha, applies Terraform with deploy_green set to true while the listener stays on blue, polls the green target group health up to 40 times at 15 second intervals, applies again with active_color set to green to move the listener, retags the green image as blue, and posts the result to Slack. A dashed edge runs from the health poll directly to the Slack step for the case where green never becomes healthy.',
+        diagram: {
+          width: 1000,
+          // 700 before the third caption, and 722 before all three were broken
+          // into six lines. Captions are single <text> baselines with no
+          // wrapping, so the canvas has to grow under every line added.
+          height: 788,
+          zones: [
+            { id: 'ci', label: 'ci.yml', note: 'every push and pull request', x: 20, y: 110, w: 460, h: 260, tone: 'region' },
+            // A zone note is one unwrapped line like a caption, so it is held
+            // to about the length of the one it replaced. The trigger's real
+            // name is in the caption underneath and in the workflow itself.
+            { id: 'cd', label: 'cd.yml', note: 'manual only · concurrency: deploy-production', x: 512, y: 110, w: 468, h: 500, tone: 'focus' },
+          ],
+          nodes: [
+            // One entry node for two triggers, because the two workflows no
+            // longer share one. CI still runs on every push; CD is dispatched
+            // by hand, and the edge labels below are where that difference is.
+            { id: 'push', label: 'git push · gh workflow run', sub: 'two triggers, two workflows', glyph: 'git', x: 500, y: 52, w: 340, h: 44 },
+
+            { id: 'lint', label: 'flake8', sub: 'app/ · 120 columns', glyph: 'scan', x: 250, y: 176, w: 380, h: 44 },
+            { id: 'test', label: 'pytest', sub: 'SQLite in memory · 50% floor', glyph: 'shield', x: 250, y: 242, w: 380, h: 44 },
+            { id: 'buildcheck', label: 'docker build', sub: 'verify only, never pushed', glyph: 'container', x: 250, y: 308, w: 380, h: 44 },
+
+            { id: 'image', label: 'build and push :green', sub: 'amd64 and arm64 · tagged by sha', glyph: 'container', x: 746, y: 176, w: 400, h: 44 },
+            { id: 'applygreen', label: 'terraform apply', sub: 'deploy_green=true · listener on blue', glyph: 'cloud', x: 746, y: 242, w: 400, h: 44 },
+            { id: 'poll', label: 'poll target health', sub: '40 attempts at 15s', glyph: 'shield', x: 746, y: 308, w: 400, h: 44 },
+            { id: 'switch', label: 'terraform apply', sub: 'active_color=green · the switch', glyph: 'balancer', x: 746, y: 374, w: 400, h: 44 },
+            { id: 'retag', label: 'retag :green as :blue', sub: 'green is now the live version', glyph: 'git', x: 746, y: 440, w: 400, h: 44 },
+            { id: 'result', label: 'Slack result', sub: 'complete, or failed with blue live', glyph: 'chat', x: 746, y: 506, w: 400, h: 44 },
+          ],
+          edges: [
+            { from: 'push', to: 'lint', label: 'on push' },
+            { from: 'push', to: 'image', label: 'on dispatch' },
+            { from: 'lint', to: 'test' },
+            { from: 'test', to: 'buildcheck' },
+            { from: 'image', to: 'applygreen' },
+            { from: 'applygreen', to: 'poll' },
+            { from: 'poll', to: 'switch', label: 'healthy' },
+            { from: 'switch', to: 'retag' },
+            { from: 'retag', to: 'result' },
+            // The failure path. Blue is still serving the whole time, so a
+            // deploy that never goes green costs a Slack message and nothing else.
+            { from: 'poll', to: 'result', label: 'never healthy', labelAt: [968, 410], labelAnchor: 'end', dash: true, via: [[962, 308], [962, 506]] },
+          ],
+          captions: [
+            {
+              x: 20,
+              y: 650,
+              tone: 'accent',
+              text: 'The switch is a Terraform variable rather than an `aws elbv2 modify-listener` call. A CLI switch is drift, and the next apply would',
+            },
+            {
+              x: 20,
+              y: 672,
+              tone: 'accent',
+              text: 'quietly put traffic back on blue.',
+            },
+            {
+              x: 20,
+              y: 694,
+              text: 'A concurrency group named deploy-production with cancel-in-progress false means two deploys never run at once and none is ever',
+            },
+            {
+              x: 20,
+              y: 716,
+              text: 'cancelled mid-flight. Blue keeps serving until the green target group reports healthy on its own health check.',
+            },
+            {
+              x: 20,
+              y: 738,
+              text: 'CD is `workflow_dispatch` only. It used to run on every push to `main`, which rebuilt live AWS infrastructure after every commit,',
+            },
+            {
+              x: 20,
+              y: 760,
+              text: 'including the commit right after a `terraform destroy`. That put the billing back on and nobody asked for it.',
+            },
+          ],
+        },
+      },
+    ],
+    // The same four weeks as Lock-N-Lock, split by what this repository was
+    // actually built in the order of: the ground first, then the product on
+    // top of it, then the things that watch it, then the pipeline over all of it.
+    implementation: {
+      months: ['2026-05', '2026-06'],
+      span: { from: '2026-05-27', to: '2026-06-24' },
+      phases: [
+        {
+          id: 'foundation',
+          title: 'Foundation',
+          range: 'May 27 – Jun 2',
+          from: '2026-05-27',
+          to: '2026-06-02',
+          text: 'The S3 state backend and its lock table, then the VPC, four subnets, the NAT instance, the bastion, RDS, the two S3 buckets and the five security groups that reference each other rather than CIDR ranges. The FastAPI skeleton went up in the same week, with `/health` answering 200 before the database exists.',
+        },
+        {
+          id: 'modules',
+          title: 'The Three Modules',
+          range: 'Jun 3 – Jun 9',
+          from: '2026-06-03',
+          to: '2026-06-09',
+          text: 'SecureDocs on S3 with presigned URLs and soft deletes, ShimonMeet with join tokens and the EventBridge rules that fire around each meeting, the audit middleware writing every request to DynamoDB, and the React console on top of all three.',
+        },
+        {
+          id: 'response',
+          title: 'Detection and Response',
+          range: 'Jun 10 – Jun 17',
+          from: '2026-06-10',
+          to: '2026-06-17',
+          text: 'The three counters, the two SNS topics, the five Lambda functions, and the on-premises Prometheus, Grafana and Alertmanager stack with the Telegram relay beside it. Logical replication from RDS to `proj-ubuntu01` landed at the end of the week, which is what made the read path real.',
+        },
+        {
+          id: 'pipeline',
+          title: 'Pipeline and Demo',
+          range: 'Jun 18 – Jun 24',
+          from: '2026-06-18',
+          to: '2026-06-24',
+          text: 'The CI workflow, the blue/green CD workflow that owns the listener through a Terraform variable, the five in-product attack simulations, and `deploy.sh` and `destroy.sh` so a whole session is two commands.',
+        },
+      ],
+    },
+    // Two of my own screen recordings and one set of captures, all from the
+    // live environment at shimonvault.junhanshin.com:
+    //
+    //   8 Sep, 20:42 local  the demo, four windows on one screen, 4660kbps at
+    //                       3024x1964. Scenarios 1 to 4 are cut from this.
+    //   9 Sep, 09:37 local  a full `scripts/deploy.sh` run in a terminal,
+    //                       1747kbps at 3248x2122. Scenario 5's clip.
+    //   9 Sep, midday       the stills, 1600x1200 and 1600x1250.
+    //
+    // Two tabs have no clip, because neither recording covers the Prometheus
+    // side. Their four stills are the only evidence on the page for the four
+    // Prometheus rules the metrics tile counts and for the Grafana dashboards
+    // the stack list names, so those tabs exist for the stills rather than the
+    // other way round.
+    //
+    // demo-NN numbering follows tab order, so inserting a tab renumbers the
+    // files after it. Cheap while the folder is young, and it keeps an `ls`
+    // readable against the page.
+    //
+    // The four-window clips are deliberately not cropped to one pane. Cropping
+    // would sharpen the console and throw away the reason the recording exists,
+    // which is that one button press lands in the app, in Grafana, in Telegram
+    // and in Slack inside a few seconds. The stills carry the detail instead,
+    // the same split the EchoChallengers clips settled on.
+    //
+    // The deploy clip is cropped to the terminal panel because the rest of that
+    // frame is a file tree, and it is kept at 1440 rather than 1280 so the
+    // monospace output survives the downscale.
+    media: {
+      clipNote:
+        'Cut from my own screen recordings of the live environment, silent and looping. Where a clip shows four windows they are the admin console, the Grafana AuditStream dashboard, Telegram and Slack, so one button press can be watched landing in all four.',
+      stillsNote:
+        'Full-resolution captures from a separate session the following day, so their counters do not line up with the clips above. Click one to open it at full size.',
+      scenarios: [
+        {
+          id: 'normal',
+          tab: 'Normal operation',
+          label: 'Scenario 1: Signing in and using the platform',
+          lead:
+            'An admin signs in, reads the console, and uploads a file to **SecureDocs**. Downloads leave as **15-minute pre-signed S3 URLs**, and every request on the way through is already in the audit trail by the time the page finishes rendering.',
+          clip: {
+            src: '/projects/shimon-vault/clip-01-console.mp4',
+            width: 1280,
+            height: 806,
+            poster: '/projects/shimon-vault/clip-01-console.jpg',
+            speed: '3.4x',
+            alt: 'A sign-in to the ShimonVault console, the security dashboard with its six counters and the five demo buttons, then the SecureDocs page with a file uploaded and listed at version 1',
+          },
+          before: {
+            src: '/projects/shimon-vault/demo-01-securedocs.png',
+            state: 'SecureDocs holds two documents at version 1',
+            alt: 'The SecureDocs page: a browse and upload row above a Documents card listing act1.txt at 55 bytes and contract_q3.txt at 56 bytes, each text/plain, dated 9 September 2026, at version 1, with a Download and a delete control, under a line reading that downloads use 15-minute pre-signed URLs and every action is audited',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-02-meetings.png',
+            state: 'ShimonMeet lists three meetings with join tokens',
+            alt: 'The ShimonMeet page: a new-meeting form with title, description, start and end times and participant ids, above three scheduled meetings named Q3 Security Review, Infra Sync Blue/Green and Vendor Access Renewal, each with a Join control, a Token control and a cancel control',
+          },
+        },
+        {
+          id: 'credential-stuffing',
+          tab: 'Credential stuffing',
+          label: 'Scenario 2: Credential stuffing against /auth/login',
+          lead:
+            'Act 2 fires **30 login attempts** from `203.0.113.42`, the RFC 5737 documentation address the demo defaults to. The fifth failure raises the first alert, the eighth writes an incident, and slowapi refuses the rest of the burst at **10 a minute**. Slack and Telegram both have the message before the run finishes. The alert text reads `Action: IP block Lambda triggered`, and that line is the one thing on screen that is not true: the SNS publish that would invoke `block_ip` is still a `TODO` one line below it in `auth_router.py`.',
+          clip: {
+            src: '/projects/shimon-vault/clip-02-credential-stuffing.mp4',
+            width: 1280,
+            height: 806,
+            poster: '/projects/shimon-vault/clip-02-credential-stuffing.jpg',
+            speed: '3.5x',
+            alt: 'Four windows at once during a credential-stuffing run: the admin console, the Grafana AuditStream dashboard with its login-failure and rate-limited panels climbing, and Telegram and Slack both filling with CREDENTIAL STUFFING DETECTED messages naming 203.0.113.42 and a rising failed-attempt count',
+          },
+          // The console's own counters already play live in the clip above, so
+          // the still that earns the slot is the one view the clip cannot show
+          // at a readable size: the Grafana dashboard the on-premises stack
+          // draws from the same requests.
+          stillsNote:
+            'Two different runs of the same act. The Grafana window closes about a quarter of an hour before the feed was captured, so the numbers in them are not the same burst.',
+          before: {
+            src: '/projects/shimon-vault/demo-03-stuffing-grafana.png',
+            state: 'Failures and refusals both run at 32.3 a minute',
+            alt: 'The ShimonVault AuditStream dashboard in Grafana over the last 30 minutes: login failures 32.3, access denied 0, rate limited 4xx 32.3, 5xx server errors 0 and 341 total requests, above a login-failure-rate panel spiking to just over 40 a minute, a request-rate-by-endpoint panel whose legend includes /demo/credential-stuffing and /auth/login, and an HTTP status distribution where a 4xx block rises out of an otherwise flat 2xx line',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-04-stuffing-feed.png',
+            state: 'The tail of the burst lands as rate limit hits in one second',
+            alt: 'The AuditStream feed filled with rate limit hit rows from 203.0.113.42 against /auth/login, all stamped 12:31:27 PM, under the successful sign-ins that preceded them',
+          },
+        },
+        {
+          id: 'access-control',
+          tab: 'Broken access control',
+          label: 'Scenario 3: Forbidden reads and account suspension',
+          lead:
+            'Act 3 signs in as the seeded **viewer** account and asks six times for a document that account may not read. Every refusal is a 403 counted by the middleware, and the **fifth one suspends the account**. That is also why Act 5 will not start afterwards: the traffic flood signs in as the same viewer account, so the defence that worked is the reason the next demo is refused at the door.',
+          clip: {
+            src: '/projects/shimon-vault/clip-03-access-control.mp4',
+            width: 1280,
+            height: 806,
+            poster: '/projects/shimon-vault/clip-03-access-control.jpg',
+            speed: '3.5x',
+            alt: 'The admin console raising a toast that reads Broken access control attack started, six attempts against a named document id, beside the Grafana AuditStream dashboard and the two chat clients still showing the previous scenario',
+          },
+          before: {
+            src: '/projects/shimon-vault/demo-05-access-control-feed.png',
+            state: 'The 403 lands directly below a live scanner',
+            alt: 'The AuditStream feed showing a doc access denied row from 203.0.113.42 at 12:32:46, and directly above it an unrelated address, 216.180.246.224, walking a list of login paths including /cgi-bin/login.cgi, /+CSCOE+/logon.html, /manage/account/login and /admin/index.html',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-06-audit-scanner.png',
+            state: 'The same feed keeps filling with no demo running',
+            alt: 'The AuditStream feed with no demo running: an address at 136.118.157.110 requesting /llm_config.json, /config/anthropic.json, /openai.json, /.codex/config.toml, /.claude/mcp.json, /.cursor/settings.json and /.windsurf/mcp.json in the same second, every row labelled login success by the middleware path heuristic',
+          },
+        },
+        {
+          id: 'exfiltration',
+          tab: 'Bulk exfiltration',
+          label: 'Scenario 4: Download rate limiting and incident reporting',
+          lead:
+            'Act 4 signs in as the **editor** account and asks for the same document 15 times in a row. The route allows **10 downloads in 60 seconds** and refuses the rest with a 429. The first 429 from an address writes an incident report to S3 and posts it once to Slack and Telegram, report key included, and every 429 after that is logged and stays quiet.',
+          clip: {
+            src: '/projects/shimon-vault/clip-04-exfiltration.mp4',
+            width: 1280,
+            height: 806,
+            poster: '/projects/shimon-vault/clip-04-exfiltration.jpg',
+            speed: '3.5x',
+            alt: 'A toast reading Bulk exfiltration attack started, 15 rapid downloads, rate limiter should trip, followed within seconds by an EXFILTRATION ATTEMPT message in both Telegram and Slack naming the S3 report key, while the Grafana rate-limited and access-denied panels come off zero',
+          },
+          before: {
+            src: '/projects/shimon-vault/demo-07-exfiltration-feed.png',
+            state: 'Ten downloads pass before the limiter refuses the rest',
+            alt: 'The AuditStream feed reading upward from 12:33:20: a run of doc download rows against one document id, then a red suspicious row reading incident:bulk_file_exfiltration from 203.0.113.42 at 12:33:21, then rate limit hit rows against the same document id at 12:33:22',
+          },
+        },
+        {
+          // The two tabs with no clip. Neither recording covers the monitoring
+          // stack, and inventing a clip for it would be worse than a lead that
+          // says what the stills say. MediaSection keeps the Screenshots
+          // heading on both anyway, because the other five tabs have clips.
+          //
+          // Split in two because they are two different claims. This one is
+          // "here is the stack, and it reaches both sides"; the next is "here
+          // is one of its rules firing and clearing on its own". One tab
+          // holding all four stills is not an option: a scenario carries a
+          // before and an after and nothing else.
+          id: 'monitoring',
+          tab: 'Monitoring stack',
+          label: 'Scenario 5: Monitoring from outside the platform',
+          lead:
+            'Everything above is the application catching things about itself. This is the other half. Prometheus, Grafana and Alertmanager run on `proj-mgmt`, **my own machine on-premises**, and scrape across the Tailscale mesh, so the thing watching the platform is not part of it. Four scrape pools cover both sides: the node exporter and the FastAPI `/metrics` endpoint on the AWS instance, and cAdvisor and a node exporter on the on-premises host itself.',
+          stillsNote: 'Both from the 9 September session, with the rest of the stills.',
+          before: {
+            src: '/projects/shimon-vault/demo-08-prometheus-targets.png',
+            state: 'Four scrape pools report up across both sides',
+            alt: 'The Prometheus target-health page with four scrape pools, each reading 1 of 1 up: ec2-nodes and fastapi-app both scraping 100.85.130.38, the app instance reached over Tailscale and labelled shimonvault-app-blue, and onprem-cadvisor and onprem-node scraping containers on onprem-proj-mgmt, the last of them carrying an environment on-prem label',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-09-grafana-infra.png',
+            state: 'One chart plots both machines on the same axis',
+            alt: 'The ShimonVault infra health dashboard in Grafana over the last hour: CPU usage 2.29 percent, memory usage 61.0 percent, 8 running containers and 0.222 requests a second, above a CPU Over Time panel plotting two series on one axis, onprem-proj-mgmt and shimonvault-app-blue, and an HTTP request rate panel split into 2xx, 4xx and 5xx',
+          },
+        },
+        {
+          id: 'alerting',
+          tab: 'Alert lifecycle',
+          label: 'Scenario 6: NodeDown firing and resolving',
+          lead:
+            'Four rules cover high CPU, high memory, a dead node exporter and a dead FastAPI, and `NodeDown` is `up{job="ec2-nodes"} == 0` held for a minute. One Alertmanager receiver posts to Slack and to the Telegram relay with `send_resolved: true`, so **the recovery arrives on the same two channels as the alarm** rather than leaving somebody to notice it stopped. A `NodeDown` on an instance also inhibits the other three for that instance, because a machine that is gone trips all four and only one of them is the news.',
+          stillsNote:
+            'These two are from different sittings. The rule list is from the 9 September session, and the Slack channel is from the same evening as the clips, twenty minutes after the last of them.',
+          before: {
+            src: '/projects/shimon-vault/demo-10-prometheus-rules.png',
+            state: 'Four rules are loaded and none of them is active',
+            alt: 'The Prometheus alerts page showing a single rule group named shimonvault, loaded from /etc/prometheus/rules/shimonvault.yml and badged INACTIVE with a count of 4, listing HighCPU, HighMemory, NodeDown and FastAPIDown',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-11-infra-alert.png',
+            state: 'NodeDown fires at 7:53 and resolves itself by 8:03',
+            alt: 'The shimonvault-alerts Slack channel: a red [ALERT] EC2 node down on shimonvault-app-blue posted at 7:53 PM, reading that the node exporter has been unreachable for one minute at critical severity, then a green [RESOLVED] of the same alert at 8:03 PM, and under both a TEST NOTIFICATION triggered by admin reading that if you can read this in Slack and Telegram, alerting works',
+          },
+        },
+        {
+          id: 'deploy',
+          tab: 'Deploy',
+          label: 'Scenario 7: One-command provisioning and blue/green deploy',
+          lead:
+            '`scripts/deploy.sh` is one command: Terraform apply, the Cloudflare record, the ALB health gate, the on-premises replica, the seeded accounts, then an Ansible pass that checks the stack from the inside. It ends by printing every Terraform output. Shipping a change afterwards is the CD workflow, which runs on `workflow_dispatch` **and nothing else**, because on `push` it used to rebuild live infrastructure after every commit.',
+          // These two stills are not from the separate session the section
+          // note describes. The outputs shot is a frame of this very clip, and
+          // the CD run is a GitHub page, so the section's caveat would be wrong
+          // on both of them.
+          stillsNote:
+            'The first of these is a full-resolution frame of the run above rather than a separate capture. The second is the GitHub Actions run for a later deploy.',
+          clipNote:
+            'The terminal panel from one full `scripts/deploy.sh` run, 6 minutes 32 seconds of it. Kept at 1440 wide so the output survives the downscale.',
+          clip: {
+            src: '/projects/shimon-vault/clip-05-provision.mp4',
+            width: 1440,
+            height: 746,
+            poster: '/projects/shimon-vault/clip-05-provision.jpg',
+            speed: '25x',
+            alt: 'A deploy.sh run scrolling through Terraform apply, an SSH config rewrite, the Cloudflare DNS update, the bastion and ALB health waits, the demo user seed, node_exporter installation, the PostgreSQL replica and its logical replication subscription, an Ansible verification play, and the Terraform outputs at the end',
+          },
+          before: {
+            src: '/projects/shimon-vault/demo-12-deploy-outputs.jpg',
+            state: 'The run ends on the Terraform outputs with nothing degraded',
+            alt: 'The tail of a deploy.sh run: Terraform outputs listing the ACM certificate ARN, the ALB DNS name and listener ARN, the blue and green target group ARNs, app_fqdn as shimonvault.junhanshin.com, app_green_private_ip as not deployed, the bastion IP, the Lambda and SNS ARNs and the RDS endpoint, followed by a line reading deployment finished with no degraded steps',
+          },
+          after: {
+            src: '/projects/shimon-vault/demo-13-cd-run.png',
+            state: 'The CD run switches the ALB and retags in 12m 28s',
+            alt: 'A successful GitHub Actions run of CD Blue/Green Deploy on the ShinJunhan/shimon-vault repository, total duration 12 minutes 28 seconds, with the job named Build, Push, Deploy Green, Switch ALB (terraform), Retag, three deprecation warnings and one build artifact',
+          },
+        },
+      ],
+      // No separate demo video: the recordings the clips are cut from are my
+      // own working captures rather than a presentation, and the tabs already
+      // carry every part of them worth watching.
+      video: null,
+    },
+    folderStructure: `
+shimon-vault/
+├── app/                          FastAPI application (Docker image root)
+│   ├── main.py                   lifespan, routers, SPA fallback, /health
+│   ├── config.py                 every setting read from the environment
+│   ├── database.py               lazy write and read engines, psycopg2 only
+│   ├── models.py                 5 tables, UUID keys, 13 audit event types
+│   ├── auth.py                   bcrypt, JWT, require_role() dependency
+│   ├── rate_limit.py             the one shared slowapi limiter
+│   ├── routers/                  6 routers, 26 endpoints
+│   │   ├── auth_router.py        register, login, logout
+│   │   ├── docs_router.py        upload, list, download, delete, versions
+│   │   ├── meetings_router.py    create, list, update, cancel, join, archive
+│   │   ├── audit_router.py       feed, incidents, my-activity
+│   │   ├── admin_router.py       dashboard summary, timeseries, infra
+│   │   └── demo_router.py        the 5 one-click attack simulations
+│   ├── services/                 S3, DynamoDB, EventBridge, Prometheus, notify
+│   ├── middleware/
+│   │   └── audit_middleware.py   logs every request, counts, suspends, alerts
+│   └── Dockerfile                3 stages: Vite build, pip build, slim runtime
+├── frontend/                     React SPA, built into the image
+│   └── src/                      Login, Docs, Meetings, Console, api.js
+├── terraform/                    27 files, 90 resource blocks
+│   ├── vpc.tf                    VPC, 4 subnets, IGW, route tables
+│   ├── alb.tf                    ALB, blue and green target groups, 80 and 443
+│   ├── acm.tf                    the cert the 443 listener serves, DNS-validated
+│   ├── app_ec2_blue.tf           the live instance
+│   ├── app_ec2_green.tf          created only when deploy_green = true
+│   ├── asg.tf                    launch template, scale policies, CPU alarms
+│   ├── rds.tf                    PostgreSQL 16, logical replication parameters
+│   ├── s3.tf                     docs and reports, encrypted, versioned
+│   ├── dynamodb.tf               audit-log, incidents, meetings
+│   ├── lambda.tf                 5 functions, zipped at apply time
+│   ├── sns.tf                    security-alert, infra-alert, meeting-reminders
+│   ├── eventbridge.tf            the static warm-up rule
+│   ├── iam.tf                    2 roles, one inline policy per Lambda
+│   ├── security_groups.tf        5 groups, referencing each other
+│   ├── nat_instance.tf           t3.micro with iptables masquerade
+│   ├── bastion.tf                SSH from my IP only
+│   ├── cloudwatch.tf             high CPU, status check, ALB 5xx
+│   ├── backend.tf                the one-time state bootstrap, documented
+│   └── templates/
+│       └── app_user_data.sh.tpl  boot: Tailscale, Docker, .env, container
+├── lambda/                       5 handlers, python3.12
+│   ├── block_ip/                 NACL deny rule, incident record, notify
+│   ├── log_incident/             SNS message to the incidents table
+│   ├── validate_file/            magic-byte check on S3 upload
+│   ├── meeting_notify/           fires 10 minutes before a meeting
+│   ├── meeting_expire/           fires at meeting end
+│   └── shared/notification.py    the Slack and Telegram helper
+├── monitoring/                   on-premises stack, docker compose
+│   ├── prometheus/rules/         4 alert rules
+│   ├── prometheus/targets/       file_sd JSON, rewritten by deploy.sh
+│   ├── alertmanager/             Slack receiver plus the Telegram webhook
+│   ├── grafana/dashboards/       infra_health, auditstream
+│   └── telegram_relay/           the bridge Alertmanager posts to
+├── ansible/
+│   ├── inventory.aws_ec2.yml     dynamic inventory, grouped by the Role tag
+│   ├── playbooks/                setup_app, setup_monitoring, verify_stack
+│   └── roles/                    docker_app, monitoring_stack, cloudwatch_agent
+├── scripts/
+│   ├── deploy.sh                 apply to healthy in one command
+│   ├── destroy.sh                teardown, then verify 9 resource types
+│   ├── generate_env.sh           app/.env from Terraform outputs
+│   ├── setup_replica.sh          RDS to on-premises logical replication
+│   ├── fetch_docker_certs.sh     the Docker TLS certs Portainer connects with
+│   ├── update_ssh_config.sh      rewrites ~/.ssh/config for the new bastion
+│   ├── package_lambdas.sh        zips the five functions with dependencies
+│   └── simulate_*.sh|.py         four of the five demos, from a terminal
+├── db/                           schema.sql, schema_from_rds.sql, seed.sql
+├── tests/                        pytest, SQLite in memory, no AWS needed
+└── .github/workflows/            ci.yml and cd.yml
+`,
     decisions: [
       {
-        // placeholder
-        keyword: 'Short keyword',
-        title: 'The decision stated in one sentence.',
-        chose: 'The option that shipped',
-        over: 'The option that did not',
-        why: 'One or two sentences on the trade-off actually being made, and what it cost.',
+        keyword: 'Response in Lambda',
+        title: 'The automated response runs in Lambda behind SNS rather than in a service on a machine.',
+        glyph: 'pipeline',
+        chose: 'Five **Lambda functions** subscribed to two SNS topics',
+        over: 'a long-running recovery controller on a VM, the way the team project did it',
+        why: 'The thing that responds to a failure should not share a failure domain with the thing that failed. A controller on the monitoring host is one more process that can be down at exactly the moment it is needed. The trade is real: five cold starts, five inline IAM policies, and no shell to open when a handler misbehaves, so **CloudWatch Logs is the only way to see what happened**.',
+      },
+      {
+        keyword: 'Security groups cannot deny',
+        title: 'The automatic IP block is a network ACL rule, because a security group has no way to express one.',
+        glyph: 'route',
+        chose: 'A **DENY entry in a network ACL**, at the lowest free rule number between 1 and 99',
+        over: 'adding a deny rule to the application security group',
+        why: 'A security group has allow rules only. There is no such thing as a security group deny, which I found out by writing the first version of this handler as though there were. Network ACLs are **stateless and ordered by rule number**, which is exactly what an automatic block needs, and reserving 1 to 99 for auto-blocks keeps them clear of the ordinary allow rules at 100 and above.',
+      },
+      {
+        keyword: 'One writer, one exception',
+        title: 'Every request is logged by one middleware, with a named exception for the console watching itself.',
+        glyph: 'channels',
+        chose: 'An `AuditMiddleware` added last, so it wraps **every route as the outermost layer**',
+        over: 'a logging call inside each handler',
+        why: 'Routes forget. Middleware cannot. It also gets the status code and the `X-Forwarded-For` address for free, which is what turns 401, 403 and 429 into security events with no extra work anywhere. The exception arrived later and is written down as `_OBSERVER_PATHS`. The console polls four read-only endpoints every four seconds to draw itself, which put **around 40 self-generated rows a minute** into the trail and pushed a real attack burst out of the live feed within a couple of minutes, so a **successful** poll on those four paths is no longer audited. A failed one still is, because a 401 or a 429 against admin telemetry is exactly the event this trail exists to catch. The older cost is unchanged: a successful request has no status code to classify it by, so the middleware **guesses an event type from the path**, which is why a scanner asking for `/openai.json` is filed in the screenshots above as a login success.',
+      },
+      {
+        keyword: 'Green before ready',
+        title: 'The health endpoint returns 200 before the database is reachable, and says so in the body.',
+        glyph: 'process',
+        chose: '`/health` answering **200 immediately**, with `init_db()` retrying in a daemon thread',
+        over: 'initialising the schema during application startup',
+        why: 'RDS takes 30 to 60 seconds to answer after the instance boots, and the ALB marks a target unhealthy long before that. Blocking startup on the database meant a deploy **never went green**. The retry runs 20 times at 15 seconds and the health body carries a `db` field that reads `initialising`, then `ok`. The load balancer reads the status code and a person reads the body, which keeps the compromise visible instead of hidden.',
+      },
+      {
+        keyword: 'Switch is a variable',
+        title: 'Blue/green traffic moves by re-applying Terraform, not by calling the AWS CLI.',
+        glyph: 'branch',
+        chose: '`terraform apply -var active_color=green`, with the listener target **held in state**',
+        over: '`aws elbv2 modify-listener` from the workflow',
+        why: 'A CLI switch is drift. The next `terraform apply` puts traffic back on blue and nobody knows why, which is the kind of failure that shows up a week later. Making the listener target a variable means the switch is **recorded where the infrastructure is recorded**, and the pipeline only reaches that step after the green target group has reported healthy on its own health check.',
+      },
+      {
+        keyword: 'Deploy on purpose',
+        title: 'The deploy workflow runs only when somebody asks for it, while the checks still run on every push.',
+        glyph: 'note',
+        chose: '`workflow_dispatch` on `cd.yml`, with `ci.yml` left on **every push to every branch**',
+        over: 'the `on: push` to `main` trigger it shipped with',
+        why: 'CD runs `terraform apply`, so an automatic push trigger meant every commit to `main` rebuilt live AWS infrastructure. The commit that hurt was the one right after a `terraform destroy`: the environment came back on its own and **started billing again with nobody watching**. Linting and testing cost nothing per push and belong there, and applying infrastructure costs money and belongs behind a decision, so the two triggers were separated rather than the pipeline being slowed down.',
+      },
+      {
+        keyword: 'Demo inside the app',
+        title: 'The five attack scenarios are endpoints in the product rather than scripts on my laptop.',
+        glyph: 'inject',
+        chose: 'Admin-only `/demo/*` routes, master-switched by `DEMO_ENABLED`',
+        over: 'load-testing profiles and shell scripts run from outside, the way the team project did it',
+        why: 'A button that fires real logins at the real login endpoint proves the audit trail on screen is the application running rather than a fixture. It is also **a vulnerability shaped like a feature**, which is why every route requires the admin role on top of the master switch, and why the attacker address defaults to the RFC 5737 documentation range. The shell versions stay in `scripts/` for when the app itself is the thing that is broken.',
+      },
+      {
+        keyword: 'Read the file, not the name',
+        title: 'Uploads are validated by their magic bytes rather than by their extension.',
+        glyph: 'depth',
+        chose: 'A Lambda reading the **first 512 bytes** on every S3 `ObjectCreated:Put`',
+        over: 'trusting the file extension or the Content-Type header',
+        why: 'Renaming `malware.exe` to `report.pdf` costs an attacker nothing. A single ranged GET costs me one S3 call and catches **PE headers, ELF headers, shebangs and tar archives** regardless of what the file claims to be. The trade is a gap I left open on purpose: the file is already in the bucket when the check runs, so the Lambda deletes it afterwards where a quarantine bucket would have stopped it landing at all.',
       },
     ],
     links: {
-      github: null, // placeholder
-      terraform: null,
+      github: 'https://github.com/ShinJunhan/shimon-vault',
+      terraform: 'https://github.com/ShinJunhan/shimon-vault/tree/main/terraform',
       presentation: null,
     },
     reflection: {
-      // placeholder
-      learned: 'What the project taught me.',
-      differently: "What I'd do differently with the same brief again.",
+      learned: [
+        'Building the same brief twice showed me which parts of Lock-N-Lock I understood and which parts I had only approved. The **architecture** I could redraw from memory. The **AWS specifics** I could not. A security group has no deny rule, which is why the automatic block ended up in a network ACL. bcrypt silently stops at 72 bytes, so every password is hashed once before it is hashed. `asyncpg` and the synchronous SQLAlchemy engine fail at runtime rather than at import, with a `MissingGreenlet` error that says nothing about the driver. Alertmanager will not expand an environment variable inside its own config file, so the compose entrypoint writes the Slack URL to a file first. The larger lesson was about **startup order**: the load balancer decides an instance is dead long before RDS is ready to answer, so `/health` had to stop depending on the database and start reporting on it instead. The last one was about **who ends TLS**. A proxied Cloudflare record terminates HTTPS itself and lets the load balancer stay on port 80. A DNS-only record does not, so the ALB has to present a certificate of its own, which is the whole of `acm.tf`: an ACM certificate, a validation record written into the same Cloudflare zone, and a 443 listener that depends on the **validation** resource rather than on the certificate, so it is never created pointing at a certificate AWS has not confirmed.',
+        "The other half of it came from my own tooling rather than from AWS. A shell script reports whatever I tell it to report, and for most of this build I told it to report success. `fetch_docker_certs.sh` wrote the Prometheus scrape targets through a heredoc that left the host address out of the JSON and printed it in the green check mark underneath, so every run wrote an empty target and announced the correct one. `deploy.sh` guards most of its steps so that one failure does not abandon the bring-up, and it used to exit `0` on a run where the application was down, seeding had failed and replication had failed. Both are repaired: the certificate script reads the target file back, and a `WARNINGS` array collects every degraded step, names each one and exits non-zero. The script that had it right from the start is `setup_replica.sh`, which runs a **verification query after every statement** and retries ten times before it gives up, which is why a replication failure was visible the day it happened while the monitoring corruption stayed quiet for hours. **A success message is a claim, and it needs evidence**, starting with the messages I wrote myself.",
+      ],
+      differently: [
+        'The download limiter looked correct for days and counted the wrong thing. slowapi keys on the **resolved URL** by default, so `/docs/download/doc-0001` and `/docs/download/doc-0002` are different counters and a bulk download across 50 ids never reaches 2. `key_style="endpoint"` keys on the route function instead, and I only found it because repeating one id tripped the limit instantly. The next thing I would fix is that **all three counters live in module-level dictionaries**, so two application instances count separately and a restart forgets everything. The SNS publish that would invoke `block_ip` from the login path is still a `TODO`, which leaves that function deployed, subscribed and authorised with no live trigger. And two of the four files in `tests/` are copies of router source rather than tests, so the real suite is **15 tests over auth and audit** and the 50 percent coverage floor is doing more work than it should have to. The demo has an ordering bug of its own. Act 3 suspends the seeded **viewer** account on purpose, and Act 5 signs in as that same account, so running the scenarios in order leaves the traffic flood refused at the door and the console reporting `Could not start simulation`. The defence is working. The seed data is what is wrong, and giving each act its own account is a few lines in `db/seed.sql` that I have not written.',
+        "The infrastructure gaps that are still open all sit outside the request path. `app_user_data.sh.tpl` opens with `set -euo pipefail` and calls `tailscale up` on **line 25**, so an expired auth key aborts every step below it and leaves the instance with no Docker TLS certificates, no environment file, no Swarm and no container, and the load balancer answering **502**. Tailscale earns a certificate subject alternative name and an optional mount, and the application serves traffic without either, so that line belongs behind a warning rather than a hard stop. `prometheus_url` is the same fault from the other direction: `variables.tf` carries a default address, my tfvars carries the live one, and `cd.yml` passes neither, so a pipeline deploy bakes the default into the image while a local run bakes in the truth. With two instances behind the listener, the console read Prometheus correctly on roughly **half of all page loads**, depending on which one answered. The third is identity: the scrape targets, the Portainer endpoint and the replica lookup are keyed to a mesh address that is reassigned whenever an instance is replaced, and the template joins the mesh as `${project_name}-app-blue` whichever colour renders it, so a blue and green release points monitoring at a terminated machine every time it succeeds.",
+        "The console reads its own audit trail two different ways, and only one of them is right. `audit_router._recent_events` asks the `event_type-index` GSI for the newest rows per event type with `ScanIndexForward=False` and merges them, because the base table is keyed on a random uuid and cannot be range-queried by time at all. `admin_router._scan_recent_events` still calls `scan(Limit=500)` and sorts what comes back, which is **the first 500 rows DynamoDB happens to walk** rather than the newest 500. So the live feed is trustworthy, and the six counters above it and the time series beside them are computed from an arbitrary page. Pointing both readers at the same query is the fix, and it is the last piece of making the demo show what actually happened.",
+      ],
     },
   },
 
@@ -4221,56 +6455,275 @@ project3-hailcast-manifests/
     slug: 'cloud-resume-challenge',
     group: 'individual',
     title: 'Cloud Resume Challenge',
-    // placeholder — the descriptive page heading. `title` above stays the
-    // short name the sidebar shows and the eyebrow repeats.
-    fullTitle:
-      'Serverless Resume Site on AWS, Provisioned End to End with Terraform',
-    accent: 'indigo',
-    // placeholder
-    period: 'TBD', // placeholder
+    // The descriptive page heading. It names both halves, because the split
+    // across two providers is the thing that makes this build different from
+    // the canonical one.
+    fullTitle: 'Static Delivery on Cloudflare Pages, Serverless Counter on AWS',
+    accent: 'teal',
+    // Start month only. The infrastructure is written and not yet applied, so
+    // there is no end date to give and inventing one would be the first
+    // fabricated figure on this site.
+    period: 'September 2026',
     glance: {
-      why: 'The Cloud Resume Challenge is usually finished as a web page. Doing it as infrastructure instead, with every piece in Terraform and nothing clicked in the console, proves the whole delivery loop rather than just the front end.',
-      how: 'A static site on S3 behind CloudFront and Route 53, a visitor-counter API on Lambda and DynamoDB, all defined in Terraform and shipped by GitHub Actions.',
-      result: 'Placeholder for the outcome: the deploy time and the running cost are the figures worth stating here. Replace once the metrics above are real.',
+      why: 'The Cloud Resume Challenge is usually finished as a standalone résumé page. This domain already had a landing page doing that job and a workspace doing the other, so the challenge was rebuilt around what was genuinely missing, which was a delivery pipeline and something worth counting.',
+      how: 'Both apps build in GitHub Actions and deploy to Cloudflare Pages. The visitor counter is a Lambda function URL over DynamoDB, defined in Terraform and applied by the same pipeline through a role assumed with OIDC.',
+      // No `result` key, and its absence is the point. The Glance renders only
+      // the lines it finds, so this reads as two lines rather than as a third
+      // line making a claim nothing has measured yet.
     },
-    // placeholder
-    role: 'Solo build, end to end: the static site, the visitor-counter API behind it, the Terraform that stands it all up, and the pipeline that ships it.',
-    // placeholder
-    context:
-      'The Cloud Resume Challenge, done as infrastructure rather than as a web page, with every piece defined in Terraform and deployed by CI and no console clicking anywhere in the path. The point was to prove the whole loop, not just the front end.',
+    role: "Solo build, end to end: the Terraform, the Lambda handler, the IAM policies, the two GitHub Actions workflows, and the terminal command on the landing page that reads the counter back.",
+    context: {
+      notes: [
+        {
+          size: 'lead',
+          label: 'Why it changed shape',
+          text: 'The canonical challenge builds a résumé page on S3 behind CloudFront. This domain already had a landing page that is a résumé, so a third surface would have left two pages doing one job and a recruiter guessing which link was the real one.',
+        },
+        {
+          size: 'lead',
+          label: 'What was actually missing',
+          text: 'Neither app in this repository had a deployment pipeline at all. Both built to a local `dist/` directory and stopped there, so the delivery half of the challenge had somewhere real to go and became the hosting this site runs on rather than a demo beside it.',
+        },
+        {
+          size: 'support',
+          label: 'Why there is no CloudFront',
+          text: 'DNS for this domain is already on Cloudflare and already serving another project, so a Route 53 zone would have meant repointing nameservers, breaking that project, and paying monthly for a zone that duplicates one I have.',
+        },
+        {
+          size: 'support',
+          label: 'What the number counts',
+          text: 'The count goes up when someone opens the terminal on the landing page and runs the `visitors` command, so it measures people who went looking rather than page loads.',
+        },
+        {
+          size: 'support',
+          label: 'Where it stops',
+          text: 'The infrastructure is written, formatted and validated, and it has not been applied. There is no deploy time, no measured cost and no visitor number on this page because none of them exist yet.',
+        },
+      ],
+    },
+    // Every figure here is counted from the repository rather than measured
+    // against a running system, because nothing is running yet: 14 `resource`
+    // blocks across infra/*.tf and infra/bootstrap/*.tf, one action in the
+    // execution role's data-plane statement, five AWS services declared, two
+    // workflow files, and no credential of any kind in the repository.
+    //
+    // The figures a deploy would produce are deliberately absent. Deploy time,
+    // billed cost and visitor count go in once they have been observed.
     metrics: [
-      { size: 'wide', value: '00', label: 'AWS resources', hint: 'AWS resources in Terraform' }, // placeholder
-      { size: 'square', value: '0 min', label: 'Deploy time' }, // placeholder
-      { size: 'square', value: '$0.00', label: 'Run cost', hint: 'Monthly run cost' }, // placeholder
+      {
+        size: 'big',
+        value: '14',
+        label: 'Terraform Resource Blocks',
+        detail: '6 in the counter backend, 8 in the bootstrap',
+      },
+      {
+        size: 'square',
+        value: '1',
+        label: 'Data-Plane Action',
+        hint: 'The execution role can call dynamodb:UpdateItem on one table, and nothing else',
+      },
+      {
+        size: 'square',
+        value: '0',
+        label: 'Stored AWS Keys',
+        hint: 'CI assumes a role through GitHub OIDC, so there is no key pair to store or rotate',
+      },
+      {
+        size: 'wide',
+        value: '2',
+        label: 'Workflows',
+        detail: 'One plans and applies, one builds and deploys',
+      },
+      {
+        size: 'square',
+        value: '5',
+        label: 'AWS Services',
+        hint: 'Lambda, DynamoDB, IAM, CloudWatch Logs and S3',
+      },
     ],
     stack: [
-      { category: 'Cloud/Infrastructure', items: ['AWS', 'S3', 'CloudFront', 'Route 53'] },
+      { category: 'Hosting/CDN', items: ['Cloudflare Pages'] },
       { category: 'Compute/Data', items: ['Lambda', 'DynamoDB'] },
-      { category: 'IaC/Automation', items: ['Terraform'] },
+      { category: 'Identity/Monitoring', items: ['IAM', 'GitHub OIDC', 'CloudWatch'] },
+      { category: 'IaC/Automation', items: ['Terraform', 'S3'] },
       { category: 'CI/CD', items: ['GitHub Actions'] },
+      { category: 'Application', items: ['Python', 'React', 'Vite'] },
     ],
-    architecture: null,
+    architecture: [
+      {
+        tab: 'Delivery',
+        caption:
+          'Two-provider delivery pipeline',
+        alt: 'A push to the main branch triggers two GitHub Actions workflows. pages.yml runs npm ci and a build, then deploys to two Cloudflare Pages projects serving junhanshin.com and devops.junhanshin.com, which visitors reach over HTTPS. infra.yml runs format, validate, plan and apply, authenticating to AWS in us-east-1 by assuming an OIDC role with sts:AssumeRoleWithWebIdentity, which then applies the counter backend of Lambda, DynamoDB and logs.',
+        diagram: {
+          width: 1020,
+          height: 470,
+          zones: [
+            { id: 'gh', label: 'GitHub Actions', x: 16, y: 110, w: 300, h: 300, tone: 'onprem' },
+            { id: 'cf', label: 'Cloudflare Pages', x: 380, y: 110, w: 300, h: 140, tone: 'cloud' },
+            { id: 'aws', label: 'AWS · us-east-1', x: 380, y: 290, w: 620, h: 150, tone: 'cloud' },
+          ],
+          nodes: [
+            { id: 'dev', label: 'Push to main', glyph: 'git', x: 90, y: 60, w: 150, h: 46 },
+            { id: 'pages_wf', label: 'pages.yml', sub: 'npm ci · vite build', glyph: 'pipeline', x: 166, y: 175, w: 216, h: 56 },
+            { id: 'infra_wf', label: 'infra.yml', sub: 'fmt · validate · plan · apply', glyph: 'pipeline', x: 166, y: 320, w: 250, h: 56 },
+            { id: 'root_site', label: 'junhanshin.com', glyph: 'cdn', x: 530, y: 170, w: 224, h: 44 },
+            { id: 'devops_site', label: 'devops.junhanshin.com', glyph: 'cdn', x: 530, y: 218, w: 250, h: 44 },
+            { id: 'visitor', label: 'Visitors', glyph: 'user', x: 858, y: 170, w: 150, h: 46 },
+            { id: 'oidc', label: 'OIDC role', sub: 'AssumeRoleWithWebIdentity', glyph: 'key', x: 520, y: 355, w: 250, h: 56 },
+            { id: 'counter_stack', label: 'Counter backend', sub: 'Lambda · DynamoDB · logs', glyph: 'service', x: 838, y: 355, w: 244, h: 56 },
+          ],
+          edges: [
+            { from: 'dev', to: 'pages_wf' },
+            // Around the left of the workflow zone rather than through
+            // pages.yml, which sits directly between the two.
+            { from: 'dev', to: 'infra_wf', via: [[40, 60], [40, 320]] },
+            { from: 'pages_wf', to: 'root_site', label: 'wrangler' },
+            { from: 'pages_wf', to: 'devops_site' },
+            { from: 'infra_wf', to: 'oidc', label: 'OIDC' },
+            { from: 'oidc', to: 'counter_stack', label: 'apply', dash: true },
+            { from: 'visitor', to: 'root_site', label: 'HTTPS' },
+          ],
+          captions: [
+            {
+              x: 16,
+              y: 440,
+              tone: 'accent',
+              text: 'One push to main runs both workflows. A pull request runs only the plan.',
+            },
+            {
+              x: 16,
+              y: 462,
+              text: 'The two providers share no credential: Cloudflare takes a scoped API token, AWS takes a role that expires with the job.',
+            },
+          ],
+        },
+      },
+      {
+        tab: 'Counter path',
+        caption:
+          'Visitor counter request path',
+        alt: 'The terminal popup in the browser runs the visitors command, issuing a GET to a Lambda function URL with authorisation type NONE and a CORS allow-list. The function URL invokes the counter function, running Python 3.13 on arm64 at 128 MB, which calls UpdateItem with an ADD expression against the crc-counter DynamoDB table and writes to a log group with 14-day retention. An execution role scoped to dynamodb:UpdateItem is what the function assumes.',
+        diagram: {
+          width: 1000,
+          height: 430,
+          zones: [
+            { id: 'browser', label: 'Browser', x: 16, y: 70, w: 260, h: 200, tone: 'onprem' },
+            { id: 'aws', label: 'AWS · us-east-1', x: 330, y: 40, w: 650, h: 345, tone: 'cloud' },
+          ],
+          nodes: [
+            { id: 'terminal', label: 'Terminal popup', sub: 'visitors', glyph: 'wrench', x: 146, y: 175, w: 210, h: 56 },
+            { id: 'furl', label: 'Function URL', sub: 'AUTH_TYPE NONE · CORS', glyph: 'cloud', x: 470, y: 130, w: 224, h: 56 },
+            { id: 'lambda', label: 'Counter function', sub: 'Python 3.13 · arm64 · 128 MB', glyph: 'service', x: 470, y: 250, w: 254, h: 60 },
+            { id: 'ddb', label: 'crc-counter', sub: 'ADD visits :increment', glyph: 'database', x: 812, y: 250, w: 224, h: 60 },
+            { id: 'logs', label: 'Log group', sub: '14-day retention', glyph: 'monitor', x: 812, y: 130, w: 204, h: 52 },
+            { id: 'role', label: 'Execution role', sub: 'dynamodb:UpdateItem', glyph: 'key', x: 470, y: 350, w: 232, h: 52 },
+          ],
+          edges: [
+            { from: 'terminal', to: 'furl', label: 'GET' },
+            { from: 'furl', to: 'lambda' },
+            { from: 'lambda', to: 'ddb', label: 'UpdateItem' },
+            { from: 'lambda', to: 'logs', dash: true, via: [[694, 250], [694, 130]] },
+            { from: 'role', to: 'lambda', dash: true },
+          ],
+          captions: [
+            {
+              x: 16,
+              y: 400,
+              tone: 'accent',
+              text: 'The command runs once per page load. The answer is held for the life of the page, because the endpoint increments on every request.',
+            },
+            {
+              x: 16,
+              y: 422,
+              text: 'The role carries one data-plane action. The function cannot read the table, scan it, or delete from it.',
+            },
+          ],
+        },
+      },
+    ],
     media: null,
     decisions: [
       {
-        // placeholder
-        keyword: 'Short keyword',
-        title: 'The decision stated in one sentence.',
-        chose: 'The option that shipped',
-        over: 'The option that did not',
-        why: 'One or two sentences on the trade-off actually being made, and what it cost.',
+        keyword: 'Pages over CloudFront',
+        title: 'Static delivery runs on Cloudflare Pages rather than S3 behind CloudFront.',
+        glyph: 'route',
+        chose: '**Cloudflare Pages** for both apps',
+        over: 'S3, CloudFront, ACM and a Route 53 hosted zone',
+        why: 'DNS for this domain is already on Cloudflare and already serving another project. Moving it to Route 53 would have broken that project and left a hosted zone billing every month for something Cloudflare already does. This is the one requirement I dropped rather than adapted, and building the CloudFront stack is a large part of what the challenge is usually understood to teach.',
+      },
+      {
+        keyword: 'No third surface',
+        title: 'The counter went onto the landing page that already existed.',
+        glyph: 'branch',
+        chose: 'The counter on `junhanshin.com`, read by the terminal',
+        over: 'A separate `resume.junhanshin.com`',
+        why: 'The landing page is already a résumé, so a second one would have left two surfaces doing one job. The larger gain is that the infrastructure became **what actually serves this site** rather than a demo standing beside it, which is a stronger thing for the page to be able to say.',
+      },
+      {
+        keyword: 'OIDC over keys',
+        title: 'CI assumes a role, so no AWS key is stored anywhere in the repository.',
+        glyph: 'channels',
+        chose: 'A **GitHub OIDC provider** and a role trusting two subjects',
+        over: 'An access key pair held in repository secrets',
+        why: 'The trust policy names `refs/heads/main` and `pull_request` rather than the repository as a whole, so a push applies and a pull request only plans. A fork reaches neither subject, because GitHub withholds `id-token: write` from workflows it triggers.',
+      },
+      {
+        keyword: 'S3-native locking',
+        title: 'State locking uses the S3 lock file instead of a DynamoDB table.',
+        glyph: 'process',
+        chose: '`use_lockfile = true` on the S3 backend',
+        over: 'The `dynamodb_table` lock most write-ups still use',
+        why: 'Terraform 1.11 made S3-native locking generally available and deprecated the DynamoDB argument. The lock is now an object written beside the state file, which removes a resource, a line on the bill, and one more thing to forget to delete.',
+      },
+      {
+        keyword: 'Provisioned 5/5',
+        title: 'The counter table is provisioned at five units rather than billed on demand.',
+        glyph: 'note',
+        chose: '**5 read and 5 write units**, with no autoscaling attached',
+        over: 'On-demand billing',
+        why: 'On-demand would have cost fractions of a cent at this volume, which is a different claim from costing nothing. Five units sit inside the **Always Free allowance of 25**, so the bill is zero by arithmetic. Autoscaling is left off deliberately, because it is the one thing that would quietly carry the table past that line under load.',
+      },
+      {
+        keyword: 'Concurrency cap',
+        title: 'Reserved concurrency is the control that bounds abuse of a public endpoint.',
+        glyph: 'inject',
+        chose: '**Reserved concurrency of 5** on the function',
+        over: 'Treating the CORS allow-list as the limit',
+        why: 'Browser JavaScript cannot sign a request and there is no CloudFront distribution to hold an origin access control, so the function URL is public. CORS stops another site reading the response and does nothing about `curl`. The concurrency cap is the limit that actually holds, and it costs a **429 to a real visitor** during a burst.',
+      },
+      {
+        keyword: 'Written-out IAM',
+        title: 'The deploy role carries a hand-written policy instead of a managed one.',
+        glyph: 'depth',
+        chose: 'Seven statements, each scoped to one constructed ARN',
+        over: '`PowerUserAccess`, or an inline wildcard',
+        why: '`iam:PassRole` is the dangerous entry in that list, and naming a single role is what stops CI handing any identity in the account to a Lambda. The cost is real and worth stating: adding a resource means adding its actions first, and the failure mode is an apply that dies on **AccessDenied against a policy that looks entirely correct**.',
       },
     ],
     links: {
-      github: null, // placeholder
-      terraform: null,
+      github: 'https://github.com/ShinJunhan/junhanshin-portfolio',
+      terraform: 'https://github.com/ShinJunhan/junhanshin-portfolio/tree/main/infra',
       presentation: null,
     },
-    reflection: {
-      // placeholder
-      learned: 'What the project taught me.',
-      differently: "What I'd do differently with the same brief again.",
-    },
+    // Six files, read out of this repository rather than copied into
+    // content/. Three are the counter itself, one is the handler, one is the
+    // policy that decides what CI may do, and one is the pipeline that runs
+    // it. `versions.tf` and `variables.tf` are absent for the reason the other
+    // projects omit their own scaffolding files: they declare no resources and
+    // carry none of the argument.
+    terraform: [
+      { path: 'infra/lambda.tf', content: crcLambdaTf },
+      { path: 'infra/dynamodb.tf', content: crcDynamodbTf },
+      { path: 'infra/iam.tf', content: crcIamTf },
+      { path: 'backend/functions/counter/handler.py', content: crcHandler },
+      { path: 'infra/bootstrap/deploy_policy.tf', content: crcDeployPolicyTf },
+      { path: '.github/workflows/infra.yml', content: crcInfraWorkflow },
+    ],
+    // No reflection section until the thing has been applied and run. What a
+    // project taught is answered after it exists, and the section drops out on
+    // its own when the key is absent.
+    reflection: null,
   },
 
   {
@@ -4281,7 +6734,7 @@ project3-hailcast-manifests/
     // short name the sidebar shows and the eyebrow repeats.
     fullTitle:
       'Containerized E-Commerce Workload on EKS with GitOps Delivery',
-    accent: 'forest',
+    accent: 'plum',
     // placeholder
     period: 'TBD', // placeholder
     glance: {

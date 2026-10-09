@@ -58,6 +58,34 @@ export function techIcon(label) {
   return null
 }
 
+// How a logo needs help on the dark theme, where every mark sits on a navy
+// circle. Logos drawn in black or near-black disappear there:
+//   invert   single-colour marks, redrawn in white
+//   backing  multi-colour marks, given a light circle so their own colours stay
+// Keyed by icon file name, so it follows the file rather than the label.
+const DARK_TONE = {
+  github: 'invert',
+  flask: 'invert',
+  locust: 'invert',
+  makefile: 'invert',
+  tailscale: 'invert',
+  'node-exporter': 'invert',
+  ansible: 'invert',
+  'amazon-linux': 'backing',
+  aws: 'backing',
+  bandit: 'backing',
+  trivy: 'backing',
+  helm: 'backing',
+  opencost: 'backing',
+  sqlalchemy: 'backing',
+  bash: 'backing',
+}
+
+// The dark-theme treatment for a label's logo, or undefined when it reads fine.
+export function techTone(label) {
+  return DARK_TONE[OVERRIDES[techSlug(label)] ?? techSlug(label)]
+}
+
 // First letter, for the fallback tile. Kept to one character: two letters at
 // tile size read as text rather than as a mark.
 export function techInitial(label) {

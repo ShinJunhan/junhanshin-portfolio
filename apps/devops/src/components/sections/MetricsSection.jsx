@@ -107,9 +107,13 @@ function Tile({ metric }) {
   )
 }
 
+// `metricsStyle: 'hero'` turns the big tile into a solid accent block and
+// steps every number and label up a size. Opt-in per project: the bento is
+// shared, and a page should only get the louder treatment when it asks.
 export default function MetricsSection({ project }) {
+  const style = project.metricsStyle === 'hero' ? ' bento--hero' : ''
   return (
-    <ul className="bento">
+    <ul className={`bento${style}`}>
       {project.metrics.map((metric) => (
         <Tile metric={metric} key={metric.label} />
       ))}

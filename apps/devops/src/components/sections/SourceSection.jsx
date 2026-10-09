@@ -110,6 +110,22 @@ const DOCUMENTS = [
   { doc: 'RUNBOOK', label: 'RUNBOOK.md', expand: 'runbook' },
 ]
 
+// Whether this project has anything for the panel to show. Owned here rather
+// than in sections.jsx because only this file knows all three things the panel
+// can hold: a project may have documents and no Terraform, which is exactly
+// the case for a solo build whose source was never brought across.
+//
+// It answers the same question as the empty check inside the component below,
+// and the two have to stay in step: a section that renders and then reports
+// itself empty is worse than one that never rendered.
+export function hasSource(project) {
+  return (
+    (project.terraform?.length ?? 0) > 0 ||
+    DOCUMENTS.some((entry) => docsFor(project.slug, entry.doc).length > 0) ||
+    Boolean(slidesFor(project.slug))
+  )
+}
+
 export default function SourceSection({ project }) {
   const files = project.terraform ?? []
   // Each document's available translations, resolved once per project.

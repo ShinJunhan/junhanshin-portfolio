@@ -176,8 +176,11 @@ export default function ArchitectureSection({ project }) {
     return {
       id,
       label: shortLabel(view, i),
-      // The address bar carries the long form the tab has no room for.
-      address: shown.caption ?? view.caption ?? view.alt ?? shortLabel(view, i),
+      // The address bar carries the long form the tab has no room for. An
+      // explicit `address` wins: a caption is a sentence, and the bar greys
+      // everything up to its last slash as a folder, which cuts a sentence
+      // like "blue/green deployment" in the wrong place.
+      address: shown.address ?? view.address ?? shown.caption ?? view.caption ?? view.alt ?? shortLabel(view, i),
       aside: paired ? (
         <SegmentToggle
           options={MODES}
@@ -254,7 +257,7 @@ export default function ArchitectureSection({ project }) {
     // The address bar names the root each tree is rooted at, so it says which
     // one you are looking at rather than repeating the project's name for all
     // of them.
-    const rootOf = (view) => view.root ?? `${project.repoName ?? project.title}/`
+    const rootOf = (view) => view.address ?? view.root ?? `${project.repoName ?? project.title}/`
 
     tabs.push(
       treeViews.length > 1

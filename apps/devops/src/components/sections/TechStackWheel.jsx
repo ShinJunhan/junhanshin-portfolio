@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'framer-motion'
-import { techIcon, techInitial } from '../../data/tech.js'
+import { techIcon, techInitial, techTone } from '../../data/tech.js'
 
 // The shared wheel, used by every project's Tech Stack section. It knows
 // nothing about any particular project: give it a project's categories and it
@@ -275,6 +275,13 @@ export default function TechStackWheel({ groups }) {
   const spinRefs = useRef([])
   const nodeRefs = useRef([])
   const markRefs = useRef([])
+  // Which ring item the pointer is actually over, independent of the bubble's
+  // eased scale. The scale-based z-index below lags the cursor by design —
+  // that is what makes the magnify effect feel smooth — but a tooltip has to
+  // win the moment its own icon is hovered, not once the bubble catches up.
+  // Without this, the node just left still outranks the one just entered for
+  // several frames, and its circle paints over the new tooltip.
+  const hoveredNodeRef = useRef(null)
   // The live angle. Deliberately a ref: it changes every frame and nothing
   // rendered depends on it.
   const angleRef = useRef(0)
@@ -368,7 +375,12 @@ export default function TechStackWheel({ groups }) {
         node.style.transform = `translate(-50%, -50%) translate(${live.px.toFixed(
           2
         )}px, ${live.py.toFixed(2)}px)`
-        node.style.zIndex = String(1 + Math.round(live.scale * 10))
+        // The hovered node always wins, regardless of where its eased scale
+        // currently sits — see hoveredNodeRef above.
+        node.style.zIndex =
+          index === hoveredNodeRef.current
+            ? '1000'
+            : String(1 + Math.round(live.scale * 10))
         node.style.setProperty('--node-scale', live.scale.toFixed(4))
         node.style.setProperty('--node-bell', live.bell.toFixed(3))
 
@@ -593,6 +605,7 @@ export default function TechStackWheel({ groups }) {
       onMouseLeave={() => {
         setHoverIndex(null)
         pointerRef.current = null
+        hoveredNodeRef.current = null
         bubbleTick()
       }}
     >
@@ -696,7 +709,15 @@ export default function TechStackWheel({ groups }) {
                   top: `${at.y}%`,
                   '--node-tint': arcs[groupIndex].tint,
                 }}
-                onMouseEnter={() => preview(groupIndex)}
+                onMouseEnter={() => {
+                  preview(groupIndex)
+                  hoveredNodeRef.current = index
+                  paint(angleRef.current)
+                }}
+                onMouseLeave={() => {
+                  if (hoveredNodeRef.current === index) hoveredNodeRef.current = null
+                  paint(angleRef.current)
+                }}
                 onClick={() => select(groupIndex)}
               >
                 {/* Counter-rotates the ring's drift so the logo and its
@@ -712,6 +733,7 @@ export default function TechStackWheel({ groups }) {
                 >
                   <span
                     className="wheel__node-mark"
+                    data-tone={icon ? techTone(item) : undefined}
                     ref={(node) => {
                       markRefs.current[index] = node
                     }}

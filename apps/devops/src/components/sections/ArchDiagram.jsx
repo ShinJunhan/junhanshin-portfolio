@@ -178,8 +178,11 @@ function textWidth(w, hasGlyph) {
   return w - (hasGlyph ? 44 : 16) - PAD_RIGHT
 }
 
-function wrap(text, width) {
-  const limit = Math.max(4, Math.floor(width / AVG_ADVANCE))
+// Greedy fill to a character count. Split out from `wrap` because captions are
+// set in a different size from node text and so measure a different number of
+// units per character: they need to name their own limit rather than inherit
+// one converted at the label face's advance.
+function wrapAt(text, limit) {
   const words = String(text ?? '').split(/\s+/).filter(Boolean)
   const lines = []
   let line = ''
@@ -195,6 +198,10 @@ function wrap(text, width) {
   }
   if (line) lines.push(line)
   return lines
+}
+
+function wrap(text, width) {
+  return wrapAt(text, Math.max(4, Math.floor(width / AVG_ADVANCE)))
 }
 
 function Node({ node }) {
@@ -311,6 +318,70 @@ function EdgeLabel({ edge, start, end }) {
   )
 }
 
+// Captions wrap, on their own budget and with their own split.
+//
+// A caption is the one piece of prose inside the drawing, and an SVG `text`
+// has no overflow behaviour: the words past the viewBox are not clipped with
+// an ellipsis or reachable by scrolling, they simply stop being drawn. A
+// caption written to fit exactly one line is therefore one edit away from
+// losing its ending silently, which is what happened to the Alert-to-restart
+// caption — it ran 160 characters into a 148-character line and ended on
+// "rather than by".
+//
+// 11px Chivo Mono measures 6.6 units per character, which is the one number
+// here that came off the rendered page rather than out of the stylesheet.
+const CAPTION_ADVANCE = 6.6
+const CAPTION_LH = 14
+
+// How much room a caption has depends on where it starts and which edge its
+// anchor pins it to, so the budget is per caption rather than per diagram.
+function captionLimit(caption, width) {
+  const anchor = caption.anchor ?? 'start'
+  const room =
+    anchor === 'end'
+      ? caption.x - 2
+      : anchor === 'middle'
+        ? Math.min(caption.x, width - caption.x) * 2 - 4
+        : width - caption.x - 2
+  return Math.max(8, Math.floor(room / CAPTION_ADVANCE))
+}
+
+// Balanced rather than greedy, which is the opposite of what a node label
+// wants. A node label is short text in a narrow box and greedy is right there.
+// A caption only ever wraps because it is a handful of characters over its
+// line, so filling the first line to the budget leaves the overflow alone on
+// the second: the caption above breaks as 146 characters and then the single
+// word "Alertmanager." Narrowing the budget as far as it will go without
+// adding a line packs the same lines evenly instead.
+function wrapCaption(text, limit) {
+  const lines = wrapAt(text, limit)
+  if (lines.length < 2) return lines
+
+  let lo = 1
+  let hi = limit
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (wrapAt(text, mid).length <= lines.length) hi = mid
+    else lo = mid + 1
+  }
+  return wrapAt(text, lo)
+}
+
+// Captions are laid out as a block before anything is drawn, because a wrapped
+// one moves every caption under it and the diagram has to get taller to keep
+// them inside the viewBox. Authored `y` values stay the source of truth for
+// spacing; each one is pushed down by whatever the captions above it grew.
+function layOutCaptions(diagram) {
+  let shift = 0
+  const laid = (diagram.captions ?? []).map((caption) => {
+    const lines = wrapCaption(caption.text, captionLimit(caption, diagram.width))
+    const placed = { caption, lines, y: caption.y + shift }
+    shift += (lines.length - 1) * CAPTION_LH
+    return placed
+  })
+  return { captions: laid, extraHeight: shift }
+}
+
 // Markers are per-diagram rather than shared in a single sprite: two diagrams
 // on the same page would otherwise fight over one id, and the second one's
 // arrowheads would vanish.
@@ -330,10 +401,14 @@ export default function ArchDiagram({ diagram, title, id: forcedId }) {
     .map((edge) => ({ edge, geo: geometry(edge, nodes) }))
     .filter(({ geo }) => geo)
 
+  // Before the viewBox, because a wrapped caption is what decides how tall it
+  // has to be.
+  const { captions, extraHeight } = layOutCaptions(diagram)
+
   return (
     <svg
       className="archd"
-      viewBox={`0 0 ${diagram.width} ${diagram.height}`}
+      viewBox={`0 0 ${diagram.width} ${diagram.height + extraHeight}`}
       role="img"
       aria-label={title}
       preserveAspectRatio="xMidYMid meet"
@@ -394,15 +469,19 @@ export default function ArchDiagram({ diagram, title, id: forcedId }) {
         ) : null
       )}
 
-      {(diagram.captions ?? []).map((caption) => (
+      {captions.map(({ caption, lines, y }) => (
         <text
           key={caption.text}
           className={`archd__aside${caption.tone === 'accent' ? ' archd__aside--on' : ''}`}
           x={caption.x}
-          y={caption.y}
+          y={y}
           textAnchor={caption.anchor ?? 'start'}
         >
-          {caption.text}
+          {lines.map((line, i) => (
+            <tspan key={line + i} x={caption.x} dy={i === 0 ? 0 : CAPTION_LH}>
+              {line}
+            </tspan>
+          ))}
         </text>
       ))}
     </svg>

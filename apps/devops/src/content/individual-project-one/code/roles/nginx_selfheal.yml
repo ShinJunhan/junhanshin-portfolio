@@ -1,0 +1,79 @@
+# ~/project1-onpremise/roles/nginx_selfheal/tasks/main.yml
+# Adds Restart=always to nginx. This is the self-healing rubric item.
+# Demonstrates "pkill nginx, back up 5 seconds later".
+# rocky1 + rocky2 only
+
+---
+- name: Create the nginx systemd override directory
+  file:
+    path: /etc/systemd/system/nginx.service.d
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: Write the nginx Restart=always override
+  copy:
+    dest: /etc/systemd/system/nginx.service.d/restart.conf
+    content: |
+      [Service]
+      Restart=always
+      RestartSec=5s
+    mode: '0644'
+  become: yes
+  notify: reload systemd and restart nginx
+
+- name: Reload the systemd daemon
+  systemd:
+    daemon_reload: yes
+  become: yes
+
+- name: Restart nginx so the override takes effect
+  systemd:
+    name: nginx
+    state: restarted
+  become: yes
+
+- name: Check the nginx Restart setting, which should read always
+  command: systemctl show nginx --property=Restart
+  register: nginx_restart_prop
+  changed_when: false
+  become: yes
+
+- name: Print the Restart setting
+  debug:
+    msg: "nginx {{ nginx_restart_prop.stdout }} <- this should read 'Restart=always'"
+
+# The self-healing proof, for the demo recording and the screenshots
+- name: "[self-healing test] Kill the nginx process"
+  command: pkill nginx
+  become: yes
+  ignore_errors: yes
+  changed_when: true
+
+- name: Wait 6 seconds, which is past the systemd RestartSec=5s
+  pause:
+    seconds: 6
+
+- name: "[self-healing test] Confirm nginx restarted on its own"
+  command: systemctl is-active nginx
+  register: nginx_active
+  become: yes
+  changed_when: false
+
+- name: Print the self-healing result, and take the screenshot here
+  debug:
+    msg: |
+      nginx self-healing test result: {{ nginx_active.stdout }}
+      ✅ 'active' = it restarted automatically after the kill. Take a screenshot.
+      ❌ 'inactive' = Restart=always did not take effect
+
+- name: Print systemctl status nginx, for the screenshot
+  command: systemctl status nginx --no-pager -l
+  register: nginx_status_out
+  become: yes
+  changed_when: false
+  ignore_errors: yes
+
+- name: Print the status output
+  debug:
+    msg: "{{ nginx_status_out.stdout_lines }}"

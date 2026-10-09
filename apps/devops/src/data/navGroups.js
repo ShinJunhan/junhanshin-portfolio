@@ -79,6 +79,15 @@ export function navGroupsFor(sections) {
   ).map((group) => ({
     ...group,
     targetId: group.anchor ?? group.target?.find((id) => present.has(id)),
+    // The sections this group actually covers on this project, for the menu
+    // that drops out of it. Filtered from the rendered list rather than
+    // mapped out of `group.sections`, so the order the menu lists them in is
+    // the order the page renders them in and cannot drift from it.
+    //
+    // A group left holding one section gets no menu — Resources and
+    // Reflection cover exactly one each, and a panel there would do nothing
+    // but repeat the entry's own label back at the reader.
+    items: sections.filter((section) => group.sections.includes(section.id)),
   }))
 }
 

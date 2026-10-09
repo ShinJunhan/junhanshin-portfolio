@@ -1,4 +1,23 @@
 import { useState } from 'react'
+import TabIcon from './tabIcons.jsx'
+
+// A sub-tab sits in a narrow column, so its name has to wrap. It is split
+// into parts after each space, `_`, `-` and `/` and before the extension's dot, and
+// each part is held together, so "audit_middleware.py" wraps as
+// "audit_ / middleware / .py" and never mid-word or as "middleware." over "py".
+function breakable(label) {
+  const parts = String(label).split(/(?<=[ _/-])|(?=\.[^.]+$)/)
+  return (
+    <span className="code__subtab-label">
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 && <wbr />}
+          <span className="code__subtab-part">{part}</span>
+        </span>
+      ))}
+    </span>
+  )
+}
 
 // The browser-window chrome, on its own so every panel that uses it stays
 // identical by construction rather than by four components agreeing to look
@@ -115,7 +134,8 @@ export default function BrowserPanel({ tabs = [], label, mark, onTabChange, chil
                 onClick={() => select(tab.id)}
                 title={tab.address ?? tab.label}
               >
-                {tab.label}
+                <TabIcon label={tab.label} />
+                <span className="code__tab-label">{tab.label}</span>
               </button>
             ) : (
               /* One tab is a label, not a control — there is nothing to
@@ -125,7 +145,8 @@ export default function BrowserPanel({ tabs = [], label, mark, onTabChange, chil
                 className="code__tab code__tab--on code__tab--static"
                 title={tab.address ?? tab.label}
               >
-                {tab.label}
+                <TabIcon label={tab.label} />
+                <span className="code__tab-label">{tab.label}</span>
               </span>
             )
           )}
@@ -147,7 +168,7 @@ export default function BrowserPanel({ tabs = [], label, mark, onTabChange, chil
                 onClick={() => selectSub(sub.id)}
                 title={sub.address ?? sub.label}
               >
-                {sub.label}
+                {breakable(sub.label)}
               </button>
             ))}
           </div>

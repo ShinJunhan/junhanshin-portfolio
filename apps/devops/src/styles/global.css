@@ -21,8 +21,36 @@
   --c-emerald: #4FA88F;
   --c-steel: #5C6670;
   --c-forest: #3D6B52;
+  /* Added when ShimonVault needed an accent and all six were spoken for, handed
+     back when that page moved to --c-burgundy below, and now Kubernetes
+     Challenge's. Spending it there is what ended --c-forest's double duty
+     across that page and Re:Build, so no accent is worn twice any more. It
+     sits 77 degrees from the teal directly above it in the rail. */
+  --c-plum: #7A5BA6;
+  /* ShimonVault's, replacing plum above. It separates further from both of
+     that page's neighbours in the Individual Projects rail: forest above and
+     teal below sit roughly 158 degrees away each, where plum was 121 from
+     forest and 77 from teal. Its nearest neighbour in hue is --c-coral, about
+     18 degrees off and the closest pair in this palette, which holds because
+     the two differ in lightness rather than hue — coral is a light salmon and
+     this is dark enough to carry white button text — and because they are
+     three rows apart in different groups. */
+  --c-burgundy: #A04C5E;
+  /* Added for the Cloud Resume Challenge, which had been sitting on
+     --c-indigo. That token is the same #3E5C89 as --accent-base in light mode,
+     so the one page using it was painted in the site's own default chrome and
+     read as a page that had never been themed — the same failure steel was
+     rejected for in the plum slot above. Teal rather than another violet or
+     red because the Individual Projects rail puts ShimonVault directly above
+     this page and Kubernetes Challenge directly below, and this separates
+     from both. It is the
+     nearest accent to --c-emerald, which is tolerable only because those two
+     are five rows apart and never adjacent. */
+  --c-teal: #2C7A88;
   /* A seventh hue, so a six-person team never repeats and the tech wheel has
-     one colour per category. Deliberately not a blue. */
+     one colour per category. Deliberately not a blue. Distinct from --c-plum
+     above and much duller on purpose: this one sits behind avatar initials
+     and wheel segments, where chroma competes with the label on top of it. */
   --c-violet: #5B4A66;
   /* Dusty denim. Not a project accent and not in the wheel's rotation — it has
      exactly one job, which is the last word of the welcome line. A muted,
@@ -179,6 +207,15 @@
   --c-emerald: #6FCFB3;
   --c-steel: #9AA6B2;
   --c-forest: #6BAA88;
+  /* Lifted like the rest, and it keeps its chroma on the way up: the whole
+     reason this accent exists is that the eyebrow it colours has to read as a
+     colour, which is as true on a dark ground as on a light one. */
+  --c-plum: #B79BE0;
+  --c-burgundy: #E38C9F;
+  /* Lifted and shifted a little bluer on the way up. A mid teal drifts toward
+     the forest sitting under it in the rail once both are lightened, and the
+     gap between them has to survive that lift. */
+  --c-teal: #6FC2D0;
   --c-violet: #A997BC;
   /* Lifted like the rest, and kept dusty: the chroma stays low so it does not
      drift toward either --name-pop or --c-indigo on a dark ground. */
@@ -646,6 +683,15 @@ button:focus-visible {
   max-width: var(--content-width);
   margin: 0 auto;
   padding: 0 var(--gutter);
+  /* The page's sections switch to their tablet layouts on the width they are
+     actually given, not on the screen's. With the project rail docked, an
+     11-inch iPad is a 1194px screen but leaves this column about 840px, and
+     the desktop layouts squeezed into that (a six-column My Role grid at
+     130px a tile, the stack wheel beside its notes). Queries against `page`
+     read this box; the rail opening or closing moves them on its own.
+     Set here rather than on `.content`, whose fixed `::before` scrim would be
+     re-anchored to it by the containment. */
+  container: page / inline-size;
 }
 
 .project__head {
@@ -697,6 +743,28 @@ button:focus-visible {
   font-size: var(--t-tiny);
   letter-spacing: 0.02em;
   color: var(--text-secondary);
+}
+
+/* "Team of N:" and its circles on one line. The avatar row's own top margin
+   was spacing it away from the period line above; here the row's margin and
+   the header's gap do that job, so the avatars' margin is dropped. The extra
+   air above the row and above the period keeps the two facts from crowding
+   the title or each other. */
+.project__team {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.project__team + .project__period {
+  margin-top: 0.6rem;
+}
+
+.project__team .avatars {
+  margin: 0;
 }
 
 /* ---------- Role: the figures band ---------- */
@@ -938,17 +1006,28 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: safe center;
-  gap: 0.4rem;
+  gap: clamp(0.5rem, 2vw, 2rem);
   height: 100%;
   padding-block: 0;
   padding-left: var(--gutter);
   padding-right: calc(var(--gutter) + var(--toggle-zone));
-  overflow-x: auto;
-  scrollbar-width: none;
+  /* Deliberately not a scroll container here. It used to be one at every
+     width, which silently clipped the section menus: a panel positioned
+     against an entry is a descendant of this box, and a scroll container
+     cuts its descendants off at its own edge. The sideways scroll is only
+     ever needed below 860px, which is also the width where the menus are
+     switched off, so the overflow lives in that breakpoint instead and the
+     two never have to coexist. */
+  overflow: visible;
 }
 
-.section-nav__bar::-webkit-scrollbar {
-  display: none;
+/* Wraps an entry and the menu that hangs off it, so the menu can be
+   positioned against the entry rather than against the bar. */
+.section-nav__group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 /* Menu entries, not chips: no fill, no rounding. The active one is marked by
@@ -960,8 +1039,11 @@ button:focus-visible {
   background: none;
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
   height: 100%;
-  padding: 0 0.6rem;
+  padding: 0 clamp(0.6rem, 0.9vw, 1rem);
   font-family: var(--font-label);
   font-size: var(--t-mini);
   font-weight: 700;
@@ -974,8 +1056,8 @@ button:focus-visible {
 .section-nav__item::after {
   content: '';
   position: absolute;
-  left: 0.6rem;
-  right: 0.6rem;
+  left: clamp(0.6rem, 0.9vw, 1rem);
+  right: clamp(0.6rem, 0.9vw, 1rem);
   bottom: -1px;
   height: 2px;
   background: var(--accent);
@@ -992,6 +1074,176 @@ button:focus-visible {
 }
 
 .section-nav__item--on::after {
+  opacity: 1;
+}
+
+/* An entry with a menu behind it says so. Only entries covering more than one
+   section get a caret, which is also the only signal in the bar telling the
+   reader which ones are worth hovering. */
+.section-nav__caret {
+  display: inline-flex;
+  font-size: 0.8em;
+  opacity: 0.7;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.section-nav__group[data-open='true'] .section-nav__caret {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+
+/* An open entry lifts to full ink the way hover does, so the bar keeps saying
+   which menu is the one on screen. The active entry keeps its accent. */
+.section-nav__group[data-open='true'] .section-nav__item {
+  color: var(--ink);
+}
+
+.section-nav__group[data-open='true'] .section-nav__item--on {
+  color: var(--accent);
+}
+
+/* ---------- The section menu ---------- */
+
+/* A card, not a bar: this is an object floating over the page rather than a
+   panel cut into it, so it takes the shadow and keeps the sharp corners the
+   rest of the site uses. */
+.section-nav__menu {
+  position: absolute;
+  top: calc(var(--section-nav-h) - 1px);
+  left: 0;
+  /* Sized to the longest section name the pages carry — "Technical Decisions
+     & Design Trade-Offs" — so the list reads as one item per line. A wrapped
+     entry in a menu this short looks like two entries. */
+  min-width: 322px;
+  padding: 0.3rem 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 14%, transparent),
+    0 2px 6px color-mix(in srgb, var(--ink) 7%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s;
+}
+
+.section-nav__group[data-open='true'] .section-nav__menu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Bridges the 1px seam between the bar and the panel. Without it the pointer
+   leaves the group on the way down and the menu closes under the cursor. */
+.section-nav__menu::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  right: 0;
+  height: 8px;
+}
+
+/* An entry near the right edge hangs its menu from the right instead, which
+   SectionNav decides by measuring rather than by counting entries. */
+.section-nav__group[data-align='right'] .section-nav__menu {
+  left: auto;
+  right: 0;
+}
+
+/* Repeats the entry's own label at the head of the panel. It is doing work,
+   not decorating: the panel opens under a bar of five entries and the reader
+   needs to know which one it belongs to without tracing back up to it. */
+.section-nav__menu-head {
+  margin: 0 0 0.3rem;
+  padding: 0.5rem 0.95rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Two numbers govern the rail and the dots on it, and both are derived rather
+   than eyeballed: a dot that misses the line it is threaded on reads as a
+   stray mark. `--dot-x` is the centre of the dot column measured from the
+   panel's inner edge; `--dot-y` is the centre of a menu item's first line,
+   which is the item's own top padding plus half a line box. */
+.section-nav__menu-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  --dot-x: calc(1.75rem - 1.05rem + 3.5px);
+  --dot-y: calc(0.42rem + 0.675 * var(--t-small));
+}
+
+.section-nav__menu-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.42rem 0.95rem 0.42rem 1.75rem;
+  font-family: var(--font-label);
+  font-size: var(--t-small);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-primary);
+  transition: background 0.13s ease, color 0.13s ease;
+}
+
+.section-nav__menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
+  color: var(--ink);
+}
+
+.section-nav__menu-item[data-current='true'] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* The reading-position rail. The dots are the reason this menu exists in the
+   form it does: a plain list says what the group contains, and the rail says
+   how far through it the reader already is, which is the question a page of
+   thirteen sections actually raises. */
+.section-nav__rail {
+  position: absolute;
+  /* Runs from the first dot's centre to the last one's, so it threads the
+     dots rather than overshooting them at both ends. */
+  left: calc(var(--dot-x) - 0.75px);
+  top: var(--dot-y);
+  bottom: var(--dot-y);
+  width: 1.5px;
+  background: var(--border);
+}
+
+.section-nav__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: calc(var(--dot-y) - 0.42rem - 3.5px);
+  margin-left: -1.05rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-secondary);
+  opacity: 0.55;
+  transition: background 0.13s ease, border-color 0.13s ease, opacity 0.13s ease;
+}
+
+/* Passed: filled, but in the secondary ink and still quiet. Current: the
+   accent, at full strength. Ahead: the hollow default above. */
+.section-nav__menu-item[data-read='true'] .section-nav__dot {
+  background: var(--text-secondary);
+  opacity: 0.5;
+}
+
+.section-nav__menu-item[data-current='true'] .section-nav__dot {
+  background: var(--accent);
+  border-color: var(--accent);
   opacity: 1;
 }
 
@@ -1240,7 +1492,7 @@ button:focus-visible {
 /* Two columns once the sidebar is a drawer: the big tile still reads as the
    largest thing in the section, and a wide tile still spans the row. */
 /* Three across through the tablet range, two once the sidebar is a drawer. */
-@media (max-width: 1100px) {
+@container page (max-width: 940px) {
   .bento {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1266,6 +1518,45 @@ button:focus-visible {
   .bento__tile--big {
     grid-row: auto;
   }
+}
+
+/* The hero variant, opt-in through `metricsStyle: 'hero'`. The headline tile
+   becomes a solid block of the project accent with the page background as its
+   ink, and every other number steps up a size. Numbers stay in Chivo Mono 700,
+   the metric face; only size and the one filled tile change. `nowrap` keeps a
+   value like "23.24s" from breaking inside a square tile. */
+.bento--hero .bento__value {
+  font-size: clamp(1.9rem, 1.2rem + 1.9vw, 2.8rem);
+  white-space: nowrap;
+}
+
+.bento--hero .bento__label,
+.bento--hero .bento__detail {
+  font-size: var(--t-small);
+}
+
+.bento--hero .bento__tile--big {
+  background: var(--accent);
+  border-color: transparent;
+  box-shadow: 0 18px 40px -18px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.bento--hero .bento__tile--big .bento__value {
+  font-size: calc(clamp(4rem, 2.4rem + 6.5vw, 7.5rem) * var(--display-scale));
+}
+
+.bento--hero .bento__tile--big .bento__label {
+  font-size: var(--t-lead);
+}
+
+.bento--hero .bento__tile--big .bento__value,
+.bento--hero .bento__tile--big .bento__label,
+.bento--hero .bento__tile--big .bento__detail {
+  color: var(--card-bg);
+}
+
+.bento--hero .bento__tile--big .bento__detail {
+  opacity: 0.85;
 }
 
 /* ---------- Tech stack ---------- */
@@ -1536,7 +1827,7 @@ button:focus-visible {
 /* Through the tablet range the notes go under the wheel, which recentres —
    two columns here would put the sentences on a measure too narrow to read
    and shrink the wheel past the point its labels survive. */
-@media (max-width: 1100px) {
+@container page (max-width: 940px) {
   .stack-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: clamp(1.5rem, 3vw, 2.25rem);
@@ -1965,9 +2256,10 @@ button:focus-visible {
 .code__tabs {
   display: flex;
   flex-wrap: wrap;
-  /* No gap: browser tabs sit shoulder to shoulder, and the concave corners
-     below need a neighbour to curve into. */
-  gap: 0;
+  /* One gap between every pair of tabs, whichever is selected. Spacing that
+     belonged to the unselected tabs alone moved with the selection and left a
+     wider gap beside the selected one. */
+  gap: 0.4rem;
   align-self: stretch;
   padding: 0.5rem 0.6rem 0;
   background: transparent;
@@ -1975,6 +2267,13 @@ button:focus-visible {
 
 .code__tab {
   position: relative;
+  /* Tabs grow to fill their row, so a strip that wraps (HailCast's seven
+     scenes) has no short last row with empty space after it. */
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
   padding: 0.5rem 1.05rem;
   border: 0;
   /* Browser-tab silhouette: rounded across the top, and the outer bottom
@@ -2000,9 +2299,34 @@ button:focus-visible {
   transition: background-color 0.18s ease, color 0.18s ease;
 }
 
+/* Each unselected tab is a light card of its own, with an outline, so the
+   strip reads as several things to open. As bare grey text they read as a
+   caption trailing the selected tab, and a skimming reader took the strip for
+   a single tab. */
+.code__tab:not(.code__tab--on) {
+  background: color-mix(in srgb, var(--card-bg) 60%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent);
+  color: color-mix(in srgb, var(--ink) 78%, var(--card-bg));
+}
+
 .code__tab:hover {
-  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  background: var(--card-bg);
   color: var(--ink);
+}
+
+/* The label carries the ellipsis now that the tab is a flex row with an icon
+   in front of it. */
+.code__tab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Drawn in the label's colour, so it dims and lights with the tab. */
+.code__tab-icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
 }
 
 /* The whole tab carries the accent as a faint wash. It used to be a white
@@ -2059,85 +2383,90 @@ button:focus-visible {
    Deliberately not the browser-tab silhouette. The shoulders and the outward
    curve say "top-level tab"; repeating them one level down would make the two
    rows look like peers, which is the exact thing the nesting exists to deny.
-   These are flat chips — the relationship a bookmarks bar has to a tab. */
-/* Left-aligned, like the tab strip above it and like every other run of nav on
-   the site: a reader's eye returns to the left edge, and a centred row moves
-   its first item every time the set changes length.
 
-   The baseline is what the active underline is drawn against — it runs the
-   full width so the row reads as a nav rail rather than as loose chips, and
-   the 2px accent below marks which one is open. */
+   Numbered steps. Each view is a small column: a numbered circle with its
+   name beneath, and the row lays them out as equal columns. The numbers say
+   these are separate places to go and in what order the section tells its
+   story, which a run of grey labels did not; a reader skimming took the row
+   for a caption. Equal columns also mean a long set never leaves a short last
+   row with empty space after it.
+
+   The selected step is a white card with its circle filled in the project's
+   accent. No underline: a single bar under the active item is the pattern
+   this site has stopped using. */
 .code__subtabs {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 0.3rem;
-  /* No bottom padding: the chips sit flush on the baseline, which is what
-     lets the active underline straddle it at `bottom: -1px` instead of
-     floating a hairline above it. */
-  padding: 0.6rem 0.85rem 0;
+  display: grid;
+  /* 6.25rem holds ShimonVault's nine source files on one row at desktop
+     width; any wider and the ninth sat alone on a second row. */
+  grid-template-columns: repeat(auto-fit, minmax(6.25rem, 1fr));
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem 0.7rem;
   background: var(--code-surface);
   border-bottom: 1px solid var(--code-edge);
+  counter-reset: subtab;
 }
 
 .code__subtab {
   appearance: none;
-  position: relative;
-  padding: 0.28rem 0.62rem;
+  counter-increment: subtab;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.45rem 0.25rem;
   border: 0;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
   font-family: var(--font-mono);
-  /* 15px exactly. Off the type ladder by half a pixel — `--t-small` is 14.5px
-     and is the nearest rung — but these are the section's primary navigation
-     now that the diagrams live under them, and they were set at metadata size. */
-  font-size: 0.9375rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  line-height: 1.45;
-  color: var(--text-secondary);
-  /* Same reasoning as .code__tab: a filename is one unbreakable token, and a
-     long one must lose its tail rather than push the page sideways. */
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.25;
+  text-align: center;
+  /* Names wrap inside their column, between the parts BrowserPanel splits a
+     filename into; see `.code__subtab-part`. */
+  overflow-wrap: break-word;
+  color: color-mix(in srgb, var(--ink) 80%, var(--card-bg));
+  transition: color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* One part of a filename, kept on one line: the label breaks between parts
+   only. */
+.code__subtab-part {
   white-space: nowrap;
-  transition: color 0.18s ease, background-color 0.18s ease;
+}
+
+.code__subtab::before {
+  content: counter(subtab);
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 50%, transparent);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .code__subtab:hover {
-  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  background: color-mix(in srgb, var(--card-bg) 65%, transparent);
   color: var(--ink);
 }
 
-/* The selected chip is marked by an underline against the row's baseline
-   rather than by a fill. It used to take the card's own ground, which read as
-   a tab hanging off the address bar below it — that made sense while the two
-   shared a surface, and stopped making sense once the address bar became a
-   raised bar of its own with a gap above it. A filled chip and an underline
-   would be two answers to the same question.
-
-   The bar is inset to the chip's own horizontal padding, so it sits under the
-   *text* rather than spanning the whole hit area — a highlight, not a full
-   bar — and it is pulled down past the chip's bottom padding to land on the
-   baseline itself, covering the 1px border for exactly its own width. */
 .code__subtab--on,
 .code__subtab--on:hover {
-  background: transparent;
+  background: var(--card-bg);
   color: var(--ink);
   font-weight: 600;
+  box-shadow: 0 1px 3px rgba(31, 46, 68, 0.12);
 }
 
-.code__subtab--on::after {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 2px;
+.code__subtab--on::before {
   background: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+  color: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2180,6 +2509,24 @@ button:focus-visible {
   line-height: 1.5;
 }
 
+/* Logos that vanish on the dark theme's navy circles. Single-colour marks are
+   redrawn in white; multi-colour ones keep their colours on a light circle.
+   Which logo gets which is `techTone` in src/data/tech.js. */
+[data-theme='dark'] [data-tone='invert'] img {
+  filter: brightness(0) invert(1);
+}
+
+[data-theme='dark'] [data-tone='backing'] {
+  background: #e9eef5;
+  border-radius: 50%;
+}
+
+/* The list layout's mark has no circle of its own and its logo fills the box,
+   so the light circle needs room around the logo. */
+[data-theme='dark'] .tech__mark[data-tone='backing'] {
+  padding: 8px;
+}
+
 [data-theme='dark'] .code__omnibox {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
@@ -2209,7 +2556,10 @@ button:focus-visible {
 }
 
 /* The single-file tab is a label, not a control. */
+/* A lone tab is a label, so it keeps its own width rather than stretching
+   across the strip like the tabs of a real switcher. */
 .code__tab--static {
+  flex: none;
   cursor: default;
 }
 
@@ -2493,6 +2843,171 @@ button:focus-visible {
   background: #000;
 }
 
+/* A scenario clip. The ratio is the encode's own 1280x608 rather than 16/9,
+   so the frame matches the file and the poster never letterboxes inside it. */
+/* No ratio here any more: `MediaSection` sets `aspect-ratio` per clip from the
+   file's own dimensions, so each one fills the column exactly and none of them
+   is letterboxed. The ratio that used to live here was one project's encode,
+   which every later clip then had to sit inside. */
+.figure__frame--clip {
+  position: relative;
+  background: #000;
+}
+
+.figure__frame--clip video {
+  display: block;
+  width: 100%;
+  /* `auto` rather than 100%, so a clip whose dimensions are missing from the
+     data still sizes itself once its metadata loads. It costs a layout shift
+     that the `aspect-ratio` above otherwise prevents. */
+  height: auto;
+  background: #000;
+}
+
+/* Sits on the clip rather than under it: a control for a moving thing belongs
+   on the moving thing. */
+.clip__toggle {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* Translucent over whatever frame is underneath, which is a dark dashboard
+     here but must not assume that. */
+  background: color-mix(in srgb, var(--card-bg) 82%, transparent);
+  backdrop-filter: blur(6px);
+  color: var(--text-primary);
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clip__toggle:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.clip__toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Rides in the address bar, inside BrowserPanel's own `.code__omnibox-aside`,
+   which is already pushed to the right end. */
+.clip__speed {
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-alt);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- One scenario: lead, clip, stills ---------- */
+
+.scenario {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2.4vw, 1.4rem);
+}
+
+/* The scenario's explanation, and the first thing in the tab. Body face at
+   reading size, because as a caption under the clip it read as a label on a
+   picture and got skipped. Above the clip it is also in the useful order: you
+   learn what to watch for before it happens.
+
+   Full panel width rather than a reading measure. Held to 66ch it broke well
+   short of the frame below it and read as a column that had been cut off,
+   which is worse here than the long line is: the text and the clip are one
+   block, and sharing an edge is what says so.
+
+   Justified the way `.glance__text` and `.prose p` already are: word spacing
+   only. `hyphens: auto` was tried here and broke words at the line end
+   ("Recov-ered"), which is the same finding those two records. See the note
+   above `.prose p` for the full argument.
+
+   Leading is 1.65 rather than the 1.55 this had at a 66ch measure, for the
+   reason stated there too: a full-width line needs more room for the return
+   sweep back to the start of the next one. */
+.scenario__lead {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--t-lead);
+  line-height: 1.65;
+  color: var(--text-primary);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+}
+
+/* The two registers a scenario is built from: Demo and Screenshots. They are
+   styled once, so a rule that moves moves in both, which is what keeps them
+   reading as a pair rather than as a video followed by some pictures.
+
+   Each opens with a rule, so the boundary between them is a line rather than
+   a guess about spacing. */
+.scenario__reg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding-top: clamp(1rem, 2.4vw, 1.35rem);
+  border-top: 1px solid var(--border);
+}
+
+.scenario__reg-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+}
+
+/* In ink rather than the accent, and a step above `.shot__state` below it.
+   The states used to be the larger of the two, which put the small unit above
+   the section holding it and is part of why the two registers did not read as
+   distinct in the first place. */
+.scenario__reg-title {
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Set like the lead, and for the same reason: it is running text in the same
+   column, so stopping it short of the frame below would reintroduce exactly
+   the ragged half-width block the lead just lost. */
+.scenario__reg-note {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+}
+
+/* Scoped to the register so the standalone `.shots` list on a project with no
+   clip keeps the size it has always had. */
+.scenario__reg .shot__state {
+  font-size: var(--t-micro);
+}
+
+.scenario__reg .shot + .shot {
+  margin-top: clamp(0.9rem, 2vw, 1.35rem);
+  padding-top: clamp(0.9rem, 2vw, 1.35rem);
+  border-top: 1px solid var(--border);
+}
+
 .figure__caption {
   display: flex;
   flex-wrap: wrap;
@@ -2549,13 +3064,20 @@ button:focus-visible {
 
 /* The state label sits *above* its image, not under it: reading "After" only
    once you have already looked at the picture is the wrong order. */
+/* Sentence case, because these lines are sentences now.
+
+   They used to be four-word labels and were set like labels: uppercase, weight
+   800, tracked out. A caption that says "systemd brings nginx back six seconds
+   after the kill" in that treatment is a wall of shouted capitals. The accent
+   colour, the label face and the size all stay, so the caption still reads as
+   a caption and still sits a clear step below the Screenshots heading above
+   it. Only the shouting goes. */
 .shot__state {
   margin: 0 0 0.5rem;
   font-family: var(--font-label);
   font-size: var(--t-tiny);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.005em;
   color: var(--accent);
 }
 
@@ -3147,9 +3669,16 @@ button:focus-visible {
   font-size: var(--t-tiny);
   line-height: 1.45;
   color: var(--text-primary);
-  /* `pretty` rather than `balance`: these run to several lines, and all they
-     need is protection from a one-word last line. */
-  text-wrap: pretty;
+  /* Plain wrapping, so each line fills before the next starts. The one-word
+     last line that `pretty` guarded against is prevented in the component
+     instead (`keepLastWordsTogether`), which behaves the same in every
+     browser. */
+  text-wrap: wrap;
+}
+
+/* A highlighted phrase stays on one line rather than splitting across two. */
+.dcard__stat-val .mark {
+  white-space: nowrap;
 }
 
 /* The road not taken is quieter than the road taken, and separated by a rule
@@ -3377,13 +3906,16 @@ button:focus-visible {
   background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  /* The same lift the My Role cards have, so the summary reads as one of the
+     page's cards rather than a flat panel on the ground. */
+  box-shadow: var(--shadow-card);
 }
 
 /* The card's name, inside it. Set as a caption rather than a heading: it is a
    label on a box, and at heading weight it was competing with the section
    title beside it for a rank it does not hold. */
 .glance__caption {
-  margin: 0 0 1rem;
+  margin: 0 0 1.35rem;
   padding-bottom: 0.7rem;
   border-bottom: 1px solid var(--border);
   font-family: var(--font-label);
@@ -3397,7 +3929,7 @@ button:focus-visible {
 .glance__list {
   margin: 0;
   display: grid;
-  gap: 0.95rem;
+  gap: 1.6rem;
 }
 
 /* The tick sits in its own column and spans both rows, so the label and the
@@ -3413,8 +3945,8 @@ button:focus-visible {
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-rows: auto auto;
   column-gap: 0.55rem;
-  row-gap: 0.3rem;
-  align-items: center;
+  row-gap: 0.55rem;
+  align-items: start;
 }
 
 /* One tick per row, on that row's label line. It spent a version spanning both
@@ -3424,10 +3956,15 @@ button:focus-visible {
 
    The mark is the bare tick. A boxed one and a circled one were both tried:
    the first read as a form control and the second as a badge, and neither is
-   what a note beside a sentence is. */
+   what a note beside a sentence is.
+
+   Pinned to the top of the label's cell rather than centred in it: the cell
+   now carries the rule under the label, and centring would drop the tick
+   between the word and its line. */
 .glance__check {
   grid-row: 1;
-  align-self: center;
+  align-self: start;
+  padding-top: 0.1rem;
   display: grid;
   place-items: center;
   color: var(--accent);
@@ -3438,8 +3975,14 @@ button:focus-visible {
   height: 0.95rem;
 }
 
+/* Each label is underlined across the card in a soft tint of the project's
+   accent, so the three sections read as separate blocks. A tint rather than
+   the full accent: the card already carries the accent in its ticks, labels,
+   diagram and figures, and full-strength rules made it heavy. */
 .glance__label {
   grid-column: 2;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   font-family: var(--font-mono);
   font-size: var(--t-mini);
   font-weight: 600;
@@ -3466,21 +4009,1774 @@ button:focus-visible {
   color: var(--text-primary);
 }
 
+/* A line given as a list: a small filled dot per item, in the accent. */
+.glance-dots {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.glance-dots li {
+  position: relative;
+  padding-left: 1rem;
+}
+
+.glance-dots li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.68em;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* The build-detect-recover diagram. Its own query container, because whether
+   three boxes fit side by side depends on the card, and the card's width is
+   not the window's. */
+.flow-wrap {
+  container-type: inline-size;
+}
+
+.flow {
+  /* Kept tight so the boxes get the width. At 1.5rem "Terraform + Ansible"
+     had 3px to spare and wrapped on some laptops. */
+  --flow-gap: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.flow__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--flow-gap);
+}
+
+.flow__step {
+  position: relative;
+  display: flex;
+}
+
+/* Centred in the gap before its box, so the boxes stay equal widths. */
+.flow__arrow {
+  position: absolute;
+  left: calc(var(--flow-gap) * -1);
+  top: 50%;
+  width: var(--flow-gap);
+  height: 0.55rem;
+  padding: 0 0.25rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.flow__node {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.45rem 0.45rem 0.5rem;
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.flow__key {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.flow__tools {
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.flow__caption {
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+/* The return from Recover to Detect. It runs from the centre of the second box
+   to the centre of the third: with three equal columns and two equal gaps,
+   the second box's centre is exactly halfway across, and the third's sits
+   half a box in from the right edge. */
+.flow__loop {
+  margin-left: 50%;
+  margin-right: calc((100% - 2 * var(--flow-gap)) / 6);
+  margin-top: -0.45rem;
+}
+
+.flow__return {
+  position: relative;
+  display: block;
+  height: 0.85rem;
+  border: 1.5px dashed var(--accent);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-lg, 10px) var(--radius-lg, 10px);
+}
+
+/* The head, on the Detect end and pointing up into it. */
+.flow__return::before {
+  content: "";
+  position: absolute;
+  left: -0.3rem;
+  top: -0.1rem;
+  border: 0.27rem solid transparent;
+  border-top: 0;
+  border-bottom: 0.4rem solid var(--accent);
+}
+
+.flow__loop-text {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  font-style: italic;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.flow__base {
+  margin: 0.15rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.flow__base strong {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Too narrow for three boxes in a row: they stack, the arrows turn to point
+   down, and the return becomes a line of text under the last box, since a
+   loop drawn up the side of a stack would cross the arrows. */
+@container (max-width: 22rem) {
+  .flow__steps {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--flow-gap);
+  }
+
+  .flow__arrow {
+    left: 50%;
+    top: calc(var(--flow-gap) * -0.5);
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+
+  .flow__loop {
+    margin: 0;
+  }
+
+  .flow__return {
+    display: none;
+  }
+
+  .flow__loop-text::before {
+    content: "\21BA\00a0";
+    font-style: normal;
+    color: var(--accent);
+  }
+}
+
+/* A line given as figures: each tile leads with its number. */
+.glance-figures {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.glance-figures__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.glance-figures__value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--accent);
+}
+
+.glance-figures__label {
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--text-secondary);
+}
+
 /* Stacked below the links once the row cannot hold both: the sentences need a
    reading measure more than they need to be beside anything. */
-@media (max-width: 900px) {
+@container page (max-width: 940px) {
   .workspace-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
 }
 
-/* Below the width where a label and a sentence both read, the label goes on
-   its own line and the sentence takes the column. */
-@container (max-width: 26rem) {
-  .glance__row {
+/* ---------- How rail (At a Glance) ---------- */
+
+/* Build, Ship, Run as a numbered accordion on a vertical rail. Closed, a
+   phase shows one summary line; open, its detail. What triggers the next
+   phase sits on the rail between them. */
+.glance__label .glance__expand {
+  float: right;
+  margin-top: -0.2rem;
+  padding: 0.22rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.rail {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+  padding-left: 2.2rem;
+  font-family: var(--font-label);
+  text-align: left;
+}
+
+.rail::before {
+  content: "";
+  position: absolute;
+  left: 0.85rem;
+  top: 1rem;
+  bottom: 1rem;
+  border-left: 1.5px solid color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.rail__phase {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: color-mix(in srgb, var(--accent) 3%, var(--card-bg));
+}
+
+.rail__num {
+  position: absolute;
+  left: -2.2rem;
+  top: 0.35rem;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: var(--card-bg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.rail__phase--open .rail__num {
+  background: var(--accent);
+  color: #fff;
+}
+
+.rail__head {
+  all: unset;
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  padding: 0.5rem 0.55rem;
+  cursor: pointer;
+}
+
+.rail__head:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+}
+
+.rail__head:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.rail__phase--open .rail__head {
+  border-bottom: 1px solid var(--border);
+}
+
+.rail__key {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.rail__tools {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.rail__sign {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Justified with whole words only, and rebalanced so no line ends on a lone
+   word. Hyphenated terms in the data use the non-breaking hyphen. */
+.rail__summary,
+.rail__entry span {
+  text-align: justify;
+  text-justify: inter-word;
+  text-wrap: pretty;
+  hyphens: none;
+}
+
+.rail__summary {
+  margin: 0;
+  padding: 0 0.55rem 0.5rem;
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.rail__body {
+  padding: 0.45rem 0.5rem 0.5rem;
+}
+
+.rail__body[hidden] {
+  display: none;
+}
+
+.rail__hop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1.1rem;
+  margin: -0.15rem 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.rail__hop span {
+  position: absolute;
+  left: -2.2rem;
+  width: 1.7rem;
+  text-align: center;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--card-bg);
+}
+
+.rail__split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.rail__pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.rail__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rail__side {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* The tunnel between the two sides, its name set sideways on a dashed line. */
+.rail__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.1rem;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.rail__link::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  border-left: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.rail__link span {
+  padding: 0.3rem 0;
+  background: color-mix(in srgb, var(--accent) 3%, var(--card-bg));
+}
+
+.rail__entry {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+  font-size: var(--t-micro);
+  line-height: 1.35;
+}
+
+.rail__entry--plain {
+  background: var(--card-bg);
+}
+
+/* Reports without blocking (OWASP ZAP). */
+.rail__entry--soft {
+  border-style: dashed;
+  background: var(--card-bg);
+}
+
+.rail__entry b {
+  display: block;
+  margin-bottom: 0.1rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rail__entry span {
+  display: block;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ---------- Result pair (At a Glance) ---------- */
+
+.glance-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  font-family: var(--font-label);
+  text-align: left;
+}
+
+.glance-pair__tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+}
+
+.glance-pair__tile--lock {
+  align-items: center;
+  text-align: center;
+  background: color-mix(in srgb, var(--accent) 4%, var(--card-bg));
+}
+
+.glance-pair__figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.glance-pair__value {
+  font-family: var(--font-mono);
+  font-size: var(--t-lead);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+.glance-pair__label {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+/* A padlock drawn from a shackle and one bar per layer. Each row is three
+   columns (bar, layer, tool) so every tool starts at the same edge. */
+.glance-lock {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 2.6rem 3.3rem auto;
+  column-gap: 0.5rem;
+  row-gap: 0.22rem;
+  align-items: center;
+  text-align: left;
+}
+
+.glance-lock__shackle {
+  grid-column: 1;
+  justify-self: center;
+  width: 1.9rem;
+  height: 1.25rem;
+  box-sizing: border-box;
+  border: 4px solid var(--accent);
+  border-bottom: 0;
+  border-radius: 1.2rem 1.2rem 0 0;
+}
+
+.glance-lock__row {
+  display: contents;
+}
+
+.glance-lock__bar {
+  grid-column: 1;
+  height: 0.85rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 85%, var(--card-bg));
+}
+
+/* The layer that reports rather than blocks (OWASP ZAP). */
+.glance-lock__bar--soft {
+  background: none;
+  border: 1.2px dashed var(--text-secondary);
+}
+
+.glance-lock__row b,
+.glance-lock__tool {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.glance-lock__row b {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.glance-lock__tool {
+  color: var(--text-secondary);
+}
+
+.glance-ring {
+  display: grid;
+  grid-template-columns: 4.4rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.glance-ring__svg {
+  width: 4.4rem;
+  height: 4.4rem;
+}
+
+.glance-ring__svg path {
+  fill: var(--accent);
+  opacity: 0.85;
+}
+
+.glance-ring__svg text {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  fill: var(--accent);
+}
+
+.glance-ring ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.1rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.25;
+  color: var(--text-secondary);
+}
+
+.glance-ring li {
+  white-space: nowrap;
+}
+
+.glance-ring b {
+  margin-right: 0.3rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---------- Workspace cards ---------- */
+
+/* At a Glance on the left, four static cards on the right. At a Glance is
+   the wider column here because it carries the How rail; the card column
+   keeps its own height so opening a phase does not stretch the cards, and
+   At a Glance spreads any spare height between its three rows. */
+.workspace-row--cards {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 1.75rem;
+  row-gap: 1.4rem;
+  align-items: stretch;
+}
+
+.workspace-row--cards .glance {
+  display: flex;
+  flex-direction: column;
+  padding-left: 1.15rem;
+  padding-right: 1.15rem;
+}
+
+.workspace-row--cards .glance__list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.workspace-row--cards .glance__text {
+  text-wrap: pretty;
+}
+
+.wc {
+  align-self: start;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  font-family: var(--font-label);
+  text-align: left;
+}
+
+.wc-card {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.95rem 1.05rem;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.wc-card--wide {
+  grid-column: 1 / -1;
+}
+
+.wc-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.wc-card__name h3 {
+  margin: 0;
+  font-family: var(--font-label);
+  font-size: var(--t-lead);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.wc-card__name p {
+  margin: 0.15rem 0 0;
+  font-size: var(--t-tiny);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.wc-card__figure {
+  text-align: right;
+}
+
+/* The card's headline number, set larger than the lead step on purpose: it
+   is the one figure each card leads with. */
+.wc-card__figure strong {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: calc(var(--t-lead) * 1.6);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.wc-card__figure span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.wc-card__foot {
+  margin: auto 0 0;
+  padding-top: 0.55rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+.wc-card__foot a {
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wc-card__foot a:hover {
+  text-decoration: underline;
+}
+
+.wc-git {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wc-git__lanes,
+.wc-git__stats,
+.wc-rows,
+.wc-net__path,
+.wc-net__doors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wc-git__lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.wc-git__lane {
+  display: grid;
+  grid-template-columns: 5.8rem minmax(0, 1fr);
+  gap: 0.4rem;
+  align-items: center;
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.wc-git__lane--mine {
+  margin: 0 -0.35rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+}
+
+.wc-git__lane code {
+  padding: 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.wc-git__lane--mine code {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--accent);
+}
+
+.wc-git__lane span {
+  text-wrap: pretty;
+}
+
+.wc-git__lane b {
+  display: block;
+  color: var(--ink);
+}
+
+.wc-git__lane--mine b {
+  color: var(--accent);
+}
+
+.wc-git__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-left: 0.6rem;
+  border-left: 1px solid var(--border);
+}
+
+.wc-git__stats li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.wc-git__stats strong {
+  font-family: var(--font-mono);
+  font-size: var(--t-lead);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.wc-git__stats span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.wc-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.wc-rows li {
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.wc-rows li:last-child {
+  border-bottom: 0;
+}
+
+.wc-rows li,
+.wc-rows a {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.wc-rows a {
+  flex: 1;
+  color: inherit;
+  text-decoration: none;
+}
+
+.wc-rows span {
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.wc-rows a:hover span {
+  color: var(--accent);
+}
+
+.wc-rows em {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.wc-net {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wc-net__path {
+  display: flex;
+  flex-direction: column;
+}
+
+.wc-net__node {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.4rem;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+}
+
+/* An arrow between each step and the next. */
+.wc-net__node + .wc-net__node {
+  margin-top: 1rem;
+}
+
+.wc-net__node + .wc-net__node::before {
+  content: "↓";
+  position: absolute;
+  top: -0.95rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.wc-net__node--edge {
+  border-style: dashed;
+  background: var(--card-bg);
+}
+
+.wc-net__node b {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.wc-net__node--edge b {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.wc-net__node em {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.wc-net__doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.7rem;
+  margin-top: 0.3rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border);
+}
+
+.wc-net__doors li {
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.wc-net__doors b {
+  margin-right: 0.25rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wc-slides {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.wc-slides figure {
+  margin: 0;
+}
+
+.wc-slides img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.wc-slides figcaption {
+  margin-top: 0.15rem;
+  font-size: var(--t-micro);
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+
+.wc-slides figcaption b {
+  margin-right: 0.3rem;
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+/* Stacked under At a Glance once the row cannot hold both. */
+@container page (max-width: 940px) {
+  .workspace-row--cards {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.25rem;
+    grid-template-rows: auto;
+  }
+}
+
+/* A phone: one card per row, and the How detail in one column. */
+@media (max-width: 560px) {
+  .wc {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wc-card--wide {
+    grid-column: auto;
+  }
+
+  .wc-git {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wc-git__stats {
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 0.5rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .wc-git__stats li {
+    align-items: flex-start;
+  }
+
+  .rail__split,
+  .rail__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rail__link {
+    writing-mode: horizontal-tb;
+    transform: none;
+    padding: 0.1rem 0;
+  }
+
+  .rail__link::after {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    right: 0;
+    border-left: 0;
+    border-top: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+}
+
+/* ---------- Workspace tiles ---------- */
+
+/* The tiles layout: the heading across both columns, At a Glance on the
+   left, the tile grid on the right, both held to one height. The tile column
+   is a touch wider so it reads as the main element. At this ratio the How
+   flow's widest box ("Recovery Controller") keeps about 12px to spare at the
+   12px type floor; any narrower and it wraps. */
+.workspace-row--tiles {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 1.75rem;
+  row-gap: 1.4rem;
+  align-items: stretch;
+}
+
+.workspace-row__title {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* Tighter flow boxes and side padding, so the box names stay on one line in
+   the narrower column. Only here: the plain layout keeps its own spacing. */
+.workspace-row--tiles .glance {
+  padding-left: 1.15rem;
+  padding-right: 1.15rem;
+}
+
+.workspace-row--tiles .flow {
+  --flow-gap: 0.7rem;
+}
+
+.workspace-row--tiles .flow__node {
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+/* Size containment lets At a Glance alone set the row height; the grid then
+   stretches to it. The grid shape for each open tile is below, by index. */
+.ws-tiles {
+  contain: size;
+  min-height: 32rem;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  transition:
+    grid-template-columns 0.55s cubic-bezier(0.2, 0.8, 0.2, 1),
+    grid-template-rows 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ws-tiles[data-open='0'] { grid-template-columns: 5fr 1fr; grid-template-rows: 7fr 1fr; }
+.ws-tiles[data-open='1'] { grid-template-columns: 1fr 5fr; grid-template-rows: 7fr 1fr; }
+.ws-tiles[data-open='2'] { grid-template-columns: 5fr 1fr; grid-template-rows: 1fr 7fr; }
+.ws-tiles[data-open='3'] { grid-template-columns: 1fr 5fr; grid-template-rows: 1fr 7fr; }
+
+.ws-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.25s;
+}
+
+.ws-tile:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.ws-tile__face {
+  all: unset;
+  box-sizing: border-box;
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 1.2rem 1.25rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ws-tile__face:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -4px;
+  border-radius: 12px;
+}
+
+.ws-tile__mark {
+  display: none;
+}
+
+.ws-tile__mark svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.ws-tile__name {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.ws-tile__name b {
+  display: block;
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: var(--t-lead);
+  letter-spacing: -0.01em;
+}
+
+.ws-tile__name small {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: var(--t-tiny);
+  color: var(--text-secondary);
+}
+
+.ws-tile__name small span {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ws-tile__headline {
+  display: none;
+}
+
+/* A large, faint mark sitting fully inside the corner: decoration, so it is
+   never cropped at the edge and never competes with the name. */
+.ws-tile__watermark {
+  position: absolute;
+  right: 1.1rem;
+  bottom: 1.1rem;
+  width: 6.5rem;
+  height: 6.5rem;
+  color: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
+}
+
+.ws-tile__watermark svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* The three tiles that shrink while another is open: mark and name only,
+   centred in whatever space their corner leaves them. */
+.ws-tiles--open .ws-tile:not(.ws-tile--open) .ws-tile__face {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.3rem;
+  padding: 0.4rem;
+}
+
+.ws-tiles--open .ws-tile:not(.ws-tile--open) .ws-tile__mark {
+  display: block;
+}
+
+.ws-tiles--open .ws-tile:not(.ws-tile--open) .ws-tile__name b {
+  font-size: var(--t-micro);
+  font-weight: 600;
+}
+
+.ws-tiles--open .ws-tile__name small,
+.ws-tiles--open .ws-tile__watermark {
+  display: none;
+}
+
+/* The open tile: its face becomes a header row of mark, name and headline. */
+.ws-tile--open .ws-tile__face {
+  flex: none;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.85rem 3.2rem 0.6rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+}
+
+.ws-tile--open .ws-tile__mark {
+  display: block;
+  color: var(--accent);
+}
+
+.ws-tile--open .ws-tile__name b {
+  font-size: var(--t-small);
+}
+
+.ws-tile--open .ws-tile__headline {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: var(--t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ws-tile__close {
+  all: unset;
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 2;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(31, 46, 68, 0.1);
+}
+
+.ws-tile__close:hover,
+.ws-tile__close:focus-visible {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+}
+
+.ws-tile__close svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* The panel's content is centred between the header and the footer line, and
+   it never scrolls on its own, so the mouse wheel always scrolls the page. */
+.ws-tile__panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.75rem 1.1rem 0.85rem;
+  animation: ws-in 0.35s 0.25s both;
+}
+
+.ws-tile__panel > :first-child {
+  margin-top: auto;
+}
+
+@keyframes ws-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ws-tile__foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin: auto 0 0;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  color: var(--text-secondary);
+}
+
+.ws-tile__foot a {
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: var(--t-small);
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ws-tile__foot a:hover {
+  text-decoration: underline;
+}
+
+/* GitHub: the three branch lanes and the review figures. */
+.ws-git {
+  margin-bottom: 0.6rem;
+}
+
+.ws-git__lane,
+.ws-git__pr {
+  display: grid;
+  grid-template-columns: 6.4rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ws-git__branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.55rem 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--t-mini);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+}
+
+.ws-git__lane--mine .ws-git__branch {
+  border-color: color-mix(in srgb, var(--name-pop) 55%, transparent);
+  background: color-mix(in srgb, var(--name-pop) 9%, var(--card-bg));
+}
+
+.ws-git__who {
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.ws-git__who b {
+  display: block;
+  font-family: var(--font-label);
+  font-weight: 500;
+  font-size: var(--t-small);
+  color: var(--ink);
+}
+
+.ws-git__lane--mine .ws-git__who b {
+  font-weight: 600;
+  color: var(--name-pop);
+}
+
+.ws-git__pr {
+  height: 1.45rem;
+}
+
+.ws-git__pr span {
+  justify-self: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+
+.ws-git__pr i {
+  font-style: normal;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  color: var(--text-secondary);
+}
+
+.ws-git__stats {
+  list-style: none;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.ws-git__stats li {
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ws-git__stats b {
+  display: block;
+  font-weight: 700;
+  font-size: var(--t-lead);
+  letter-spacing: -0.02em;
+  color: var(--accent);
+}
+
+/* Notion: the workspace's pages, with counts where there are many. */
+.ws-docs {
+  list-style: none;
+  margin: 0 0 0.9rem;
+  padding: 0;
+}
+
+.ws-docs li {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.78rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ws-docs li:last-child {
+  border-bottom: 0;
+}
+
+.ws-docs svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: var(--text-secondary);
+}
+
+.ws-docs b {
+  display: block;
+  font-family: var(--font-label);
+  font-weight: 600;
+  font-size: var(--t-small);
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.ws-docs small {
+  display: block;
+  font-family: var(--font-label);
+  font-size: var(--t-mini);
+  color: var(--text-secondary);
+}
+
+.ws-docs__count {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--t-micro);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+}
+
+/* Infrastructure: the two networks side by side, joined by Tailscale. Every
+   line is held to one line at the 12px floor. */
+.ws-net {
+  margin-bottom: 0.5rem;
+}
+
+.ws-net__map {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1.25rem minmax(0, 1fr);
+}
+
+.ws-net__zone {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--name-pop) 4%, var(--card-bg));
+}
+
+.ws-net__zone-name {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.ws-net__zone-name em {
+  display: block;
+  margin-top: 0.1rem;
+  font-style: normal;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ws-net__zone ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.ws-net__zone li {
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  line-height: 1.3;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.ws-net__zone li b {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ws-net__zone li b span {
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.ws-net__role,
+.ws-net__routes {
+  display: block;
+}
+
+.ws-net__routes {
+  font-family: var(--font-mono);
+  color: var(--name-pop);
+}
+
+li.ws-net__router {
+  margin: 0 -0.3rem;
+  padding: 0.25rem 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--name-pop) 35%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--name-pop) 10%, var(--card-bg));
+}
+
+.ws-net__tag {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0 0.35rem;
+  font-family: var(--font-mono);
+  color: var(--name-pop);
+  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--name-pop) 40%, transparent);
+  border-radius: 999px;
+}
+
+.ws-net__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.ws-net__link i {
+  flex: 1;
+  border-left: 2px dashed color-mix(in srgb, var(--name-pop) 55%, transparent);
+}
+
+.ws-net__link span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  letter-spacing: 0.06em;
+  color: var(--name-pop);
+}
+
+.ws-net__note {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Presentation: four slides, large enough to read the titles on. */
+.ws-slides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.ws-slides figure {
+  margin: 0;
+}
+
+.ws-slides img {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.ws-slides figcaption {
+  margin-top: 0.25rem;
+  font-family: var(--font-label);
+  font-size: var(--t-mini);
+  color: var(--text-secondary);
+}
+
+.ws-slides figcaption b {
+  margin-right: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--ink);
+}
+
+/* Stacked under At a Glance once the row cannot hold both. The tile grid gets
+   a height of its own, since At a Glance no longer sets one for it. */
+@container page (max-width: 940px) {
+  .workspace-row--tiles {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .ws-tiles {
+    height: 38.75rem;
+  }
+}
+
+/* A phone: one column of tiles in the same order. The open one grows to fit
+   its panel and the others become slim rows, so nothing scrolls inside a
+   tile. */
+@media (max-width: 560px) {
+  .ws-tiles,
+  .ws-tiles[data-open] {
+    contain: none;
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .ws-tile {
+    min-height: 5.5rem;
+  }
+
+  .ws-tile__watermark {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .ws-tiles--open .ws-tile:not(.ws-tile--open) {
+    min-height: 3.2rem;
+  }
+
+  .ws-tiles--open .ws-tile:not(.ws-tile--open) .ws-tile__face {
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0.6rem 1rem;
+  }
+
+  .ws-tile__panel {
+    overflow: visible;
+  }
+
+  .ws-net__zone li {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-tiles {
+    transition: none;
+  }
+
+  .ws-tile__panel {
+    animation: none;
   }
 }
 
@@ -4046,6 +6342,17 @@ a.link-tile:hover .link-tile__mark {
   flex-direction: column;
 }
 
+/* Justified by word spacing alone, like the rest of the page's prose: no
+   hyphenation and no mid-word breaks. */
+.reflection__part p {
+  text-align: justify;
+  text-justify: inter-word;
+  text-wrap: pretty;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .reflection__part + .reflection__part {
   padding-top: clamp(1.75rem, 3.5vw, 2.75rem);
   border-top: 1px solid var(--border);
@@ -4091,6 +6398,21 @@ a.link-tile:hover .link-tile__mark {
      centre, where extra padding is just dead scroll length. */
   .section-nav__bar {
     padding-right: var(--gutter);
+    /* The one width where the bar is a scroll container. Above this it is not,
+       so the section menus have somewhere to hang; see the base rule. */
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .section-nav__bar::-webkit-scrollbar {
+    display: none;
+  }
+  /* No menus on a phone. There is no hover to open them with, and a 300px
+     panel inside a 375px viewport is a worse way to reach a section than the
+     bar the reader can already swipe. The entries keep doing exactly what they
+     did before, which is scroll to their group. */
+  .section-nav__menu,
+  .section-nav__caret {
+    display: none;
   }
   .section {
     scroll-margin-top: calc(var(--mobile-bar-h) + var(--section-nav-h));
@@ -4272,6 +6594,8 @@ a.link-tile:hover .link-tile__mark {
   line-height: 1.62;
   text-align: justify;
   text-justify: inter-word;
+  /* Keeps a lone word off a note's last line where the browser supports it. */
+  text-wrap: pretty;
   hyphens: none;
   color: var(--text-primary);
 }
@@ -4286,6 +6610,17 @@ a.link-tile:hover .link-tile__mark {
 .board__note--lead .board__text {
   font-size: var(--t-base);
   line-height: 1.66;
+}
+
+/* A support note's opening sentence, set at the lede size so one small card
+   on the board reads as a callout. Left-aligned: justified text this large in
+   a narrow card opens wide gaps between words. */
+.board__lede {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: var(--t-lead);
+  line-height: 1.4;
+  text-align: left;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4303,7 +6638,7 @@ a.link-tile:hover .link-tile__mark {
    rather than a note; at this width the tier is carried by its type size and
    padding alone, which is what it was doing before the spans existed. Six
    notes then fill three even rows. */
-@media (max-width: 1100px) {
+@container page (max-width: 940px) {
   .board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4580,7 +6915,14 @@ a.link-tile:hover .link-tile__mark {
    sized for what it is — the one number in the section meant to be read from
    across the page, on a tile that is otherwise a line of prose. */
 .bento__tile--lead .bento__value {
-  font-size: calc(clamp(3.2rem, 2rem + 4vw, 5rem) * var(--display-scale));
+  font-size: calc(clamp(3.2rem, 2rem + 4cqi, 5rem) * var(--display-scale));
+}
+
+/* The figure never breaks between its digits: at a narrow tile width the flex
+   row shrank it until "41" stacked as a 4 over a 1. */
+.role-tile__stat .bento__value {
+  flex: none;
+  white-space: nowrap;
 }
 
 .role-tile__unit {
@@ -4648,7 +6990,7 @@ a.link-tile:hover .link-tile__mark {
    sized for what it is — the one number in the section meant to be read from
    across the page, on a tile that is otherwise a line of prose. */
 .bento__tile--lead .bento__value {
-  font-size: calc(clamp(3.2rem, 2rem + 4vw, 5rem) * var(--display-scale));
+  font-size: calc(clamp(3.2rem, 2rem + 4cqi, 5rem) * var(--display-scale));
 }
 
 .role-tile__unit {
@@ -4659,29 +7001,37 @@ a.link-tile:hover .link-tile__mark {
   color: var(--text-secondary);
 }
 
+/* 16px, justified by word spacing alone. Hyphenation stays off and words
+   never break mid-word, so every tile keeps whole words on each line.
+   `text-wrap: pretty` keeps a lone word off the last line; browsers without
+   it fall back to ordinary wrapping. */
 .bento__prose {
   margin: 0;
   font-family: var(--font-body);
-  font-size: var(--t-tiny);
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.5;
   text-align: justify;
   text-justify: inter-word;
+  text-wrap: pretty;
   hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
   color: var(--text-primary);
 }
 
 /* The headline claim reads at the page's own prose size — it is the one a
-   reader should be able to take at a glance from across the section. The
-   smallest tier steps down again, so the three tiers separate by type as well
-   as by area. */
+   reader should be able to take at a glance from across the section. */
 .bento__tile--lead .bento__prose {
   font-size: var(--t-prose);
   line-height: 1.6;
 }
 
-.bento__tile--small .bento__prose {
-  font-size: var(--t-tiny);
-  line-height: 1.55;
+/* The larger type pays for itself out of the padding rather than the grid:
+   a little less inset on the two smaller tiers keeps their rows close to the
+   height they had at 13.5px. */
+.bento--role .bento__tile--medium,
+.bento--role .bento__tile--small {
+  padding: 1rem 1.15rem;
 }
 
 /* Through the tablet range the sidebar still holds a column, so the content is
@@ -4690,7 +7040,7 @@ a.link-tile:hover .link-tile__mark {
    full row, the mediums go two across, the smalls three. Giving the lead a
    half row here was tried and collapsed the tiers — lead, medium and small all
    came out 350px wide, which is a uniform grid with extra steps. */
-@media (max-width: 1100px) {
+@container page (max-width: 940px) {
   /* The identity column stops being a column: at this width taking 13rem off
      the front of the grid leaves the tiles on a measure they cannot carry a
      sentence on. The mark and the title go back to a row above them. */
@@ -5063,6 +7413,9 @@ a.link-tile:hover .link-tile__mark {
   transform: none;
 }
 
+/* Justified by word spacing alone, like the role tiles and the context notes:
+   no hyphenation and no mid-word breaks. Shared by the Implementation Steps
+   phases and the Tech Stack notes. */
 .disclosure__panel p {
   margin: 0;
   padding: 0 0.2rem 1.35rem calc(0.2rem + 2.4rem);
@@ -5070,6 +7423,12 @@ a.link-tile:hover .link-tile__mark {
   font-family: var(--font-body);
   font-size: var(--t-prose);
   line-height: 1.75;
+  text-align: justify;
+  text-justify: inter-word;
+  text-wrap: pretty;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
   color: var(--text-primary);
 }
 
@@ -5110,7 +7469,7 @@ a.link-tile:hover .link-tile__mark {
 
 /* The calendar drops under the list rather than shrinking to a column it
    cannot be read in. */
-@media (max-width: 1100px) {
+@container page (max-width: 940px) {
   .steps {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -5390,6 +7749,12 @@ a.link-tile:hover .link-tile__mark {
   font-size: var(--t-prose);
   line-height: 1.72;
   color: var(--text-primary);
+  /* Justified, with the spacing doing the work: no hyphenated breaks, and
+     `pretty` keeps a single word from wrapping onto a line of its own. */
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+  text-wrap: pretty;
 }
 
 .cost__notes li::marker {
@@ -5407,6 +7772,21 @@ a.link-tile:hover .link-tile__mark {
   font-size: var(--t-tiny);
   line-height: 1.7;
   color: var(--text-secondary);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+  text-wrap: pretty;
+}
+
+/* The source line under the total, read at the number it qualifies. */
+.cost__caveat--total {
+  margin-top: 0.6rem;
+}
+
+.cost__caveat a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ---------- Cost: the measured second reading ---------- */

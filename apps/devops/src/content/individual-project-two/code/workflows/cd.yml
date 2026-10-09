@@ -1,0 +1,192 @@
+name: CD — Blue/Green Deploy
+
+# Trigger: MANUAL ONLY.
+#
+# This workflow runs `terraform apply`, so an automatic push trigger meant every
+# commit to main rebuilt live AWS infrastructure — including immediately after a
+# `terraform destroy`, which silently started billing again. Deploying is now an
+# explicit decision:
+#
+#   gh workflow run cd.yml --ref main --repo <owner>/shimon-vault
+#   ...or the "Run workflow" button on the Actions tab.
+#
+# CI (lint/test) still runs automatically on every push — it costs nothing and
+# is the part you actually want on each commit.
+on:
+  workflow_dispatch:
+
+# Prevent two deployments from running at the same time
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # never cancel a deploy mid-flight
+
+jobs:
+  deploy:
+    name: Build → Push → Deploy Green → Switch ALB (terraform) → Retag
+    runs-on: ubuntu-latest
+
+    # Job-level env: every required variable that lives in your gitignored
+    # terraform.tfvars must be supplied here, because BOTH terraform apply steps
+    # (launch green, then switch) need them. Setting them once at job level keeps
+    # the two steps in sync.
+    env:
+      TF_VAR_db_password:         ${{ secrets.DB_PASSWORD }}
+      TF_VAR_jwt_secret_key:      ${{ secrets.JWT_SECRET_KEY }}
+      TF_VAR_slack_webhook_url:   ${{ secrets.SLACK_WEBHOOK_URL }}
+      TF_VAR_telegram_bot_token:  ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TF_VAR_telegram_chat_id:    ${{ secrets.TELEGRAM_CHAT_ID }}
+      TF_VAR_alert_email:         ${{ secrets.ALERT_EMAIL }}
+      TF_VAR_your_ip_cidr:        ${{ secrets.YOUR_IP_CIDR }}
+      TF_VAR_tailscale_auth_key:  ${{ secrets.TAILSCALE_AUTH_KEY }}
+      TF_VAR_onprem_tailscale_ip: ${{ secrets.ONPREM_TAILSCALE_IP }}
+      TF_VAR_dockerhub_token:     ${{ secrets.DOCKERHUB_TOKEN }}
+      TF_VAR_ssh_public_key:      ${{ secrets.SSH_PUBLIC_KEY }}
+      # Needed by the cloudflare provider in terraform/acm.tf, which writes the
+      # ACM DNS-validation record. Without it the provider authenticates with an
+      # empty token and the certificate never validates.
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Configure AWS credentials ─────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ap-northeast-2
+
+      # ── 3. Login to Docker Hub ────────────────────────────────────────────────
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # ── 4. Set up Docker Buildx ───────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      # ── 5. Build and push :green image ───────────────────────────────────────
+      # The green EC2 boots with container_tag="green", so it pulls THIS image.
+      # context: . (repo root) so the Dockerfile can COPY both frontend/ and app/.
+      # The frontend-builder stage runs `npm run build` and the result is baked in.
+      - name: Build and push :green Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: app/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            mindmug/shimonvault-app:green
+            mindmug/shimonvault-app:green-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── 6. Notify: deployment started ─────────────────────────────────────────
+      - name: Notify deployment started
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H 'Content-type: application/json' \
+            --data "{\"text\": \"🚀 *DEPLOYMENT STARTED — ShimonVault*\nVersion: \`${{ github.sha }}\`\nTriggered by: ${{ github.actor }}\nEnvironment: green (blue still live)\"}"
+
+      # ── 7. Set up Terraform ───────────────────────────────────────────────────
+      # Match (or exceed) your LOCAL terraform version (run: terraform version).
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.0"   # ← set to match your local `terraform version`
+
+      # ── 8. Terraform init ─────────────────────────────────────────────────────
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      # ── 9. Launch green EC2 (listener still on blue) ─────────────────────────
+      # deploy_green=true creates the green instance AND (via
+      # green_target_group_attachment.tf) registers it into the green TG.
+      # active_color is left at its default "blue", so live traffic is untouched.
+      - name: Launch green EC2 instance
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="deploy_green=true"
+
+      # ── 10. Read green target group ARN ───────────────────────────────────────
+      - name: Read green target group ARN
+        id: tf_outputs
+        working-directory: terraform
+        run: |
+          echo "green_tg_arn=$(terraform output -raw alb_target_group_green_arn)" >> $GITHUB_OUTPUT
+
+      # ── 11. Wait for green target to be healthy (via the ALB target group) ───
+      # We poll the green target group's own health check instead of SSM. This
+      # needs no SSM agent, no SSM IAM policy, and no instance access — the ALB
+      # already health-checks /health on the green instance once it is attached.
+      # The `|| echo` keeps a transient AWS error from aborting the step under -e.
+      - name: Wait for green target to be healthy
+        run: |
+          GREEN_TG_ARN="${{ steps.tf_outputs.outputs.green_tg_arn }}"
+          echo "Polling green target group: $GREEN_TG_ARN"
+          for i in $(seq 1 40); do
+            STATE=$(aws elbv2 describe-target-health \
+              --target-group-arn "$GREEN_TG_ARN" \
+              --region ap-northeast-2 \
+              --query "TargetHealthDescriptions[0].TargetHealth.State" \
+              --output text 2>/dev/null || echo "pending")
+            echo "Attempt $i/40: green target state = $STATE"
+            if [ "$STATE" = "healthy" ]; then
+              echo "✅ Green target is healthy!"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "❌ Green never became healthy after ~10 min."
+          exit 1
+
+      # ── 12. Switch ALB to green (durable, via Terraform) ─────────────────────
+      # Instead of `aws elbv2 modify-listener` (which Terraform would later
+      # revert), we re-apply with active_color=green. The listener in alb.tf
+      # forwards to whichever color this names, so the switch is in-place,
+      # zero-downtime (green was just confirmed healthy), and drift-free.
+      # We keep deploy_green=true so green is NOT torn down by this apply.
+      - name: Switch ALB traffic to green
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="deploy_green=true" \
+            -var="active_color=green"
+          echo "✅ ALB listener now forwards to green (Terraform-owned)."
+
+      # ── 13. Retag :green as :blue ─────────────────────────────────────────────
+      # Green is now the live version, so we promote the image to :blue too.
+      # NOTE: the blue EC2 keeps running but receives no traffic. That's fine —
+      # `terraform destroy` cleans it up at session end. (Auto-terminating it is
+      # an optional follow-up; see the chat notes.)
+      - name: Retag :green as :blue
+        run: |
+          docker pull mindmug/shimonvault-app:green
+          docker tag  mindmug/shimonvault-app:green mindmug/shimonvault-app:blue
+          docker push mindmug/shimonvault-app:blue
+
+      # ── 14. Notify: succeeded ─────────────────────────────────────────────────
+      - name: Notify deployment succeeded
+        if: success()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H 'Content-type: application/json' \
+            --data "{\"text\": \"✅ *DEPLOYMENT COMPLETE — ShimonVault*\nVersion: \`${{ github.sha }}\`\nTraffic: 100% shifted to green (zero downtime)\"}"
+
+      # ── 15. Notify: failed ────────────────────────────────────────────────────
+      - name: Notify deployment failed
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H 'Content-type: application/json' \
+            --data "{\"text\": \"❌ *DEPLOYMENT FAILED — ShimonVault*\nVersion: \`${{ github.sha }}\`\nBlue still live — no downtime\nCheck the Actions log.\"}"

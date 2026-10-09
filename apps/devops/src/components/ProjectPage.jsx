@@ -4,6 +4,7 @@ import Reveal from './Reveal.jsx'
 import { accentFor } from '../data/projects.js'
 import { sectionsFor, labelOf } from '../data/sections.jsx'
 import Avatars from './Avatars.jsx'
+import { OWNER } from '../data/owner.js'
 
 // One template for every project. Nothing here knows which project it is
 // rendering: the content comes from src/data/projects.js, the section order
@@ -21,6 +22,12 @@ export default function ProjectPage({ project }) {
   // observer and reset the highlight to the first section on every scroll.
   const sections = useMemo(() => sectionsFor(project), [project])
 
+  // A solo project lists no team, but the header still reads "Team of 1"
+  // with his circle so every project page has the same shape. This stays
+  // local to the header: Links and My Role read `project.team` to tell team
+  // projects from solo ones, so the data itself is left alone.
+  const team = project.team?.length > 0 ? project.team : [OWNER]
+
   // A different project is a different page as far as the reader is
   // concerned, so it starts at the top rather than wherever the last one was
   // left. `instant` because a smooth scroll here races the section nav's
@@ -35,7 +42,7 @@ export default function ProjectPage({ project }) {
     <article className="project" style={{ '--accent': accentFor(project) }}>
       {/* Above the title, not below it: this is the page's navigation menu,
           and it stays pinned there while the header scrolls away under it. */}
-      {sections.length > 0 && <SectionNav sections={sections} />}
+      {sections.length > 0 && <SectionNav sections={sections} project={project} />}
 
       {/* The menu spans the whole content column; everything below it is held
           to the reading measure, which is why they are separate wrappers. */}
@@ -52,19 +59,19 @@ export default function ProjectPage({ project }) {
               the sidebar carries the team, the eyebrow carries the product. */}
           <p className="project__eyebrow">{project.eyebrow ?? project.title}</p>
           <h1 className="project__title">{project.fullTitle ?? project.title}</h1>
+          {/* The team size sits on one line with the circles it counts, so the
+              label and the faces read as one fact. It is derived from the
+              members list rather than stored, one fact in one place. The
+              avatars are part of the header, not a section of their own:
+              giving them a heading, a divider and an anchor made a row of five
+              circles look like something to read. */}
+          <div className="project__team">
+            <p className="project__period">Team of {team.length}:</p>
+            <Avatars team={team} />
+          </div>
           {/* "Project Period:" is fixed chrome, so it lives here rather than
-              being repeated in every project's data. The team size is derived
-              from the members list for the same reason — one fact, one place.
-              The full roster has its own Members section below. */}
-          <p className="project__period">
-            {project.team?.length > 0 && `Team of ${project.team.length} \u00b7 `}
-            Project Period: {project.period}
-          </p>
-          {/* Part of the header, not a section of its own. Who built it belongs
-              with the title and the dates — it is one more fact about the
-              project, and giving it a heading, a divider and an anchor of its
-              own made a row of five circles look like something to read. */}
-          <Avatars team={project.team} />
+              being repeated in every project's data. */}
+          <p className="project__period">Project Period: {project.period}</p>
         </header>
 
         <div className="project__sections">

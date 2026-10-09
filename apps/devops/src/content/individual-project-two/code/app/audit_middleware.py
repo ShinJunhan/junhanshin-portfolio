@@ -1,0 +1,231 @@
+# shimon-vault/app/middleware/audit_middleware.py
+"""
+middleware/audit_middleware.py — ShimonVault request audit logger
+Every HTTP request that hits the FastAPI app is intercepted here.
+Before returning the response, this middleware writes a record to
+the DynamoDB audit-log table via audit_service.
+Why middleware and not individual route handlers?
+  - Routes can forget to log. Middleware never forgets.
+  - It's one consistent place to capture IP, path, method, status code.
+  - Security events (403, 401, 429) are captured automatically.
+"""
+import json
+import uuid as _uuid
+from typing import Optional
+
+from fastapi import Request
+from jose import JWTError, jwt
+from starlette.middleware.base import BaseHTTPMiddleware
+
+import config
+from database import get_write_db
+from models import AuditEventType, User
+from services.audit_service import write_event, write_security_incident
+from services.notify_service import notify_all
+from services.s3_service import upload_incident_report
+from datetime import datetime, timezone
+
+# Paths that are too noisy to log every time
+_SKIP_PATHS = {"/health", "/metrics", "/favicon.ico"}
+
+# Read-only endpoints the admin console polls on a timer to draw itself. A
+# successful poll is the observer watching, not something a person did, and at
+# 4 requests every 4 seconds they bury the real security signal: the audit trail
+# fills with ~40 self-generated rows a minute, so an attack burst is pushed out
+# of the recent feed within a couple of minutes. Successful polls are therefore
+# not audited. FAILED ones still are — a 401/403/429 here means someone is
+# hitting admin telemetry without the right token, which is exactly the kind of
+# event this trail exists to capture.
+_OBSERVER_PATHS = {
+    "/audit/feed",
+    "/admin/metrics/summary",
+    "/admin/metrics/infra",
+    "/admin/metrics/timeseries",
+}
+
+# After this many access-control violations (403s) by one user, suspend them.
+_SUSPEND_THRESHOLD = 5
+_violation_counts: dict[str, int] = {}
+
+# Bulk-download / exfiltration tracking: one alert per IP per burst.
+_exfil_alerted_ips: set = set()
+
+
+def _user_id_from_request(request: Request) -> Optional[str]:
+    """Pull the user id (JWT 'sub') from the Authorization header, or None."""
+    auth = request.headers.get("authorization", "")
+    if not auth.lower().startswith("bearer "):
+        return None
+    token = auth.split(" ", 1)[1].strip()
+    try:
+        payload = jwt.decode(
+            token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM]
+        )
+        return payload.get("sub")
+    except JWTError:
+        return None
+
+
+def _record_violation_and_maybe_suspend(user_id: str, ip: str) -> None:
+    """
+    Count one access-control violation for this user. Once the count reaches
+    _SUSPEND_THRESHOLD, set users.suspended = True (auth.get_current_user then
+    blocks the account). Best-effort: any failure is logged, never raised.
+    """
+    _violation_counts[user_id] = _violation_counts.get(user_id, 0) + 1
+    if _violation_counts[user_id] < _SUSPEND_THRESHOLD:
+        return
+
+    gen = get_write_db()
+    db = next(gen)
+    try:
+        user = db.query(User).filter(User.id == _uuid.UUID(str(user_id))).first()
+        if user and not user.suspended:
+            user.suspended = True
+            db.commit()
+            write_security_incident(
+                incident_type="broken_access_control",
+                ip_address=ip,
+                detail={"user_id": user_id, "violations": _violation_counts[user_id]},
+                user_id=user_id,
+            )
+            notify_all(
+                f"*ACCESS VIOLATION -- ShimonVault*\n"
+                f"Type: Broken Access Control (account suspended)\n"
+                f"User ID: `{user_id}`\n"
+                f"Violations: {_violation_counts[user_id]}\n"
+                f"Action: Account suspended\n"
+                f"Time: {datetime.now(timezone.utc).isoformat()}"
+            )
+    finally:
+        gen.close()
+
+
+def _maybe_report_exfiltration(ip: str, path: str) -> None:
+    """
+    First 429 seen from a given IP on a /docs/download path triggers one
+    incident report + one Slack/Telegram alert for that IP. Subsequent 429s
+    from the same IP (the rest of the burst) are still logged to the audit
+    trail by the normal per-request logic, but do not re-alert.
+    """
+    if ip in _exfil_alerted_ips:
+        return
+    _exfil_alerted_ips.add(ip)
+    report = {
+        "incident_type": "bulk_file_exfiltration",
+        "ip_address": ip,
+        "path": path,
+        "detected_at": datetime.now(timezone.utc).isoformat(),
+        "detail": "Rate limit (10 downloads / 60s) exceeded on /docs/download",
+    }
+    try:
+        s3_key = upload_incident_report("bulk_file_exfiltration", report)
+    except Exception as exc:
+        s3_key = None
+        print(f"[exfiltration] Failed to upload S3 report: {exc}")
+    write_security_incident(
+        incident_type="bulk_file_exfiltration",
+        ip_address=ip,
+        detail={"path": path, "s3_report_key": s3_key},
+    )
+    notify_all(
+        f"*EXFILTRATION ATTEMPT -- ShimonVault*\n"
+        f"Type: Bulk File Download\n"
+        f"IP: `{ip}`\n"
+        f"Action: Rate limit enforced, further requests blocked\n"
+        f"Report: {s3_key or 'upload failed'}\n"
+        f"Time: {datetime.now(timezone.utc).isoformat()}"
+    )
+
+
+# Map HTTP status codes to event types for security-relevant responses
+_STATUS_EVENT_MAP = {
+    401: AuditEventType.LOGIN_FAILURE,
+    403: AuditEventType.DOC_ACCESS_DENIED,
+    429: AuditEventType.RATE_LIMIT_HIT,
+}
+
+
+class AuditMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Skip health checks and metrics scrapes — they happen every 30s
+        if request.url.path in _SKIP_PATHS:
+            return await call_next(request)
+        # Call the actual route handler
+        response = await call_next(request)
+        # Determine severity based on HTTP status
+        status_code = response.status_code
+        # Drop successful console self-polling before it reaches the trail.
+        if request.url.path in _OBSERVER_PATHS and status_code < 400:
+            return response
+        if status_code >= 500:
+            severity = "critical"
+        elif status_code in (401, 403, 429):
+            severity = "warning"
+        else:
+            severity = "info"
+        # Exfiltration detection: first 429 on a /docs/download path fires
+        # one incident report + Slack/Telegram alert per attacking IP.
+        if status_code == 429 and "/docs/download" in request.url.path:
+            ip = (
+                request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+                or request.client.host
+            )
+            _maybe_report_exfiltration(ip, request.url.path)
+
+        # Map status to event type (default to suspicious for 4xx we don't recognize)
+        if status_code in _STATUS_EVENT_MAP:
+            event_type = _STATUS_EVENT_MAP[status_code]
+        elif 400 <= status_code < 500:
+            event_type = AuditEventType.SUSPICIOUS
+        else:
+            # For 2xx/3xx, use a path-based heuristic
+            path = request.url.path
+            if "/docs/download" in path:
+                event_type = AuditEventType.DOC_DOWNLOAD
+            elif "/docs/upload" in path or (path.startswith("/docs") and request.method == "POST"):
+                event_type = AuditEventType.DOC_UPLOAD
+            elif "/auth/login" in path:
+                event_type = AuditEventType.LOGIN_SUCCESS
+            elif "/auth/logout" in path:
+                event_type = AuditEventType.LOGOUT
+            elif "/meetings" in path and "join" in path:
+                event_type = AuditEventType.MEETING_JOIN
+            else:
+                # Generic info event — still logged for the full audit trail
+                event_type = AuditEventType.LOGIN_SUCCESS  # reuse as generic "action"
+        # Extract client IP. X-Forwarded-For is set by ALB / Cloudflare.
+        ip = (
+            request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+            or request.client.host
+        )
+        detail = json.dumps({
+            "method": request.method,
+            "path":   request.url.path,
+            "status": status_code,
+        })
+        # Fire-and-forget write — we do NOT await or let it block the response
+        # If DynamoDB is down, the error is logged to stdout but never raises
+        try:
+            write_event(
+                event_type=event_type,
+                ip_address=ip,
+                resource=request.url.path,
+                detail=detail,
+                severity=severity,
+            )
+        except Exception as exc:
+            print(f"[AuditMiddleware] Failed to write audit event: {exc}")
+
+        # Broken-access-control auto-suspend: count 403s per user and suspend
+        # the account once it crosses the threshold. Wrapped so it can never
+        # affect the response.
+        if status_code == 403:
+            try:
+                uid = _user_id_from_request(request)
+                if uid:
+                    _record_violation_and_maybe_suspend(uid, ip)
+            except Exception as exc:
+                print(f"[AuditMiddleware] suspension check failed: {exc}")
+
+        return response

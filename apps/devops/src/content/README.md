@@ -28,6 +28,56 @@ To add a third language, add an entry to `LANGUAGES` in `src/data/docs.js`
 (`{ id: 'ja', label: 'JA', suffix: '.ja' }`) and drop `README.ja.md` in the
 project's folder.
 
+## Source files
+
+The document tabs above are discovered. The source tabs beside them are not —
+each one is an explicit `?raw` import in `src/data/projects.js`, listed in that
+project's `terraform` key against the path the file has in its own repository:
+
+```js
+import echoMainTf from '../content/echochallengers/code/terraform/main.tf?raw'
+// …
+terraform: [{ path: 'terraform/main.tf', content: echoMainTf }],
+```
+
+Those files live under `src/content/<slug>/code/` and are chosen to carry the
+page's argument rather than to inventory the repository. They are **copies**,
+because each of those projects is a separate GitHub repository that Vite cannot
+see. The copy doubles as the editorial gate: comments are translated where the
+original wrote them in Korean, and a file carrying a live credential is left out
+rather than redacted.
+
+What a copy costs is that it can go stale in silence. Nothing throws, no test
+fails, and the page keeps showing a file the repository no longer has.
+
+### The one exception: cloud-resume-challenge
+
+That project's infrastructure is in **this** repository, under `infra/` and
+`backend/`, because it is what deploys this site. Its six source files are
+therefore imported from where they actually live:
+
+```js
+import crcLambdaTf from '../../../../infra/lambda.tf?raw'
+```
+
+The reason is the page's own claim. It says *this is the infrastructure this
+site runs on*, and a copy that drifts makes that claim quietly false. Reading
+the real file means the page cannot be wrong about it, and a renamed file fails
+the build instead of rotting the page.
+
+Three consequences, all accepted on purpose:
+
+- `vite.config.js` carries a `server.fs.allow` entry so the dev server can read
+  outside its own root. The production build never needed one, because Rollup
+  follows the import like any other.
+- Those files have no editorial gate. Every comment written in `infra/` is
+  published the moment it is pushed, so nothing private belongs in them.
+- The devops build now depends on `infra/` being present. That is a loud
+  failure rather than a silent one, which is the whole trade.
+
+Do not generalise this. A project whose code is in another repository has no
+such option, and the copy is correct for every one of them.
+
 ## Writing a runbook
 
 Different job from the README, so a different voice. A runbook is read by

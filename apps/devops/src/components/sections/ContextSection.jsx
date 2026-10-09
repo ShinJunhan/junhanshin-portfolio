@@ -69,6 +69,15 @@ export default function ContextSection({ project }) {
             <span className="board__pin" aria-hidden="true" />
             {note.label && <h3 className="board__label">{note.label}</h3>}
             <p className="board__text">
+              {/* An optional opening sentence set larger, for the one support
+                  note on a board that should break the run of same-sized
+                  cards. It is the note's own first sentence, not an extra
+                  headline, so the text still reads straight through. */}
+              {note.lede && (
+                <span className="board__lede">
+                  <RichText>{note.lede}</RichText>
+                </span>
+              )}
               <RichText>{note.text}</RichText>
             </p>
           </li>

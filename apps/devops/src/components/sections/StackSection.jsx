@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import RichText from '../../lib/richText.jsx'
-import { techIcon, techInitial } from '../../data/tech.js'
+import { techIcon, techInitial, techTone } from '../../data/tech.js'
 import useMediaQuery from '../../lib/useMediaQuery.js'
 import TechStackWheel from './TechStackWheel.jsx'
 
@@ -32,7 +32,7 @@ function Tech({ item }) {
 
   return (
     <li className="tech">
-      <span className="tech__mark">
+      <span className="tech__mark" data-tone={icon ? techTone(item) : undefined}>
         {icon ? (
           // Decorative: the label sits right next to it in text.
           <img src={icon} alt="" loading="lazy" />
@@ -82,7 +82,11 @@ function ToolNote({ note, open, onToggle, index }) {
           aria-controls={`tool-${note.tool}`}
           onClick={onToggle}
         >
-          <span className="tool-note__icon" aria-hidden="true">
+          <span
+            className="tool-note__icon"
+            aria-hidden="true"
+            data-tone={icon ? techTone(note.icon ?? note.tool) : undefined}
+          >
             {icon ? (
               <img src={icon} alt="" loading="lazy" />
             ) : (

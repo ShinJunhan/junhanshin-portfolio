@@ -51,8 +51,9 @@ cd monitoring && make ps
 # Prometheus has its targets
 curl -s localhost:9090/api/v1/targets | grep -c '"health":"up"'
 
-# The recovery controller is listening
-curl -s localhost:8000/health
+# The recovery controller is listening (published on 8001; expect
+# {"message":"Recovery Controller Running"})
+curl -s localhost:8001/
 
 # The app answers through Nginx, which is what BankAppDown actually measures
 curl -s -o /dev/null -w '%{http_code}\n' http://<alb-dns>/health
@@ -290,10 +291,9 @@ other change is almost always an expired key, not a network fault.
   app-to-replica tunnel would not initialise, and the login page rendered while
   logins hung. Pinging out from the replica host registers the connection with
   the firewall and the direct peer-to-peer path comes up.
-- **Public exposure draws automated scanners within minutes.** WordPress and
-  PHP webshell probes started arriving on their own shortly after the EC2 went
-  public. The `nginx-scan` jail exists because of that traffic, not
-  in anticipation of it.
+- **Public exposure draws automated scanners right away.** WordPress and
+  PHP webshell probes started arriving on their own right after the EC2 went
+  public. The `nginx-scan` jail was added in response to that traffic.
 - **Maintenance alerts never reach Telegram.** See the top of this document.
 
 ---

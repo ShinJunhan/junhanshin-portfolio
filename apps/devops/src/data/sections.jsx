@@ -8,7 +8,7 @@ import ArchitectureSection, {
 import StepsSection from '../components/sections/StepsSection.jsx'
 import CostSection from '../components/sections/CostSection.jsx'
 import RecoveryPolicySection from '../components/sections/RecoveryPolicySection.jsx'
-import SourceSection from '../components/sections/SourceSection.jsx'
+import SourceSection, { hasSource } from '../components/sections/SourceSection.jsx'
 import MediaSection from '../components/sections/MediaSection.jsx'
 import DecisionsSection from '../components/sections/DecisionsSection.jsx'
 import LinksSection, { visibleLinkKinds } from '../components/sections/LinksSection.jsx'
@@ -179,8 +179,17 @@ export const SECTIONS = [
     // page, where the repo links already live.
     id: 'source',
     label: 'Resources',
-    has: (project) => project.terraform?.length > 0,
-    always: true,
+    // Owned by the section component, which is the only thing that knows all
+    // three sources a tab can come from: the Terraform in the data, and the
+    // documents and deck discovered on disk. Testing `project.terraform` here
+    // hid a project that had a README and a runbook and no Terraform.
+    has: hasSource,
+    // Standing empty on a project whose source has not been brought across
+    // yet, gone entirely on one that sets `terraform: null` — the same opt-out
+    // `recovery` above already uses, and for the same reason. `has` still wins
+    // over this: a project that opts the empty slot out and then gains a
+    // README gets the panel back, with the README in it.
+    always: (project) => project.terraform !== null,
     Body: SourceSection,
   },
   {

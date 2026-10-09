@@ -21,6 +21,23 @@ import DecisionGlyph from './decisionGlyphs.jsx'
 // button and no focus trap. The card is part of the page, and the reader can
 // scroll past it or ignore it at any moment.
 
+// Ties the last two words of a Chose/Over value together with a no-break
+// space, so the value never ends on a line holding one word. CSS
+// `text-wrap: pretty` was doing this job, but Safari applies it far more
+// eagerly than Chrome and pulled whole words off a first line that had room
+// for them. A space inside a `code` span is skipped: those already render
+// unbroken.
+function keepLastWordsTogether(text) {
+  if (!text) return text
+  for (let i = text.length - 1; i > 0; i -= 1) {
+    if (text[i] !== ' ') continue
+    const ticksBefore = text.slice(0, i).split('`').length - 1
+    if (ticksBefore % 2 === 1) continue
+    return `${text.slice(0, i)}\u00a0${text.slice(i + 1)}`
+  }
+  return text
+}
+
 // The card being read, and the one on its way off the stage. The leaving card
 // is decoration: it is aria-hidden, inert, and removed on a timer rather than
 // on an animation event, so a frame that never composites cannot leave two
@@ -437,13 +454,13 @@ function Face({ index, total, decision, variant = 'live' }) {
       <dl className="dcard__stat">
         <dt className="dcard__stat-key">Chose</dt>
         <dd className="dcard__stat-val">
-          <RichText>{decision.chose}</RichText>
+          <RichText>{keepLastWordsTogether(decision.chose)}</RichText>
         </dd>
         {decision.over && (
           <>
             <dt className="dcard__stat-key">Over</dt>
             <dd className="dcard__stat-val dcard__stat-val--over">
-              <RichText>{decision.over}</RichText>
+              <RichText>{keepLastWordsTogether(decision.over)}</RichText>
             </dd>
           </>
         )}

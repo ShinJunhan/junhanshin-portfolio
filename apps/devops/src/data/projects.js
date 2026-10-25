@@ -113,6 +113,16 @@ import crcDeployPolicyTf from '../../../../infra/bootstrap/deploy_policy.tf?raw'
 import crcHandler from '../../../../backend/functions/counter/handler.py?raw'
 import crcInfraWorkflow from '../../../../.github/workflows/infra.yml?raw'
 
+// Midam's (the KT fellowship project), on the same terms as hailcast: comments
+// and the messages a person reads are translated, and every identifier, flag,
+// value, and line of logic is byte-for-byte what Jangingmall/infra holds. Five
+// files from Junhan's own track; see the entry's `terraform` key for the order.
+import ktNatTf from '../content/kt-fellowship-project/code/terraform/modules/nat/main.tf?raw'
+import ktEksTf from '../content/kt-fellowship-project/code/terraform/modules/eks/main.tf?raw'
+import ktEksNodesTf from '../content/kt-fellowship-project/code/terraform/modules/eks_nodes/main.tf?raw'
+import ktEksAddonsTf from '../content/kt-fellowship-project/code/terraform/modules/eks_addons/main.tf?raw'
+import ktHaDrill from '../content/kt-fellowship-project/code/scripts/ha_failover_drill.py?raw'
+
 // The single source of truth for every project page on this app. Nothing in
 // the page components is per-project — a new project is one entry here plus a
 // folder under src/content/<slug>/ for its README files.
@@ -140,6 +150,10 @@ import crcInfraWorkflow from '../../../../.github/workflows/infra.yml?raw'
 //                 complete sentence that stands alone — the format invites
 //                 fragments and a fragment only works for someone who already
 //                 knows the project.
+//                 `layout: 'collage'` with exactly six notes swaps the even
+//                 grid for a collage: the `hero` note sits in the middle of
+//                 the top row, and each note's `tone` (why | what | limit)
+//                 picks its paper colour.
 //
 //   implementation
 //                 { months: ['YYYY-MM', …],
@@ -189,6 +203,9 @@ export const ACCENTS = {
   coral: 'var(--c-coral)',
   orange: 'var(--c-orange)',
   emerald: 'var(--c-emerald)',
+  // Unassigned as a page accent since the fellowship page moved to berry.
+  // Kept mapped: a grey reads as an unthemed page, and DESIGN.md says not to
+  // reach for it again. The token itself stays for the avatars and the wheel.
   steel: 'var(--c-steel)',
   forest: 'var(--c-forest)',
   // Still mapped, and still a trap worth naming. --c-indigo is the same
@@ -205,6 +222,9 @@ export const ACCENTS = {
   // the site now has an accent of its own.
   plum: 'var(--c-plum)',
   burgundy: 'var(--c-burgundy)',
+  // The fellowship page's (Midam), replacing steel. See the token in
+  // global.css for why it is a berry.
+  berry: 'var(--c-berry)',
 }
 
 // The sidebar buckets, in the order they appear. Adding another one is an
@@ -246,6 +266,20 @@ const LOCK_N_LOCK_DIAGRAMS = [
   // exports run 02 to 06 rather than the 01 to 05 in their file names.
   address: `lock-n-lock/architecture/${String(i + 2).padStart(2, '0')}-${file.replace(/^architecture-\d+-|\.svg$/g, '')}`,
 }))
+
+// Midam's eight tracks, in the deck's order. Each member of that page's team
+// points at one, and Avatars groups the header row by it: the code sits under
+// each cluster, and the name is the cluster's accessible label.
+const MIDAM_TRACKS = {
+  PM: { code: 'PM', name: 'Product Management' },
+  PD: { code: 'PD', name: 'Product Design' },
+  AI: { code: 'AI', name: 'Generative AI' },
+  FE: { code: 'FE', name: 'Front-End' },
+  BE: { code: 'BE', name: 'Back-End' },
+  CI: { code: 'CI', name: 'Cloud Infrastructure' },
+  CN: { code: 'CN', name: 'Cloud Native' },
+  SEC: { code: 'SEC', name: 'Cloud Security' },
+}
 
 export const PROJECTS = [
   {
@@ -448,10 +482,11 @@ export const PROJECTS = [
     // Ansible roles, the merged PRs, the bootstrap script, the chaos role, the
     // troubleshooting log.
     role: {
-      // Stated once, in full, under the monogram. It used to be split between
-      // a short form up here and a "PR Owner" heading down in a tile, which
-      // made one job read as two.
-      title: 'Infrastructure Build Lead and PR Owner',
+      // The build role under the monogram, with the PR role in the pill
+      // beneath it. Kept in full even though it wraps to two lines in the
+      // avatar column: "Infra" is how the Members row shortens it, not this.
+      title: 'Infrastructure Build Lead',
+      subtitle: 'PR Owner',
       // `mirror` — `columns` reflected, with the lead pinned to the right-hand
       // half. Same cell maths as hailcast's, opposite silhouette, which is the
       // cheapest way to stop two pages reading as one picture.
@@ -1435,7 +1470,11 @@ project1-aws/
     // list this track's own deliverables, or to the README where the deck is
     // looser than the code (Remote State).
     role: {
-      title: 'Team Lead and Infrastructure Track Owner',
+      // The lead role under the monogram, with the track in the pill beneath
+      // it. "Infra" rather than "Infrastructure" so the pill stays one line in
+      // the avatar column, where the full word wrapped it to two.
+      title: 'Team Lead',
+      subtitle: 'Infra Track Owner',
       // The three counts this track is measured by, across the top of the
       // section. They were figures inside the lead tile, which is what made
       // that tile ask to be three rows tall and then sit half empty; the band
@@ -2527,245 +2566,299 @@ project2-security/
       { name: 'Jiyoon Lee', initials: 'JY', title: 'Autoscaling & Monitoring' },
       { name: 'Yongbin Cho', initials: 'YB', title: 'ArgoCD & Manifests' },
     ],
-    // The three sentences a reader who never scrolls should still come away
-    // with, drawn from the sections below rather than written separately. The
-    // result sentence carries the honesty declaration inside it on purpose:
-    // the number is the headline, and a headline number that quietly turns
-    // out to be a simulation two screens later is the thing this project
-    // spent a whole slide refusing to do.
+    // The three answers a reader who never scrolls should still come away
+    // with. Hyphenated terms use the non-breaking hyphen (‑) so a line
+    // never ends on half a word.
     glance: {
-      why: 'A taxi platform sized for its own peak pays for that peak around the clock. The service never falls over, and the bill never falls either. Reactive autoscaling only narrows the gap, because capacity still arrives after the traffic that called for it.',
-      how: 'A LightGBM model trained on New York taxi calls and Open-Meteo weather forecasts the next four hours of demand; the predict pod turns that into a floor and patches it onto a KEDA `ScaledObject` every 60 seconds, so pods exist before the load does and Karpenter supplies Spot nodes underneath them. When the forecast is wrong, KEDA’s own queue-length trigger catches it.',
-      result: 'A **26.5% reduction in worker pod-hours** against a peak-sized fixed fleet, **216 pod-hours a day down to 158.8**, across **4 repositories**, **16 ArgoCD applications** and **12 IRSA roles**. That figure is simulated from eight days of recorded scaling decisions rather than read off a bill; a later refinement wired the **Cost and Usage Report** through Glue and Athena into OpenCost, so what the cluster itself cost is now measured even though what it saved is still modelled.',
+      why: 'This project was the capstone of our cloud infrastructure course, and it was our most ambitious build yet. As the lead of a six‑member team, I set a goal for us to put core skills such as **Kubernetes**, **GitOps**, and **FinOps** into real practice. Working from the project guidelines, we decided to design cloud infrastructure that would solve a problem most always‑on services face: **over‑provisioning**. We built hailcast, a taxi platform on Amazon EKS whose capacity follows demand through predictive autoscaling. It pays for the capacity it needs instead of peak prices all day.',
+      // `loop` draws an illustrative day (taxi calls as an area, the forecast
+      // floor as a step line, one queue spike) above the deck's four-stage
+      // control loop (slide 10). The curves are drawn to show the two
+      // scaling layers, not recorded data, and the note under the chart says
+      // so. Values are fractions of the chart height, one per hour, 0 to 24.
+      how: {
+        loop: {
+          calls: [0.1, 0.07, 0.05, 0.05, 0.06, 0.12, 0.3, 0.55, 0.62, 0.45, 0.38, 0.4, 0.44, 0.42, 0.45, 0.52, 0.62, 0.78, 0.95, 0.7, 0.55, 0.42, 0.28, 0.16, 0.1],
+          floor: [0.15, 0.12, 0.1, 0.1, 0.12, 0.2, 0.45, 0.68, 0.68, 0.55, 0.48, 0.48, 0.52, 0.52, 0.55, 0.62, 0.72, 0.8, 0.8, 0.8, 0.65, 0.52, 0.38, 0.25, 0.15],
+          // Every 4 hours: weather-cron and the ForecastScheduler (slide 30).
+          forecastEvery: 4,
+          labels: {
+            forecast: 'forecast every 4 h',
+            floor: 'floor rises first',
+            // The KEDA queue trigger, 500 messages (slide 26).
+            spike: 'queue > 500',
+            scaleIn: 'scale in',
+          },
+          stages: [
+            { key: '01 Observe', tool: 'Prometheus' },
+            { key: '02 Forecast', tool: 'LightGBM' },
+            { key: '03 Execute', tool: 'KEDA + Karpenter' },
+            { key: '04 Verify', tool: 'OpenCost' },
+          ],
+          // Slide 10's own wording for the return arrow.
+          back: 'verification results feed the next forecast',
+          note: 'Illustrative day, drawn to show the two layers.',
+        },
+      },
+      // Simulated and measured side by side, each under its own label.
+      // `pods`: 216 pod-hours a day is 9 pods all day (the observed peak);
+      // 158.75 is 6.61. The saving is the 2.39 pods between them, 26.5%.
+      // `measured`: the refinement's AWS net cost for the last fully settled
+      // day (OpenCost reading the CUR, captured 2026-08-25), for the whole
+      // dev environment rather than the cluster alone.
+      result: {
+        pods: {
+          peak: 9,
+          forecast: 6.61,
+          saving: '−26.5%',
+          forecastLabel: '6.6 with the forecast',
+          peakLabel: '9 at peak',
+          caption:
+            'Each block represents one worker pod running for 24 hours. The figures come from eight days of recorded scaling decisions. The hatched blocks show the simulated saving.',
+        },
+        measured: {
+          value: '$8.71',
+          text: 'This is the project’s AWS bill for one day.',
+        },
+      },
     },
-    // My Role as a bento of duties sized by how much of the project each one
-    // was. Eight tiles rather than the six the other two projects use: one
-    // lead (3x2), four medium (3x1) and three small (2x1) tile the six-column
-    // grid exactly over four rows.
-    //
-    // `label` is the tile's key and is deliberately not rendered; the emphasis
-    // lives inside the sentence instead.
-    //
-    // Scoped to what the deck's team slide puts against this name and what the
-    // ops repo's own README documents — the lead role, the four-repo console,
-    // the account guard, and teardown. The Terraform, the IRSA design, the
-    // naming convention and the verifier's internals belong to the deputy lead
-    // and are credited to her in Problem & Context rather than absorbed here.
+    // My Role as a bento of six duties, each with a small visual that restates
+    // its sentence. Every claim here traces to a PR he authored or to a figure
+    // from the GitHub API (reviews), the teardown results doc (140 / 0), or the
+    // course schedule (Aug 4 and Aug 27). The Terraform, the IRSA design, the
+    // naming convention, the contract checker and the rebuild document are the
+    // deputy lead's and the rebuild team's, and are not claimed here.
     role: {
-      title: 'Team Lead and Operations Track Owner',
-      // `columns` — lead 3x2 with two mediums stacked beside it. The one of the
-      // three arrangements whose lead is closest to its own content height,
-      // which is what this project needs: eight tiles, and a lead whose
-      // sentence is no longer than the two duties sitting next to it.
-      layout: 'columns',
+      title: 'Team Lead',
+      subtitle: 'Operations Track Owner',
+      // `areas` — the lead takes the left half over two rows, the teardown
+      // result and the silent-failure fix stack beside it, and three small
+      // tiles share the bottom row.
+      layout: 'areas',
+      areas: [
+        'L L L L L L T T T T T T',
+        'L L L L L L G G G G G G',
+        'E E E E R R R R P P P P',
+      ],
       tiles: [
         {
+          area: 'L',
           size: 'lead',
           label: 'Team Lead',
-          stat: { value: '4', unit: 'repos, one console' },
-          text: 'Led **six people across four repositories** that deploy four different ways: `terraform apply`, `docker build`, an ArgoCD pull, and local `make`. The fourth repo is mine: an operations layer that gives the other three **one command surface** and the guardrails that surface is worth having.',
+          visual: {
+            type: 'hub',
+            from: { name: 'ops', cmd: 'make' },
+            to: [
+              { name: 'infra', cmd: 'terraform apply' },
+              { name: 'app', cmd: 'docker build' },
+              { name: 'manifests', cmd: 'Argo CD pull' },
+            ],
+          },
+          text: 'Coordinated **six people across four repositories** and owned the ops repo that runs the other three from one console.',
+          footer: {
+            type: 'reviews',
+            value: '177 of 248',
+            unit: 'teammate PRs reviewed',
+            bars: [
+              { name: 'infra', count: 80 },
+              { name: 'manifests', count: 65 },
+              { name: 'ops', count: 19 },
+              { name: 'app', count: 13 },
+            ],
+          },
         },
         {
+          area: 'T',
           size: 'medium',
-          label: 'Account Guard',
-          text: 'Every credentialed command compares `sts get-caller-identity` against `PROJECT_ACCOUNT_ID` and **stops dead on a mismatch**. The earlier script printed the account and compared nothing, so a session sitting in the wrong account went **green on every check**. We finished with zero wrong-account incidents.',
-        },
-        {
-          size: 'medium',
+          tone: 'accent',
           label: 'Teardown Orchestration',
-          text: 'Ordered destruction **manifests → infra → app**, because a live ALB or a leftover ENI blocks a VPC from being destroyed for hours. The measured run cleared **140 resources in 21 minutes 40 seconds with zero errors**, and stops between stages rather than carrying a failure forward.',
+          visual: {
+            type: 'result',
+            items: [
+              { value: '140', unit: 'resources removed' },
+              { value: '0', unit: 'errors' },
+            ],
+          },
+          text: 'Built the teardown orchestrator and its scripts for **infra, app, and manifests**, which removed **140 resources with zero errors** on August 3.',
         },
         {
-          size: 'small',
-          label: 'Command Delegation',
-          text: 'One `Makefile` that delegates outward to each sibling repository, so `clone-all`, `setup`, `check`, plan, apply and deploy all start **in the same place**.',
-        },
-        {
-          size: 'small',
-          label: 'Contract Checking',
-          text: 'Hosted the naming-contract verifier as `make check-contract`, run **daily rather than the night before a demo**. It checks statically against the Terraform source and at runtime against `aws describe`, and the refinement extended it to compare a **value** across two repositories rather than only a name.',
-        },
-        {
-          size: 'small',
-          label: 'Credential Isolation',
-          text: 'A `cd` hook swaps `DOCKER_CONFIG` to a repo-local store inside the ops folder, so logging into the team registry **does not overwrite anyone’s personal login**.',
-        },
-        {
+          area: 'G',
           size: 'medium',
-          label: 'Runbooks as Deliverables',
-          text: 'Wrote and revised the **teardown and rebuild checklists seven times**, folding measured numbers back in each pass. CloudFront’s teardown was estimated at "over ten minutes" and measured at **3 minutes 14 seconds**. Then had someone who had not written the rebuild document **execute it while I stayed out of it**: it stopped in three places, all of them steps I was doing without noticing.',
+          label: 'Silent Teardown Fix',
+          visual: {
+            type: 'beforeAfter',
+            rows: [
+              { cmd: 'make destroy-all-yes', stage: 'preview only', outcome: '“done”, 0 deleted', ok: false },
+              { cmd: 'CONFIRM=yes', stage: 'infra stage', outcome: 'real destroy', ok: true },
+            ],
+          },
+          text: 'Fixed a silent failure where the one-command teardown reported success **without deleting anything**. Added an **account guard** before the real destroy.',
         },
         {
-          size: 'medium',
-          label: 'Blast-Radius Discipline',
-          text: '`CONFIRM=yes` is injected by the orchestrator so a real destroy is deliberate; `FORCE=yes` is **never injected** and has to be typed by a person. Review is gated by `CODEOWNERS` on the teardown files alone, because putting the whole repository behind approval would have cost more speed than it bought safety.',
+          area: 'E',
+          size: 'small',
+          label: 'Edge Module',
+          visual: {
+            type: 'chips',
+            items: [
+              { text: 'Route53' },
+              { text: 'CloudFront' },
+              { text: 'ACM us-east-1', accent: true },
+              { text: 'ACM ap-northeast-2', accent: true },
+            ],
+          },
+          text: 'Built the **Route53, CloudFront, and ACM** edge module with certificates in two regions behind an `enable_edge` switch.',
+        },
+        {
+          area: 'R',
+          size: 'small',
+          label: 'Profile Isolation',
+          visual: {
+            type: 'routes',
+            rows: [
+              { when: 'in the project', profile: '[hailcast]', active: true },
+              { when: 'anywhere else', profile: '[default]' },
+            ],
+          },
+          text: 'Kept every teammate’s personal AWS login separate by having `setup` create and switch to a **hailcast profile** automatically.',
+        },
+        {
+          area: 'P',
+          size: 'small',
+          label: 'Presenter',
+          visual: {
+            type: 'calendar',
+            dates: [
+              { month: 'AUG', day: '4', label: 'First presentation' },
+              { month: 'AUG', day: '27', label: 'Refinement presentation', active: true },
+            ],
+          },
+          text: 'Presented the **original build** and the **refined build** to the course.',
         },
       ],
     },
-    // An idea board rather than a paragraph. Thirteen notes over four rows of
-    // the four-column grid: three leads spanning two columns each and ten
-    // supports. Every note is a complete sentence that stands on its own —
-    // the format invites fragments, and a fragment only works for someone who
-    // already knows the project.
+    // The collage board: one hero note in the middle of the top row, the
+    // other two "why" notes either side of it, and three notes below. Each
+    // label is the question the note answers, and each lede is the short
+    // answer. `tone` picks the paper: why (accent), what (indigo), and limit
+    // (ink). At a Glance already covers the capstone, the team, the stack, and
+    // the 26.5% and $8.71 figures, so none of that repeats here.
     //
-    // The counts have to divide the rows, which the board's CSS is explicit
-    // about — so the refinement's three notes are one lead plus two supports,
-    // filling row four exactly rather than leaving a note beside empty columns.
+    // Sources: slide 4 (the opening question), slide 8 (riders wait on
+    // drivers), slide 4 (reactive versus forecast-led scaling), slides 5 and
+    // 32 (New York taxi and weather data), slide 12 (other services), and
+    // slide 44 (the three fixed costs).
     context: {
+      layout: 'collage',
       notes: [
         {
-          size: 'lead',
-          label: 'The Bill Nobody Notices',
-          text: 'A taxi app almost never falls over, and that is precisely the problem: the infrastructure behind it is **sized for its busiest hour and runs at that size all twenty-four**, so at four in the morning the platform is paying peak prices to serve almost nobody. Nothing shows up as an incident, and nothing shows up in a dashboard. It shows up as a bill that is quietly larger than the service it bought.',
+          hero: true,
+          tone: 'why',
+          label: 'What Does a Server That Never Fails Cost?',
+          lede: 'We suspected that taxi apps rarely go down because their servers run at **peak capacity** all day.',
+          text: 'If that is true, the platform pays the same price in the early morning as it does during the evening rush.',
         },
         {
-          size: 'support',
-          label: 'The Problem, Redefined',
-          text: 'Our first framing was **"stop the service slowing down under a traffic surge,"** and looking at how taxi hailing actually works killed it: the bottleneck is the number of drivers, not the number of servers. So we redefined the problem as **the cost of idle peak-sized capacity**, which is the one the infrastructure could genuinely answer.',
+          tone: 'why',
+          label: 'What Makes Riders Wait?',
+          lede: 'Riders wait when there are not enough **drivers**.',
+          text: 'Our first goal was to prevent server delays during traffic spikes. After this finding, we changed our goal to cutting the fixed cost of **idle capacity**.',
         },
         {
-          size: 'support',
-          label: 'Where the Name Comes From',
-          text: 'The team is **ThisPod-ThatPod**, and it named the app **hailcast**, joining “hail,” as in hailing a taxi, to the “cast” of “forecast,” because the whole system is one sentence: **use the weather forecast to decide how many taxi calls are coming**, and have the capacity waiting when they arrive.',
+          tone: 'why',
+          label: 'Can Infrastructure Move First?',
+          lede: 'We wanted to add capacity before the calls arrive.',
+          text: 'Most infrastructure adds capacity only after the load arrives. We used a demand **forecast** to start scaling earlier.',
         },
         {
-          size: 'support',
-          label: 'Prediction Sets the Floor',
-          text: 'A LightGBM model trained on New York taxi trips and Open-Meteo weather learns patterns like “a rainy Friday evening spikes,” and every four hours it writes a demand figure for the next four hours; a scheduler turns that into a pod count of **demand ÷ 500, plus one for headroom**, and patches it onto KEDA as a minimum.',
+          tone: 'what',
+          label: 'Why Taxis and Weather?',
+          lede: 'Taxi demand changes with the time of day and the weather.',
+          text: 'We trained our model on public **New York City** taxi data matched with hourly **weather** data. The model learns patterns such as more calls on a rainy Friday evening.',
         },
         {
-          size: 'support',
-          label: 'The Queue Is the Safety Net',
-          text: 'Prediction alone is a single point of failure, so **KEDA also reads the SQS call queue directly**: if the forecast is wrong and the queue passes 500 messages, reactive scaling catches the overflow, and Karpenter supplies Spot nodes underneath whatever the two layers between them ask for.',
+          tone: 'what',
+          label: 'Where Else Does It Fit?',
+          lede: 'Other services with hourly demand swings can use it.',
+          text: 'Examples include **delivery platforms**, **ticketing systems**, and high-traffic APIs.',
         },
         {
-          size: 'lead',
-          label: 'Four Repos, One Contract',
-          text: 'Six people split across **four repositories that deploy four different ways**, and the seams between them are all strings: a role name, a ServiceAccount name, a metric key, an image tag. One character out of place in any of them fails **silently**, producing no error and only a "permission denied" against a policy that is perfectly correct. So a single naming document became the source of truth, revised **before** the code rather than after it, with a verifier checking the code against it daily.',
-        },
-        {
-          size: 'support',
-          label: 'Honesty Declaration',
-          text: 'The deck opens on a slide the team wrote before any of the numbers existed: **this is not a live service, and every figure here is a simulated expected effect rather than measured billing**. Keeping that line at the front is what let us report a 26.5% figure without it becoming a claim the project cannot back.',
-        },
-        {
-          size: 'support',
-          label: 'Cost as a Design Constraint',
-          text: 'FinOps was a build rule rather than a review step: **unnecessary resources were not created at all**, S3 and DynamoDB traffic skips the NAT through a free gateway endpoint, and an EventBridge schedule takes the whole dev cluster down between 02:00 and 10:00 KST so a learning budget is not spent on an empty night.',
-        },
-        {
-          size: 'support',
-          label: 'The Expensive Failure Is the Silent One',
-          text: 'Every incident worth remembering left **no error at all**: a missing security-group tag meant nodes booted, accepted SSM sessions, and never joined the cluster; a doubled `/api` prefix made the demo stop scaling with the app still perfectly healthy; a probe using `pgrep` on an image without `procps` would have restarted every pod forever.',
-        },
-        {
-          size: 'support',
-          label: 'Whose Idea It Was',
-          text: 'The topic was **Miseon Lee’s**, and the team chose it over the alternatives on the strength of the pitch; she went on to build the entire Terraform estate, the IRSA roles, the naming convention, and the verifier that enforces it. That work is the foundation the rest of this page stands on.',
-        },
-        {
-          size: 'lead',
-          label: 'The Refinement: Guesswork Into Measurement',
-          text: 'The project was presented once in early August and then given a second stretch, and the six tasks that came out of it turn out to be one task: **everything the first version asserted, the second version had to measure**. The cost figure stopped being a list-price estimate and became a bill. The rebuild procedure stopped being a document someone had read and became a command someone had run. The prediction stopped being checked by eye and started recording its own misses. **Every one of them replaced a claim with evidence**, which is the only kind of improvement a system already working can honestly make.',
-        },
-        {
-          size: 'support',
-          label: 'The Runbook Someone Else Ran',
-          text: 'A runbook checked by its own author is checked against the memory that wrote it, so this one was validated by giving it to a **teammate who had not written a line of it** and watching where they stopped: three places, all of them steps the author did without noticing. They are now one command, and the document was reorganised into a normal path and a manual-recovery path rather than one undifferentiated list.',
-        },
-        {
-          size: 'support',
-          label: 'The Limit That Caused the Outage',
-          text: 'A CPU **limit** throttles a container that reaches it; a throttled container answers its health check late; a pod that answers late is restarted; and a restarted pod loses the in-memory state it was holding. So the refinement **removed the CPU limits entirely** across all six services and kept the requests. The request is what guarantees the floor, and the limit was only ever guaranteeing the crash.',
+          tone: 'limit',
+          label: 'What Can Pod Scaling Not Save?',
+          lede: 'Some costs stay the same at any traffic level.',
+          text: 'The **EKS control plane**, the **NAT gateway**, and **RDS** run all day. We tracked these three costs separately from pod scaling.',
         },
       ],
     },
-    // `size` drives the bento layout. On the 5-column grid these twelve tile it
-    // exactly over four rows: the big tile (2x2) plus three squares fills the
-    // first, the big tile's second row plus a wide (2) and a square fills the
-    // second, two wides with a square between them fills the third, and the
-    // fourth row — the three the refinement produced — repeats that shape.
+    // `size` drives the bento layout. On the 5-column grid these nine tile it
+    // exactly over three rows: the big tile (2x2) plus three squares, the big
+    // tile's second row plus a wide (2) and a square, then a wide, a square,
+    // and a wide.
     //
     // The big tile is the pod-hour saving because it is the number the whole
-    // project was built to produce. It is labelled as a simulation in its own
-    // detail line rather than only in the cost caveat further down — a
-    // headline figure has to carry its own qualification, because it is the
-    // one thing a reader takes away without scrolling.
+    // project was built to produce, and its detail says it is a simulation.
+    // Every hint and detail is written as complete sentences. "0 Wrong-Account
+    // Runs" was dropped because nothing counts those runs; 259 merged PRs is
+    // the team's total from GitHub. The NAT, CUR-rows, and runbook tiles were
+    // dropped because Decisions and Implementation Steps already say them.
+    //
+    // `metricsLarge` makes the square tiles' numbers bigger to fill their
+    // space, and justifies the detail lines under the wide and big tiles.
+    metricsLarge: true,
     metrics: [
       {
         size: 'big',
         value: '26.5%',
         label: 'Worker Pod-Hours Saved',
-        detail: '216 pod-hours a day down to 158.8, against a fleet held at peak size, simulated from eight days of recorded scaling decisions rather than measured billing',
+        detail: 'The simulation cut worker pod-hours from 216 to 158.8 a day. It replayed eight days of recorded scaling decisions against a fleet held at peak size.',
       },
       {
         size: 'square',
         value: '12',
         label: 'IRSA Roles',
-        hint: 'One per ServiceAccount, mapped 1:1, with S3 permissions split by prefix so the model path is read-only. Ten at the first presentation; the refinement added OpenCost and the retraining job',
+        hint: 'Each ServiceAccount has its own AWS role. The first presentation had ten, and the refinement added two.',
       },
       {
         size: 'square',
         value: '16',
         label: 'ArgoCD Applications',
-        hint: 'app-of-apps: every application and add-on declared in Git, with selfHeal reverting anything changed by hand in the cluster',
+        hint: 'ArgoCD deploys every app and add-on from Git. It reverts any change made by hand in the cluster.',
       },
       {
         size: 'square',
         value: '6',
         label: 'Always-On Pods',
-        hint: 'call-api, worker, predict, weather-cron, simulator and frontend, of which worker is the only one KEDA scales',
+        hint: 'Six pods run at all times. KEDA scales only the worker pod.',
       },
       {
         size: 'wide',
         value: '4',
         label: 'Repos, One Console',
-        detail: 'infra, app, manifests and ops: four deployment methods reached through a single delegating Makefile',
+        detail: 'The infra, app, manifests, and ops repositories each deploy a different way. One Makefile in the ops repository runs all four.',
       },
       {
         size: 'square',
-        value: '0',
-        label: 'Wrong-Account Runs',
-        hint: 'Every credentialed command checks the caller identity against the project account before it starts; nothing ever ran against the wrong one',
+        value: '259',
+        label: 'PRs Merged',
+        hint: 'The team merged 259 pull requests across four repositories.',
       },
       {
         size: 'wide',
         value: '140',
         label: 'Resources Torn Down',
-        detail: '21 minutes 40 seconds, zero errors and zero warnings, the measured run the teardown runbook was rewritten around',
+        detail: 'The August 3 teardown took 21 minutes 40 seconds. It finished with zero errors and zero warnings.',
       },
       {
         size: 'square',
         value: '5',
         label: 'Schedulers',
-        hint: 'Forecast every 4h, scaling every 60s, traffic every 2s, backup hourly, and the accuracy check on the hour at :59, all five inside the predict pod',
+        hint: 'The predict pod runs five schedulers. They handle forecasts, scaling, traffic, backups, and accuracy checks.',
       },
-      {
-        size: 'wide',
-        value: '1',
-        label: 'NAT Gateway, Not Two',
-        detail: 'One in 2a rather than one per AZ: roughly $43 a month against $86 at Seoul list price, traded against 2a becoming a single point of failure',
-      },
-      // The refinement's own row. The first of these is the only figure on the
-      // page that is money rather than a proxy for it, which is the whole point
-      // of the stretch that produced it.
       {
         size: 'wide',
         value: '$8.71',
         label: 'Measured AWS Cost / Day',
-        detail: 'The last fully-billed day of the period, with real Cost and Usage Report data reaching OpenCost through a Glue crawler and Athena rather than a list-price estimate',
-      },
-      {
-        size: 'square',
-        value: '19,038',
-        label: 'CUR Rows Catalogued',
-        hint: 'Up from 8,146 five days earlier. The daily 03:00 UTC crawl growing the Glue table is what proved the billing pipeline was running rather than merely configured',
-      },
-      {
-        size: 'wide',
-        value: '3',
-        label: 'Runbook Blockers Found',
-        detail: 'Found by handing the rebuild runbook to someone who had not written it and watching where they stopped. All three are now absorbed into one `make bootstrap-all`',
+        detail: 'The development environment cost this much on its last fully billed day. OpenCost read the figure from the AWS Cost and Usage Report.',
       },
     ],
     // Grouped by what each tool is for, with no `tint` overrides — the
@@ -2792,35 +2885,44 @@ project2-security/
     ],
     // Why the load-bearing tools, at the level of the tool rather than the
     // line of code — the same scope the other two team projects use, and
-    // deliberately different from `decisions` below: this answers "why KEDA at
-    // all", that one answers "why one NAT gateway instead of two". Five, not
-    // twenty: the wheel already lists every tool and a note against each would
-    // be a second inventory rather than an argument.
+    // deliberately different from `decisions` below. Five, not twenty: the
+    // wheel already lists every tool.
+    //
+    // Written in EchoChallengers' "We chose X because…" voice, with one
+    // concrete number each. "We" throughout: the team's merged PRs show every
+    // one of these tools came in through another track (KEDA, Karpenter,
+    // OpenCost and the Telegram alerts through the autoscaling and monitoring
+    // track, ArgoCD through the deployment track, LightGBM through the app
+    // repo), so none of them is "I chose".
+    //
+    // Sources: slide 26 (500 messages a pod, 16 applications, selfHeal), slide
+    // 32 (the six inputs, four hours), RUNBOOK.md (eight alert rules, the
+    // 1,000-message queue alert), and the refinement's CUR pipeline.
     stackNotes: [
       {
-        tool: 'Why KEDA and Karpenter, both?',
+        tool: 'Why KEDA and Karpenter?',
         icon: 'KEDA',
-        text: 'They scale different things and neither substitutes for the other. **KEDA decides how many pods**, taking a predicted floor from the predict pod and a reactive ceiling from the SQS queue depth. **Karpenter decides whether there is anywhere to put them**, supplying Spot nodes for pods that would otherwise sit `Pending` and reclaiming them when they do not.',
+        text: 'We chose **KEDA** and **Karpenter** because pods and nodes needed different scalers. KEDA sets the pod count from the forecast floor and adds one worker pod for every **500** messages in the **SQS queue**. Karpenter adds **Spot nodes** when new pods have nowhere to run and removes them when the pods are gone.',
       },
       {
         tool: 'Why LightGBM?',
         icon: 'Python',
-        text: 'The features are **hour, weekday, weekend flag, humidity, temperature and rainfall**, which are small, tabular and exactly what gradient boosting is best at. A model that trains in seconds and loads out of an S3 pickle inside a pod was worth more here than accuracy we could not have used: the output is a pod count, and a pod count is an integer.',
+        text: 'We chose **LightGBM** because our training data was small and tabular. The model learns from **six** inputs: the hour, the day of the week, a weekend flag, humidity, temperature, and precipitation. It predicts the calls for each of the next **four hours**.',
       },
       {
-        tool: 'Why ArgoCD over Terraform?',
+        tool: 'Why ArgoCD?',
         icon: 'ArgoCD',
-        text: 'Installing KEDA, Karpenter or the ALB controller with `helm_release` inside the infrastructure Terraform would have given **two owners to one object**, and two owners means drift that neither one reports. The boundary is ownership, not convenience: Terraform builds AWS, ArgoCD builds what runs inside the cluster, and `selfHeal` makes Git the answer to what the cluster should look like.',
+        text: 'We chose **ArgoCD** because we wanted Git to decide what runs in the cluster. Terraform builds the AWS resources, and ArgoCD manages **16** applications inside the cluster. Its **selfHeal** option reverts any manual change to match Git.',
       },
       {
         tool: 'Why OpenCost?',
         icon: 'Prometheus',
-        text: 'AWS bills by resource and Kubernetes spends by workload, and neither view answers **"what did the worker deployment cost?"** on its own. OpenCost reads node pricing through Prometheus and splits it by namespace and pod, which is what makes worker-only cost separable from cluster cost. It priced from the **list price** until the refinement, when the Cost and Usage Report was wired through a **Glue crawler and Athena** into OpenCost’s Cloud Costs, so the same split now reads against the actual bill rather than against a rate card.',
+        text: 'We chose **OpenCost** because the AWS bill does not show what each workload costs. OpenCost splits cluster cost by namespace and pod, and we used it to track the worker pods on their own. After the refinement, it priced the cluster from the real bill in the **Cost and Usage Report**.',
       },
       {
         tool: 'Why Telegram?',
         icon: 'Telegram',
-        text: 'Alert rules had to reach a phone without standing up an on-call platform for a summer project. The thresholds are deliberately offset from the scaling ones. **A queue alert at 1,000 is twice the KEDA trigger at 500**, so the page fires when scaling has failed to absorb the load rather than every time it starts working. The refinement took the eight rules to **ten and rewrote what each one says**: every alert now carries what it affects and where to look next, because a notification naming only the symptom leaves the reader to work out the other two on a phone.',
+        text: 'We chose **Telegram** to send alerts straight to our phones. **Eight** alert rules reach it through **Alertmanager**. The queue alert fires at **1,000** messages, twice the KEDA trigger of 500, and only fires when scaling cannot keep up.',
       },
     ],
     // Eight views of the same system, a tab each: the whole AWS layout, then
@@ -2919,7 +3021,7 @@ project2-security/
             {
               x: 150,
               y: 590,
-              text: 'Only the call API is spread across both zones. RDS and the NAT gateway are fixed to 2a, which is a cost choice.',
+              text: 'The call API was planned to run in both zones for high availability. RDS and the NAT gateway are fixed to 2a, which is a cost choice.',
             },
           ],
         },
@@ -2979,7 +3081,7 @@ project2-security/
       {
         tab: 'Weather ingest',
         caption: 'Flow 2: scheduled weather collection into S3',
-        alt: 'The weather-cron CronJob calling the Open-Meteo forecast API for New York out through the NAT gateway, checking the response is valid, logging the error and waiting for the next cycle if it is not, and otherwise overwriting the forecast CSV in S3 for the prediction pods to read',
+        alt: 'The weather-cron pod, a Deployment with its own four-hour timer, calling the Open-Meteo forecast API for New York out through the NAT gateway, checking the response is valid, logging the error and waiting for the next cycle if it is not, and otherwise overwriting the forecast CSV in S3 for the prediction pods to read',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
@@ -2991,7 +3093,11 @@ project2-security/
           width: 1000,
           height: 340,
           nodes: [
-            { id: 'job', label: 'weather-cron', sub: 'CronJob · scheduled', glyph: 'pipeline', x: 120, y: 85, w: 190 },
+            // A Deployment with its own four-hour timer, not a Kubernetes CronJob
+            // (apps/weather-cron/deployment.yaml, deck slide 31). The draw.io
+            // export behind the Detailed toggle still says CronJob: it was drawn
+            // before the build settled.
+            { id: 'job', label: 'weather-cron', sub: 'Deployment · own timer', glyph: 'pipeline', x: 125, y: 85, w: 220 },
             { id: 'nat', label: 'NAT gateway', glyph: 'cloud', x: 350, y: 85 },
             { id: 'api', label: 'Open-Meteo API', sub: 'New York forecast', glyph: 'cloud', x: 580, y: 85, w: 190 },
             { id: 'check', label: 'Response valid?', glyph: 'scan', x: 810, y: 85, w: 170 },
@@ -3160,7 +3266,7 @@ project2-security/
       {
         tab: 'Cluster topology',
         caption: 'EKS control plane and node group layout with cluster networking',
-        alt: 'Cluster topology: the AWS-managed EKS control plane outside the user VPC, system node groups and Karpenter-managed EC2 nodes in availability zones 2a and 2c, an ALB with a network interface in each public subnet, one NAT gateway in 2a that the 2c private subnet shares by routing, and a VPC gateway endpoint carrying S3 and DynamoDB traffic past it',
+        alt: 'Cluster topology: the AWS-managed EKS control plane outside the user VPC, one managed system node group with a node in each of availability zones 2a and 2c, Karpenter Spot nodes in both zones, an ALB with a network interface in each public subnet, one NAT gateway in 2a that the 2c private subnet shares by routing, and a VPC gateway endpoint carrying S3 and DynamoDB traffic past it',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
@@ -3184,10 +3290,13 @@ project2-security/
             // exactly the redundancy the project chose not to pay for.
             { id: 'nat', label: 'NAT gateway', sub: 'single · AZ 2a only', glyph: 'cloud', x: 250, y: 130, w: 180, h: 58 },
             { id: 'gwep', label: 'VPC gateway endpoint', sub: 'S3 · DynamoDB', glyph: 'service', x: 830, y: 130, w: 200, h: 58 },
-            { id: 'sysA', label: 'System node group', sub: 'EKS managed', glyph: 'server', x: 365, y: 300, w: 190, h: 54 },
-            { id: 'karpA', label: 'Karpenter nodes', sub: 'EC2, on demand', glyph: 'cluster', x: 365, y: 410, w: 190, h: 54 },
-            { id: 'sysC', label: 'System node group', sub: 'EKS managed', glyph: 'server', x: 755, y: 300, w: 190, h: 54 },
-            { id: 'karpC', label: 'Karpenter nodes', sub: 'EC2, on demand', glyph: 'cluster', x: 755, y: 410, w: 190, h: 54 },
+            // One managed node group with two nodes (modules/eks/nodegroup.tf: min 2,
+            // desired 2), drawn once per zone the nodes land in.
+            { id: 'sysA', label: 'System node group', sub: 'node 1 of 2', glyph: 'server', x: 365, y: 300, w: 190, h: 54 },
+            // The NodePool allows Spot only (addons/karpenter/nodepool.yaml).
+            { id: 'karpA', label: 'Karpenter nodes', sub: 'EC2 Spot · from zero', glyph: 'cluster', x: 365, y: 410, w: 190, h: 54 },
+            { id: 'sysC', label: 'System node group', sub: 'node 2 of 2', glyph: 'server', x: 755, y: 300, w: 190, h: 54 },
+            { id: 'karpC', label: 'Karpenter nodes', sub: 'EC2 Spot · from zero', glyph: 'cluster', x: 755, y: 410, w: 190, h: 54 },
           ],
           edges: [
             { from: 'control', to: 'alb', dash: true, via: [[550, 88], [520, 88]] },
@@ -3230,7 +3339,7 @@ project2-security/
       {
         tab: 'Pod architecture',
         caption: 'Service and worker pod layout with their scaling metrics',
-        alt: 'Pod-level view: Route 53 and the ALB forwarding into ClusterIP services in front of the call API, worker, predict and simulator pods; the call API publishing to SQS and a KEDA-scaled worker deployment consuming from it and writing to RDS; Karpenter provisioning a node for a pending worker pod; the weather-cron pod fetching from the external Open-Meteo API into S3; and Prometheus, Grafana and Alertmanager watching the cluster with alerts leaving for Telegram',
+        alt: 'Pod-level view: Route 53 and the ALB forwarding into ClusterIP services in front of the call API, predict, simulator and frontend pods, with a KEDA-scaled worker deployment; the call API publishing to SQS and a KEDA-scaled worker deployment consuming from it and writing to RDS; Karpenter provisioning a node for a pending worker pod; the weather-cron pod fetching from the external Open-Meteo API into S3; and Prometheus, Grafana and Alertmanager watching the cluster with alerts leaving for Telegram',
         // The draw.io export of this same view, shown by the panel's
         // Clean / Detailed toggle. Only the chosen one is rendered.
         detailed: {
@@ -3256,6 +3365,10 @@ project2-security/
             { id: 'podPred', label: 'predict pod', glyph: 'container', x: 490, y: 310, w: 170, h: 50 },
             { id: 'svcSim', label: 'simulator svc', sub: 'ClusterIP', glyph: 'service', x: 250, y: 390, w: 170, h: 50 },
             { id: 'podSim', label: 'simulator pod', glyph: 'container', x: 485, y: 390, w: 160, h: 50 },
+            // The dashboard. The ALB sends `/` here (apps/frontend/ingress.yaml);
+            // the draw.io export behind the Detailed toggle leaves it out.
+            { id: 'svcFront', label: 'frontend svc', sub: 'ClusterIP', glyph: 'service', x: 250, y: 465, w: 170, h: 50 },
+            { id: 'podFront', label: 'frontend pod', sub: 'dashboard', glyph: 'container', x: 455, y: 465, w: 150, h: 50 },
             { id: 'karpenter', label: 'Karpenter', sub: 'a node for a pending pod', glyph: 'cluster', x: 675, y: 390, w: 180, h: 58 },
             { id: 'weather', label: 'weather-cron pod', glyph: 'container', x: 660, y: 465, w: 200, h: 50 },
             { id: 'prom', label: 'Prometheus', glyph: 'monitor', x: 240, y: 540, w: 160, h: 48 },
@@ -3272,6 +3385,11 @@ project2-security/
             { from: 'r53', to: 'alb' },
             { from: 'alb', to: 'svcCall', via: [[430, 112], [250, 112]] },
             { from: 'alb', to: 'svcSim', via: [[430, 112], [370, 112], [370, 390]] },
+            // The ingress rules: `/api/dashboard`, `/api/scaling` and `/api/prediction`
+            // go to predict, and `/` goes to the frontend down the left lane.
+            { from: 'alb', to: 'svcPred', via: [[430, 112], [370, 112], [370, 310]] },
+            { from: 'alb', to: 'svcFront', via: [[430, 112], [155, 112], [155, 465]] },
+            { from: 'svcFront', to: 'podFront' },
             { from: 'svcCall', to: 'podCall' },
             { from: 'worker', to: 'podWorker' },
             { from: 'svcPred', to: 'podPred' },
@@ -3355,7 +3473,7 @@ project2-security/
 ~/project3-hailcast/              	# a plain folder, not a git repo. The four repos sit here as siblings.
 ├── project3-hailcast-infra       	# builds the AWS foundation with Terraform: VPC, EKS, RDS, IAM roles.
 │   └── docs/네이밍규약서.md          	# the naming contract. Every AWS name the other repos use is fixed here.
-├── project3-hailcast-app         	# builds the six pod images and the LightGBM model, pushes them to ECR.
+├── project3-hailcast-app         	# builds the six pod images for ECR and trains the LightGBM model for S3.
 ├── project3-hailcast-manifests   	# holds what ArgoCD syncs: 16 Applications, the apps and the add-ons.
 └── project3-hailcast-ops         	# this repo, my track. It drives the other three from one place.
     ├── Makefile                   	# one command surface. Each target delegates to a repo with make -C.
@@ -4302,6 +4420,10 @@ project3-hailcast-manifests/
     // on 07-25, the checklist's major revision of 07-28, the measured destroy
     // of 08-03, the rebuild measurements of 08-18 — rather than from a
     // schedule slide, because the deck does not carry one.
+    // Written as the whole team's flow in "we", with only two lines about my
+    // own part (the destroy-all-yes catch and the August 3 orchestrator run).
+    // Marks follow one rule: every technology named, plus the two
+    // presentation dates.
     implementation: {
       months: ['2026-06', '2026-07', '2026-08'],
       // Two stretches with a real gap between them, not one run of two months.
@@ -4320,7 +4442,7 @@ project3-hailcast-manifests/
           range: 'Jun 29 – Jul 12',
           from: '2026-06-29',
           to: '2026-07-12',
-          text: 'The team started by looking back at the previous two projects rather than forward at this one, and three decisions came out of it: verify by simulation and say so, split six people across four repositories, and treat a naming document as the single source of truth for every seam between them. The original goal, stopping latency under a traffic surge, was dropped here once looking at how taxi hailing actually works showed the bottleneck was drivers rather than servers.',
+          text: 'We reviewed our first two team projects and set three rules: one measurable goal, one naming document, and no resource the system does not need. We redefined the problem from server delays to the cost of idle capacity, split six people across four repositories, and started the **VPC** and **EKS** cluster. We also trained the first **LightGBM** model on public New York City taxi and weather data.',
         },
         {
           id: 'foundation',
@@ -4328,7 +4450,7 @@ project3-hailcast-manifests/
           range: 'Jul 13 – Jul 27',
           from: '2026-07-13',
           to: '2026-07-27',
-          text: 'The AWS estate went up: VPC and EKS, the ten IRSA roles that everything else waited on, the data tier, and the CI roles. Terraform state locking moved to S3’s native lock rather than a DynamoDB table, IRSA was folded into the EKS module to settle the OIDC ordering problem, and the account guard went in before the first `apply` did. The safety rail arriving ahead of the thing it guards was the point.',
+          text: 'We built the AWS foundation with **Terraform**, including **EKS**, ten **IRSA** roles, **SQS**, **RDS**, and **S3**. We deployed **KEDA**, **Karpenter**, **ArgoCD**, and the monitoring stack through **GitOps** and shipped the six application pods with image tags set by CI. The predict pod started running the model every four hours and setting the KEDA floor from its forecast. I caught a silent failure where `make destroy-all-yes` printed "done" without deleting anything.',
         },
         {
           id: 'rails',
@@ -4336,7 +4458,7 @@ project3-hailcast-manifests/
           range: 'Jul 28 – Aug 4',
           from: '2026-07-28',
           to: '2026-08-04',
-          text: 'The naming verifier started running daily, cost-allocation tags were switched on, and the teardown checklist was rewritten around real runbooks instead of a practice incident. On August 3 the whole estate was destroyed for real: **140 resources, 21 minutes 40 seconds, no errors**, with one S3 bucket accounting for 20 of those 21 minutes. The first presentation followed the next day.',
+          text: 'We tuned the scaling thresholds, finished the alert rules, and scripted the **ArgoCD** install. On August 3, the teardown orchestrator I built destroyed the whole environment: 140 resources in 21 minutes 40 seconds with zero errors. We presented the first version on **August 4**.',
         },
         {
           id: 'refine',
@@ -4344,7 +4466,7 @@ project3-hailcast-manifests/
           range: 'Aug 13 – Aug 27',
           from: '2026-08-13',
           to: '2026-08-27',
-          text: 'The fourth project started on August 5 and had the week to itself; from the 13th the two ran **side by side**. The estate was rebuilt from zero to prove the runbook worked, which is where its real gaps surfaced: a secret that synced with one key empty, an ECR repository left without an image, and a CUR bucket that had to be migrated. What that exposed set the agenda for the rest of the stretch. The six tasks it produced are all the same task, **replacing an assertion with a measurement**: CPU limits came out of all six services, the Cost and Usage Report went through Glue and Athena into OpenCost so the cost figure became a bill, the three points where the runbook had stalled were absorbed into one `make bootstrap-all`, the dashboards were rebuilt around a notice–identify–assess–trace read with FinOps split out as a fifth, the prediction started recording its own misses and continuing training on them nightly, and the ALB was closed to everything but CloudFront. The project was presented again on **August 27**.',
+          text: 'Our integrated fellowship project started on August 5, and from August 13 we refined hailcast alongside it. We rebuilt the environment from scratch and turned the runbook\'s three stalls into one `make bootstrap-all`. We also connected the real AWS bill to **OpenCost**, removed the CPU limits, and limited the load balancer to **CloudFront**. The model started logging the hours it under-predicted and retraining on them every night at 03:00. We presented the refined build on **August 27**.',
         },
       ],
     },
@@ -4432,16 +4554,16 @@ project3-hailcast-manifests/
       // another board's clip would be worse than showing no clip. Both still
       // carry a `lead`, so every tab explains itself whether or not it moves.
       clipNote:
-        "Cut from the first presentation. The Korean captions are the team's own. Silent, and it loops.",
+        "This clip comes from the first presentation. The Korean captions are the team's own. It has no sound and plays on a loop.",
       stillsNote:
-        "Full-resolution captures from the team's report deck. Click one to open it at full size.",
+        "These captures come from the team's report deck. Click one to open it at full size.",
       scenarios: [
         {
           id: 'predictive-scaling',
           tab: 'Predictive scaling',
           label: 'Demo 1: The forecast raising the floor',
           lead:
-            'A forecast of **5,000** calls for 10:00 is written to RDS. KEDA reads it and the worker floor rises to **10** pods before the load arrives.',
+            'We set the 10:00 forecast in RDS to **5,000** calls by hand. The predict pod raised the worker floor, and **10** pods were Ready before any traffic arrived.',
           clip: {
             src: '/projects/hailcast/clip-01-predict.mp4',
             width: 1280,
@@ -4450,25 +4572,39 @@ project3-hailcast-manifests/
             speed: '3.6x',
             alt: 'A forecast run writing predicted demand into RDS, followed by the worker pod count rising to ten ahead of the traffic',
           },
-          before: {
-            src: '/projects/hailcast/demo-01-predictive-scaling.png',
-            state: 'Ten workers Ready',
-            alt: 'The hailcast Grafana dashboard "01 예측 기반 스케일링" showing a runtime summary row: prediction collection available, one predict pod Ready, an applied scaling threshold of 3, ten worker pods Ready, and a Ready-versus-threshold panel reading satisfied, above a five-minute chart of predict container restarts holding flat at zero',
-          },
+          stillsNote:
+            "The first two frames come from the clip above. The last capture comes from the team's report deck. Click one to open it at full size.",
+          shots: [
+            {
+              src: '/projects/hailcast/demo-01-forecast-set.png',
+              state: 'Forecast set to 5,000 for 10:00',
+              alt: 'A terminal reading the latest forecast from RDS in New York time: the 10:00 row on July 30 shows a predicted demand of 5000.0, and the 11:00 to 13:00 rows show 3361.64, 3611.01, and 3842.85',
+            },
+            {
+              src: '/projects/hailcast/demo-01-pods-ready.png',
+              state: 'Ten pods Ready, as forecast',
+              alt: 'The hailcast simulator dashboard reading 10 pods, 0 traffic and 1 node, with a pod chart by New York hour whose tooltip shows 10 actual pods against 10 predicted pods',
+            },
+            {
+              src: '/projects/hailcast/demo-01-predictive-scaling.png',
+              state: 'Ten workers Ready',
+              alt: 'The hailcast Grafana dashboard "01 예측 기반 스케일링" showing a runtime summary row: prediction collection available, one predict pod Ready, an applied scaling threshold of 3, ten worker pods Ready, and a Ready-versus-threshold panel reading satisfied, above a five-minute chart of predict container restarts holding flat at zero',
+            },
+          ],
         },
         {
           id: 'keda-queue',
           tab: 'KEDA queue trigger',
           label: 'Demo 2: The reactive layer catching the overflow',
           lead:
-            'With the forecast deliberately wrong, traffic climbs to **607** calls. The reactive layer picks up what the prediction missed while the cluster holds at **3** Ready nodes.',
+            'With the forecast too low for the hour, we sent **10,000** calls through the simulator. KEDA added workers from the queue while the cluster held at **3** Ready nodes.',
           clip: {
             src: '/projects/hailcast/clip-02-keda.mp4',
             width: 1280,
             height: 720,
             poster: '/projects/hailcast/clip-02-keda.jpg',
             speed: '2x',
-            alt: 'The simulator driving traffic to 607 calls against a stale forecast, with the worker dashboard showing three Ready nodes',
+            alt: 'The simulator sending 10,000 calls against a low forecast, with the worker dashboard showing three Ready nodes and workers at 22.7 percent of their CPU request',
           },
           before: {
             src: '/projects/hailcast/demo-02-keda-queue.png',
@@ -4481,27 +4617,41 @@ project3-hailcast-manifests/
           tab: 'Worker runtime',
           label: 'Demo 3: What the scaled workers were actually doing',
           lead:
-            'Under load the workers run at **22.7%** of their CPU request across 12 cores, with **3** nodes Ready and none unschedulable. Once traffic stops they terminate back down.',
+            'KEDA scaled the workers from **3** to **11** pods under load. After five minutes with no new traffic, the extra pods began to terminate.',
           clip: {
             src: '/projects/hailcast/clip-03-worker.mp4',
             width: 1280,
             height: 720,
             poster: '/projects/hailcast/clip-03-worker.jpg',
             speed: '1.5x',
-            alt: 'The worker dashboard reading 22.7 percent of CPU request over twelve cores with three Ready nodes, then worker pods terminating as traffic falls away',
+            alt: 'The simulator dashboard counting worker pods up from three to eleven under load, then pods terminating after five minutes without new traffic',
           },
-          before: {
-            src: '/projects/hailcast/demo-03-worker-runtime.png',
-            state: 'Six workers at 32.3 percent',
-            alt: 'The hailcast Grafana dashboard "03 Worker 및 Kubernetes" showing six running worker pods, zero Pending, a flat zero container-restart rate over five minutes, and a Worker Ready gauge at 100 percent; a resource row below plots worker CPU rising to roughly 0.5 cores and memory to about 400 MiB, with CPU usage against request shown on a gauge at 32.3 percent',
-          },
+          stillsNote:
+            "The first two frames come from the clip above. The last capture comes from the team's report deck. Click one to open it at full size.",
+          shots: [
+            {
+              src: '/projects/hailcast/demo-03-workers-eleven.jpg',
+              state: 'Eleven workers under load',
+              alt: 'The hailcast simulator dashboard reading 11 pods beside a terminal listing eleven running worker pods, a KEDA ScaledObject with a minimum of 3 and a maximum of 20, and three Ready nodes',
+            },
+            {
+              src: '/projects/hailcast/demo-03-workers-terminating.jpg',
+              state: 'Workers terminating after five minutes',
+              alt: 'The same view a few minutes later: the simulator dashboard reads 7 pods and the terminal shows two worker pods in the Terminating state',
+            },
+            {
+              src: '/projects/hailcast/demo-03-worker-runtime.png',
+              state: 'Six workers at 32.3 percent',
+              alt: 'The hailcast Grafana dashboard "03 Worker 및 Kubernetes" showing six running worker pods, zero Pending, a flat zero container-restart rate over five minutes, and a Worker Ready gauge at 100 percent; a resource row below plots worker CPU rising to roughly 0.5 cores and memory to about 400 MiB, with CPU usage against request shown on a gauge at 32.3 percent',
+            },
+          ],
         },
         {
           id: 'pod-hour-saving',
           tab: 'Pod-hour simulation',
           label: 'The 26.5% figure, and what it is made of',
           lead:
-            'The saving is a simulation rather than a measurement: **216** pod-hours run flat against **158.8** scaled to the forecast.',
+            'The saving is a simulation. Fixed peak capacity uses **216** pod-hours a day, and the forecast floor uses **158.8**.',
           before: {
             src: '/projects/hailcast/pod-hour-savings.png',
             state: '216 pod-hours against 158.8',
@@ -4515,9 +4665,9 @@ project3-hailcast-manifests/
         {
           id: 'finops-cost',
           tab: 'FinOps: real billing',
-          label: 'The refinement: cost measured rather than modelled',
+          label: 'The refinement: cost read from the AWS bill',
           lead:
-            'OpenCost had quietly fallen back to list-price estimates after losing its S3 permission. The refinement points it at the real Cost and Usage Report, and the board reads a billed **$8.71** for the last settled day.',
+            'OpenCost had been pricing the cluster from AWS list prices. Its query of the Cost and Usage Report was denied for a missing S3 permission. The refinement fixed the permission, and the board now reads **$8.71** for the most recent day in the report.',
           clip: {
             src: '/projects/hailcast/clip-05-finops.mp4',
             width: 1280,
@@ -4527,19 +4677,33 @@ project3-hailcast-manifests/
             alt: 'An OpenCost query failing on a denied S3 permission, then the same cost board reading a billed net cost of 8.71 dollars from the real Cost and Usage Report',
           },
           clipNote:
-            "Cut from the refinement presentation. The Korean captions are the team's own. Silent, and it loops.",
-          before: {
-            src: '/projects/hailcast/demo-04-finops-cost.png',
-            state: '$8.71 billed for a day',
-            alt: 'The hailcast Grafana dashboard "04 Hailcast 비용 / FinOps", split into an AWS section reading from the Cost and Usage Report and a Kubernetes section reading from OpenCost: a headline of $8.71 as the most recent settled daily net cost, a daily trend line holding near $16 from August 19 to 23 and falling away on the 24th, a per-service bar chart led by EC2 with EKS, S3, RDS, ELB and smaller services beneath it, and a category doughnut at 58.64 percent compute; below, three seven-day totals of $70.12 for nodes, $26.44 for the hailcast namespace and $9.28 for worker, then per-node and per-namespace breakdowns and a chart plotting worker cost against worker Ready count across five daily cycles',
-          },
+            "This clip comes from the refinement presentation. The Korean captions are the team's own. It has no sound and plays on a loop.",
+          stillsNote:
+            "The first two frames come from the clip above. The last capture comes from the team's report deck. Click one to open it at full size.",
+          shots: [
+            {
+              src: '/projects/hailcast/demo-04-athena-denied.png',
+              state: 's3:ListBucket denied',
+              alt: 'An Athena query on the hailcast_dev_cur table failing with PERMISSION_DENIED because the OpenCost IRSA role is not authorized to perform s3:ListBucket on the CUR bucket',
+            },
+            {
+              src: '/projects/hailcast/demo-04-athena-passing.png',
+              state: 'The same query passing',
+              alt: 'The same Athena query completing after the IAM fix, returning one result row from the hailcast_dev_cur table',
+            },
+            {
+              src: '/projects/hailcast/demo-04-finops-cost.png',
+              state: '$8.71 for the most recent day',
+              alt: 'The hailcast Grafana dashboard "04 Hailcast 비용 / FinOps", split into an AWS section reading from the Cost and Usage Report and a Kubernetes section reading from OpenCost: a headline of $8.71 as the net cost of the most recent day in the report, a daily trend line holding near $16 from August 19 to 23 and falling away on the 24th, a per-service bar chart led by EC2 with EKS, S3, RDS, ELB and smaller services beneath it, and a category doughnut at 58.64 percent compute; below, three seven-day totals of $70.12 for nodes, $26.44 for the hailcast namespace and $9.28 for worker, then per-node and per-namespace breakdowns and a chart plotting worker cost against worker Ready count across five daily cycles',
+            },
+          ],
         },
         {
           id: 'retraining',
           tab: 'Retraining loop',
           label: 'The refinement: a training job that can fail out loud',
           lead:
-            'Predictions are logged against the demand that actually arrived, and retraining continues the model from **8,000** trees to **8,026**. A failed run now raises **KubeJobFailed** to Telegram, where it used to close quietly as a success.',
+            'Forecasts that fell short of real demand are logged in DynamoDB. Retraining continues the model from **8,000** trees to **8,026**. A run that added no trees used to finish as a success. Now it fails and raises **KubeJobFailed** in Telegram.',
           clip: {
             src: '/projects/hailcast/clip-06-retraining.mp4',
             width: 1280,
@@ -4549,19 +4713,19 @@ project3-hailcast-manifests/
             alt: 'The DynamoDB prediction log holding predicted against actual demand, a continued-training run uploading a new model to S3, and a KubeJobFailed alert arriving in Telegram',
           },
           clipNote:
-            "Cut from the refinement presentation. The Korean captions are the team's own. Silent, and it loops.",
+            "This clip comes from the refinement presentation. The Korean captions are the team's own. It has no sound and plays on a loop.",
           // The only scenario whose stills are not from the report deck. That
           // deck has no capture of this material, so these are frames out of
           // the recording, and the note below says so rather than letting them
           // pass as deck images like the other six.
           stillsNote:
-            'Frames from the refinement recording at full resolution, since this scenario is not in the report deck. Click one to open it at full size.',
+            'This scenario is not in the report deck. These frames come from the refinement recording. Click one to open it at full size.',
           // Two shots rather than one, because the point of this scenario is
           // that the job reports either outcome. One still could only show it
           // succeeding, which is the half that was never the problem.
           before: {
             src: '/projects/hailcast/demo-06-retraining-run.jpg',
-            state: '8000 trees to 8026',
+            state: '8,000 trees to 8,026',
             alt: 'The retraining job log ending on continued training complete from 8000 to 8026 trees, an S3 upload of the new model version, twenty prediction records marked as trained, and an in-sample MAE of 921.15',
           },
           after: {
@@ -4575,7 +4739,7 @@ project3-hailcast-manifests/
           tab: 'Closed-loop summary',
           label: 'The rebuilt summary board: the whole loop on one screen',
           lead:
-            'The rebuilt board puts the whole loop on one screen: prediction available, HPA asking for **8**, **8** workers Ready, queue at zero, and no Pending pods or restarts.',
+            'The rebuilt board shows the prediction service available and the HPA asking for **8** workers. All **8** are Ready, the queue is empty, and no pods are Pending or restarting.',
           before: {
             src: '/projects/hailcast/demo-05-closed-loop.png',
             state: 'Eight asked and eight Ready',
@@ -4596,114 +4760,104 @@ project3-hailcast-manifests/
     // version where one did both — and the naming contract is a way of working
     // rather than a choice between tools. Both keep the card because both cost
     // something, which is what this section is for.
+    // Card values are justified here; each one was checked for gaps.
+    decisionsJustify: true,
     decisions: [
       {
         keyword: 'Single NAT gateway',
-        title: 'The environment runs one NAT gateway in a single availability zone.',
+        title: 'Outbound traffic from the private subnets uses one NAT gateway in zone 2a.',
         glyph: 'route',
-        chose: 'One NAT gateway in zone **2a**, with free VPC gateway endpoints carrying S3 and DynamoDB traffic around it',
-        over: 'one NAT gateway per availability zone, the configuration a production account would use',
-        why:
-          'A NAT gateway bills by the hour whether or not traffic passes through it. A second gateway therefore doubles a fixed cost to buy redundancy that a four-week development environment is unlikely to need, roughly **$86 a month against $43** at Seoul list price. The trade is real and we recorded it as such. An outage in zone 2a removes outbound connectivity from the entire private tier. The same architecture built for production would use one NAT gateway per zone and a Multi-AZ database.',
+        chose: 'One **NAT gateway** in zone 2a',
+        over: 'one NAT gateway per availability zone',
+        why: 'A second NAT gateway would have raised the cost from about **$43** to **$86 a month**. We kept one gateway in zone 2a and accepted that an outage there would stop outbound traffic.',
       },
       {
         keyword: 'Add-ons via ArgoCD',
-        title: 'ArgoCD owns every cluster add-on, and Terraform owns the AWS resources underneath.',
+        title: 'ArgoCD installs every cluster add-on, and Terraform builds only the AWS resources.',
         glyph: 'branch',
-        chose: 'KEDA, Karpenter, the ALB controller and the monitoring stack **declared in the manifests repository** and pulled by ArgoCD',
-        over: 'installing them with `helm_release` from the infrastructure Terraform, which would remove one repository',
-        why:
-          'A `helm_release` in Terraform gives the same Kubernetes object **two owners**. Terraform reconciles it toward the state file while ArgoCD reconciles it toward Git, and each one reports success while undoing the other. We drew the boundary by who creates the resource, so **Terraform owns AWS and ArgoCD owns the cluster**. That rule is what makes `selfHeal` safe to enable.',
+        chose: 'Add-ons that ArgoCD syncs from the **manifests** repository',
+        over: 'installing each add-on from Terraform',
+        why: 'If Terraform and ArgoCD both managed an add-on, each tool would undo the changes of the other. We let Terraform build the AWS resources and ArgoCD install everything inside the cluster.',
       },
       {
         keyword: 'Account ID guard',
-        title: 'The safety guard checks which AWS account the caller is standing in.',
+        title: 'The safety guard checks which AWS account the credentials belong to.',
         glyph: 'inject',
-        chose: 'A comparison of `sts get-caller-identity` against `PROJECT_ACCOUNT_ID`, leaving the credential chain untouched',
-        over: 'forcing `AWS_PROFILE=hailcast`, which is how the script was first written',
-        why:
-          'Forcing a profile name protected a personal `[default]` profile while the project account and the owner’s personal account were separate. Once they became the same account, the check protected nothing and **broke two valid setups**: a server that uses the default profile, and CI, which authenticates through OIDC environment variables. The question that matters is **which account you are operating in**. The guard reads that identity directly, and the credential chain stays as the caller configured it.',
+        chose: 'Checking the caller\'s **account ID**',
+        over: 'forcing one fixed profile name',
+        why: 'Forcing one profile name broke a server using the default profile and CI signing in through **OIDC**. The guard now compares the **account ID** directly and works for both.',
       },
       {
         keyword: 'Single-value .env',
-        title: 'The setup script parses exactly one value out of the .env file.',
+        title: 'The scripts read only one value from the `.env` file.',
         glyph: 'note',
-        chose: 'A parser that reads exactly one line, `PROJECT_ACCOUNT_ID`, out of the file',
-        over: '`source .env`, the usual shell approach, which would let the file define anything',
-        why:
-          'We demonstrated both of the holes that sourcing the file opens. A single `export AWS_PROFILE` line **separates the credentials the guard inspects from the credentials Terraform later uses**, because `make infra-destroy` runs the guard and the delegated command in different shells. The guard can then approve account A while Terraform destroys account B. Sourcing is also arbitrary code execution, so a redefined `aws()` function defeats the guard completely. Anyone who needs a specific profile exports it **in their own shell**, where both halves of the command see the same value.',
+        chose: 'Reading a single line of `.env`',
+        over: '`source .env`, which runs the whole file',
+        why: 'Sourcing `.env` could point the guard and Terraform at different accounts and run any code in the file. The scripts now read only the `PROJECT_ACCOUNT_ID` line.',
       },
       {
         keyword: 'Ordered teardown',
-        title: 'Teardown runs in the order the resources were created.',
+        title: 'Teardown runs in three stages: manifests, infrastructure, and app.',
         glyph: 'pipeline',
-        chose: '**Manifests, then infrastructure, then application**, with a y/N gate between stages and no automatic continue after a failure',
-        over: 'running `terraform destroy` first, the command that sounds like it removes everything',
-        why:
-          '`terraform destroy` removes only what the **state file** records. The ALBs, ENIs and Karpenter nodes that Kubernetes created are not in that file, so they survive the command, keep billing, and block the VPC from being deleted for hours. Deleting the Kubernetes objects first lets each finalizer clean up its own AWS resources while the cluster is still running. The measured teardown removed **140 resources in 21 minutes and 40 seconds** with no errors. An earlier practice run, before the ordering existed, failed after 20 minutes on orphaned resources.',
+        chose: 'Manifests, infrastructure, and app, with a **y/N** gate before each stage',
+        over: 'running `terraform destroy` first',
+        why: '`terraform destroy` misses the load balancers and nodes that Kubernetes created, and those resources keep billing. Deleting the Kubernetes objects first removed **140 resources** with **zero errors** on August 3.',
       },
       {
         keyword: 'Separate IRSA and RBAC',
-        title: 'IRSA and Kubernetes RBAC are treated as two separate systems.',
+        title: 'IRSA and Kubernetes RBAC are managed as two separate systems.',
         glyph: 'channels',
-        chose: 'IRSA for access to anything outside the cluster and RBAC for anything inside it, with **no attempt to bridge the two**',
+        chose: '**IRSA** for AWS access and **RBAC** for the Kubernetes API',
         over: null,
-        why:
-          'The predict pod needs S3 and RDS, which are AWS resources reached through an IAM role assumed by its ServiceAccount. The same pod also patches a KEDA `ScaledObject`, which is a Kubernetes API object that no IAM policy can reach. **Neither system can substitute for the other**, and treating them as one is how a team spends an afternoon in IAM while debugging an RBAC failure. Both fail identically when a ServiceAccount name is one character wrong, returning a plain access denied against a policy that is entirely correct.',
+        why: 'The predict pod reads S3 through an IAM role and patches a KEDA `ScaledObject` through Kubernetes RBAC. Neither system can grant the permissions of the other, and a one-character ServiceAccount typo breaks both with a plain access denied.',
       },
       {
         keyword: 'Controllers off Spot',
-        title: 'Controllers run on fixed nodes while application workloads run on Spot capacity.',
+        title: 'Controllers run on fixed nodes, and application pods run on Spot.',
         glyph: 'depth',
-        chose: 'A **managed node group of two fixed instances** for the controllers, with application pods on Karpenter Spot nodes that scale to zero',
-        over: 'running everything on Spot, which is cheaper by the amount that matters least',
-        why:
-          'If Karpenter and KEDA run on Spot capacity, a reclamation event can remove **the components that respond to reclamation events**. The controllers therefore sit on stable capacity and the workloads take the cheap interruptible capacity. That is also where the saving actually is, because application nodes drop to zero on a quiet night while the two system nodes would have run either way.',
+        chose: 'Two fixed **system nodes** for the controllers',
+        over: 'running everything on Spot',
+        why: 'If Karpenter and KEDA ran on Spot, a reclaim could remove the tools that respond to reclaims. The application nodes still drop to **zero** on a quiet night, and that is where the savings come from.',
       },
       {
         keyword: 'Scheduler without Lambda',
-        title: 'EventBridge Scheduler drives the nightly shutdown by calling the AWS API directly.',
+        title: 'EventBridge Scheduler stops the nodes and the database every night.',
         glyph: 'process',
-        chose: '**EventBridge Scheduler calling the AWS API directly** to stop the node group and the database at 02:00 KST and start them again at 10:00',
-        over: 'a Lambda function on a schedule, the usual shape of this pattern',
-        why:
-          'A Lambda here would add a function, a role, a package and a deployment path to maintain, all to make **two API calls a day**. The scheduler makes those calls itself, using a role scoped to one node group and one database instance. The approach also taught us something. **A schedule does not fail when you create it; it fails at 02:00 when it runs.** Ours retried twice and then dropped the event with no dead letter queue, so the failure stayed invisible until someone checked the node count the next morning. That check is now part of the routine.',
+        chose: '**EventBridge Scheduler** calling the AWS API on its own',
+        over: 'a scheduled Lambda function',
+        why: 'The scheduler stops the node group and RDS at 02:00 KST and starts them at 10:00 without a function to maintain. A failed run retried twice and then dropped silently, and we now check the node count every morning.',
       },
       {
         keyword: 'No CPU limits',
-        title: 'CPU limits came out of every service, and CPU requests stayed.',
+        title: 'CPU limits were removed from every service, and CPU requests stayed.',
         glyph: 'process',
-        chose: '`limits.cpu` deleted from **all six services** with `requests.cpu` kept, and memory pinned request to limit',
-        over: 'raising each limit to a value high enough to avoid throttling, the fix the load test appeared to ask for',
-        why:
-          'A CPU limit **throttles the container that reaches it**, and a throttled process answers its liveness probe late, gets restarted, and loses its in-memory state. That is the exact failure the load test produced, and raising the number only moves the load at which it happens. **The request is what reserves the floor**, and the scheduler already prevents the node from being oversubscribed, so the limit cost a restart and bought nothing. Memory keeps its limit because memory pressure kills a neighbouring pod. The reverse cost is stated plainly: **a runaway pod can now consume a whole node’s CPU**, and only the scheduler stands in its way.',
+        chose: 'CPU requests only, on all **six** services',
+        over: 'raising each CPU limit',
+        why: 'A CPU limit slowed busy pods until they missed health checks and restarted with their in-memory state lost. Memory keeps its limit, and the risk we accepted is that one runaway pod can use the CPU of a whole node.',
       },
       {
         keyword: 'Separate retraining role',
-        title: 'The retraining job runs under a ServiceAccount of its own.',
+        title: 'The retraining job runs under its own ServiceAccount.',
         glyph: 'channels',
-        chose: 'A separate `retraining-sa` and IRSA role, scoped to `models/latest/` and to `Scan` and `UpdateItem` on the accuracy table',
-        over: 'reusing `predict-sa`, which already reads the model and writes accuracy records',
-        why:
-          'The inference pod runs at several replicas and **KEDA adds more of them**, so a permission granted to that pod is granted to every copy. One misbehaving copy overwriting `models/latest/model.pkl` would leave every other pod predicting from a corrupted model. **Only the nightly CronJob needs to write a model**, so that permission lives on its own identity, narrowed further than predict’s own read scope of `models/*`. `PutItem` stays with predict, since the retraining job creates no records and only reads them and marks them used.',
+        chose: 'A separate IAM role that writes only the **latest model**',
+        over: 'reusing the predict role',
+        why: 'Every predict replica shares one role, and KEDA adds more replicas under load. Only the nightly retraining job writes the model, and its own role keeps every predict pod read-only.',
       },
       {
         keyword: 'Independent runbook test',
-        title: 'The rebuild runbook was validated by someone who did not write it.',
+        title: 'A teammate who did not write the rebuild runbook tested it.',
         glyph: 'note',
-        chose: 'A **teammate from another track** running the document while we watched where they got stuck, with no author present to explain',
-        over: 'the author walking through their own runbook, which is what testing a runbook usually means',
-        why:
-          'An author reading their own procedure supplies from memory every step they forgot to write down, A self-check therefore confirms the document the author meant to write. Run by someone else, the procedure **stopped three times**: a CRD that had to be rendered from the chart rather than pulled from a tag, a secret whose first reconcile fails and then waits an hour to retry, and an install ordering that nobody had written out. All three are now covered by a single `make bootstrap-all`, and the document was split into a normal path and a manual recovery path so the recovery steps no longer read as required work. One thing the exercise does not prove is the original goal. The reader was on the team, so the claim that a third party can reproduce the build is **still unmeasured**.',
+        chose: 'A teammate from another track following the runbook alone',
+        over: 'the author testing their own runbook',
+        why: 'The rebuild stopped **three times**, and all three fixes now run in one `make bootstrap-all`. The tester was still on our team, and a rebuild by an outside reader remains untested.',
       },
       {
         keyword: 'Naming doc first',
-        title: 'The naming document is corrected before the code is.',
+        title: 'The naming document is corrected before the code.',
         glyph: 'note',
-        chose: 'One naming convention as the source of truth, revised **first**, with a verifier checking the code against it daily',
+        chose: 'One **naming document** that all four repositories follow',
         over: null,
-        why:
-          'Four repositories reference each other entirely through strings, including role names, ServiceAccount names, a metric key and an image tag. A mismatch of one character **fails without producing an error**. The document therefore leads and the code follows. When reality is correct and the document is wrong, we amend the document and attach the evidence. The cost is stated honestly: **the verifier checks names only**, so a collection interval documented as two hours and coded as four went unnoticed for the whole project.',
+        why: 'The four repositories connect through names, and a one-character mismatch fails without an error. Our verifier checks names only, and an interval documented as two hours and coded as four went unnoticed.',
       },
     ],
     // NOT DOLLARS — the chart, at least. Every other cost table on this site
@@ -4733,77 +4887,290 @@ project3-hailcast-manifests/
       items: [
         {
           label: '00:00 – 05:59',
-          note: 'The quiet half of the night, where the floor falls to two pods at 5am, its lowest point in the day',
+          note: 'The forecast floor falls to two pods at 5 a.m. This is the lowest point of the day.',
           fixed: 54.0,
           actual: 23.05,
         },
         {
           label: '06:00 – 11:59',
-          note: 'Morning ramp, where the floor climbs from two back through six as demand returns',
+          note: 'The floor climbs from two pods back to about six as calls return.',
           fixed: 54.0,
           actual: 29.55,
         },
         {
           label: '12:00 – 13:59',
-          note: 'Midday, within one pod of peak and correctly so',
+          note: 'The floor stays within one pod of the peak at midday.',
           fixed: 18.0,
           actual: 16.65,
         },
         {
           label: '21:00 – 23:59',
-          note: 'Late evening, at peak until the last hour of the day',
+          note: 'The floor stays at the peak until the last hour of the day.',
           fixed: 27.0,
           actual: 26.5,
         },
         {
           label: '14:00 – 20:59',
-          note: 'Seven hours with no observation at all, filled with the peak value rather than estimated',
+          note: 'No scaling data exists for these seven hours. We filled them with the peak of nine pods.',
           fixed: 63.0,
           actual: 63.0,
         },
       ],
       total: { fixed: 216.0, actual: 158.75 },
       notes: [
-        'The entire saving is **the quiet hours**, and that is the whole thesis rather than a footnote: between midnight and noon a peak-sized fleet spends 108 pod-hours where the forecast asks for 52.6. Around the middle of the day the two lines sit **within one pod of each other**, which is the result you want. A predictor that undercut peak demand at 1pm would be saving money by dropping calls.',
-        'The **14:00–20:59 row does not move, because there is nothing in it**. Those seven New York hours are 03:00–10:00 KST, exactly when the night shutdown had the cluster switched off, so no scaling decision was ever recorded for them. They are filled with the **peak value of nine pods**, the most pessimistic choice available. Interpolating from the hours either side would have invented a saving out of a gap in the data.',
-        'The basis is **107 hourly snapshots** written to `dashboard/pod-history.json` in S3 between 2026-07-21 and 07-28, with `predicted_replicas` averaged by New York hour. The comparison column is a **fixed fleet held at the observed peak of nine pods**, which is what "size it for the busy hour and leave it" actually costs over a day.',
-        'Pod-hours are a proxy for money. At the first presentation that was the end of it, because OpenCost was pricing from the AWS list price with **the CUR integration scoped and unfinished**. The refinement finished it, and the measured cost is below. It does not convert this chart: the comparison column is a fleet that was never run, so **no invoice exists for the thing being saved against**, and a percentage in dollars would be arithmetic on one real number and one imaginary one.',
+        'The saving comes from the **quiet hours**. Between midnight and noon, a fleet sized for the peak runs 108 pod-hours, and the forecast needs only 52.6. Around midday, the two lines stay within one pod of each other.',
+        'The 14:00–20:59 row does not change because it has no data. Those New York hours fall between 03:00 and 09:59 KST, when the nightly shutdown had the cluster off. We filled them with the **peak of nine pods** instead of guessing a lower value.',
+        'The chart uses **107 hourly snapshots** saved in S3 from July 21 to July 28, averaged by New York hour. The comparison column is a fleet held at the observed peak of **nine pods** all day.',
+        'Pod-hours stand in for money in this chart. The comparison fleet never ran, and no bill exists for it. The real AWS cost appears in the measured figures below.',
       ],
       caveat:
-        'Simulated expected effect for a development environment in `ap-northeast-2`. Every figure is modelled, and no invoice underlies any of them. Both columns are pod-hours derived from recorded scaling decisions over eight days; the fixed-capacity column is a modelled baseline that was never actually run.',
+        'The chart is a simulated expected effect. The cluster ran in the AWS Seoul region, and the chart shows New York hours because the model forecast New York taxi demand. The comparison fleet was never run.',
       // The refinement's own numbers, and the only real money on this page.
-      // A strip rather than a second chart, for the reason the section comment
-      // above gives: these do not compare with the bars, and a second set of
-      // bars would invite exactly that comparison.
+      // From the OpenCost FinOps dashboard in Grafana (deck slide 69,
+      // demo-04-finops-cost.png), captured 2026-08-25. $88.90 and $8.71 are the
+      // AWS bill read through CUR; $70.12, $26.44 and $9.28 are the OpenCost
+      // Kubernetes cost model, which the dashboard keeps separate from the bill.
+      // $8.71 is the most recent day in the report, which may be a partial day.
       measured: {
-        label: 'Measured: what the cluster actually cost',
-        lede:
-          'The August 4 version of this page said the CUR integration was never wired up. The refinement wired it: the **Cost and Usage Report** lands in S3, a **Glue crawler** catalogues it every morning at 03:00 UTC, **Athena** queries it, and OpenCost’s Cloud Costs reads the result, so the same namespace-and-pod split that used to run on the list price now runs on the invoice. These are dev-environment figures for a cluster that was deliberately switched off overnight, not a production bill.',
+        label: 'Measured: what AWS billed',
+        lede: 'In the refinement, we connected the real AWS bill to OpenCost. The **Cost and Usage Report** lands in S3, a **Glue crawler** catalogs it every day at 03:00 UTC, and **Athena** queries it for OpenCost and Grafana. These figures come from a development environment that was shut down every night.',
         figures: [
+          {
+            value: '$88.90',
+            label: 'AWS cost / 6 days',
+            note: 'This was the AWS bill from August 19 to August 24.',
+          },
           {
             value: '$8.71',
             label: 'AWS net cost / day',
-            note: 'The last fully-settled day; the days before it ran near $16 with the cluster up for longer',
+            note: 'This was the most recent day in the report.',
           },
           {
             value: '$70.12',
             label: 'Node cost / 7 days',
-            note: 'The whole cluster, priced by OpenCost against the billed rate rather than the rate card',
+            note: 'This is the cost of all nodes in the OpenCost model.',
           },
           {
             value: '$26.44',
-            label: 'hailcast namespace / 7 days',
-            note: '38% of the cluster; kube-system is $5.84, KEDA $1.90, monitoring $1.29',
+            label: 'hailcast / 7 days',
+            note: 'This is about 38% of the node cost.',
           },
           {
             value: '$9.28',
-            label: 'Worker deployment / 7 days',
-            note: 'The one workload KEDA scales, and the deployment the pod-hour chart above is about',
+            label: 'Workers / 7 days',
+            note: 'This is the one workload KEDA scales.',
           },
         ],
-        source:
-          'OpenCost Cloud Costs (Level 2) reading CUR through Glue and Athena, captured 2026-08-25. Closing this took three permission failures found only by running it: `s3:ListBucket` missing from the crawler role on 8/18, `glue:BatchGetPartition` on 8/19, and on 8/21 an S3 condition too narrow to read the CUR path plus no permission to look up Spot prices at all.',
+        source: 'The figures come from the OpenCost dashboard in Grafana, captured on August 25, 2026. Three missing permissions had to be fixed first: `s3:ListBucket` on August 18, `glue:BatchGetPartition` on August 19, and Spot price access with a wider S3 condition on August 21.',
       },
+    },
+    // The workspace as the four tools the team worked in, rendered by
+    // WorkspaceApps.jsx beside At a Glance. Closed, each card shows one
+    // figure, one action line and a quiet foot line; open, it shows names and
+    // dates only, with no sentences. The team Google Doc (it carries the AWS
+    // account ID and ARNs) stays unlinked, and only Notion and GitHub carry an
+    // `href`. Copy rules for this section: lines start with the action or a
+    // concrete tool, never "I", "my", or "The team", and no "·" separators.
+    //
+    // Every count was read off the source: the Notion hub and its documents,
+    // the Google Doc's tab list (97 tabs, 11 integrated roundups out of 16
+    // improvement tabs), the four repos' branch rules, workflows and
+    // CODEOWNERS, and the notebook's 11 tabs. Body blocks are `list` (icon,
+    // name, end), `lead` and `tabs`, whose panes hold the same blocks plus
+    // `terminal`. `sentence` is optional; My notes has none.
+    workspaceApps: {
+      label: 'Team tools',
+      apps: [
+        {
+          id: 'notion',
+          logo: 'N',
+          title: 'Notion',
+          subtitle: 'Team hub for docs, rules, and decisions',
+          href: 'https://app.notion.com/p/Pod-Pod-38e9e3e335cc80e3bfbacd1cedef9d43',
+          figure: { value: '9', label: 'documents' },
+          sentence: 'Keeps every plan, rule, and decision in one place.',
+          foot: [{ label: 'Team lead', person: 'Junhan Shin' }],
+          body: [
+            { type: 'lead', icon: '👤', label: 'Team lead', person: 'Junhan Shin' },
+            {
+              type: 'list',
+              label: 'Document hub',
+              items: [
+                { icon: '📂', name: 'Project plan archive' },
+                { icon: '👥', name: 'WBS work guide' },
+                { icon: '📘', name: 'AWS resource dictionary' },
+                { icon: '🧠', name: 'Git commit convention' },
+                { icon: '✒️', name: 'Interface contract' },
+                { icon: '🖌️', name: 'Teardown checklist' },
+                { icon: '⛓️', name: 'Naming convention' },
+                { icon: '💵', name: 'Cost runbook' },
+                { icon: '🔗', name: 'Repo dependencies' },
+              ],
+            },
+            {
+              type: 'list',
+              label: 'Databases',
+              two: true,
+              items: [
+                { icon: '📝', name: 'Meeting notes' },
+                { icon: '📓', name: 'Dev journals' },
+                { icon: '🗂️', name: 'Kanban board' },
+                { icon: '📅', name: 'Daily work log' },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'docs',
+          logo: '≡',
+          title: 'Google Docs',
+          subtitle: 'Meeting and task log',
+          meta: '97 private tabs',
+          figure: { value: '97', label: 'tabs' },
+          sentence: 'Logs every meeting and task.',
+          foot: ['Jun 29 to Aug 27', 'Private'],
+          body: [
+            {
+              type: 'list',
+              label: 'Phases',
+              items: [
+                { icon: '🧭', name: 'Plan', end: 'Jun 29' },
+                { icon: '🛠️', name: 'Build', end: 'Jul 6' },
+                { icon: '🎤', name: 'Present', end: 'Aug 4' },
+                { icon: '🔁', name: 'Refine', end: 'Aug 13' },
+                { icon: '🎬', name: 'Wrap', end: 'Aug 24' },
+              ],
+            },
+            {
+              type: 'list',
+              label: 'Tab types',
+              two: true,
+              items: [
+                { icon: '🗓️', name: 'Meetings and mentoring', end: '9' },
+                { icon: '📣', name: 'Notices and handoffs', end: '4' },
+                { icon: '🔁', name: 'Improvement roundups', end: '11' },
+                { icon: '📈', name: 'Progress shares', end: '15' },
+              ],
+            },
+            {
+              type: 'list',
+              label: 'Sample tabs',
+              two: true,
+              items: [
+                { icon: '🎥', name: 'Jul 27 demo' },
+                { icon: '🧑‍🏫', name: 'Jul 29 mentoring' },
+                { icon: '💥', name: 'Aug 3 destroy' },
+                { icon: '📘', name: 'Rebuild runbook' },
+                { icon: '🛡️', name: 'ALB inbound limit' },
+                { icon: '⚙️', name: 'CPU limit decision' },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'github',
+          logo: 'TP',
+          title: 'GitHub',
+          subtitle: 'Four repos in the ThisPod-ThatPod org',
+          href: 'https://github.com/ThisPod-ThatPod',
+          figure: { value: '4', label: 'repositories' },
+          sentence: 'Ships every feature through dev.',
+          foot: ['infra, app, manifests, and ops'],
+          body: [
+            {
+              type: 'list',
+              label: 'Repositories',
+              items: [
+                { icon: '🏗️', name: 'infra' },
+                { icon: '🐳', name: 'app' },
+                { icon: '☸️', name: 'manifests' },
+                { icon: '🧰', name: 'ops' },
+              ],
+            },
+            {
+              type: 'list',
+              label: 'Automation',
+              items: [
+                { icon: '⚙️', name: 'terraform.yml' },
+                { icon: '📦', name: 'build.yml' },
+                { icon: '🔄', name: 'Argo CD' },
+              ],
+            },
+            {
+              type: 'list',
+              label: 'Review routing',
+              items: [
+                { icon: '👀', name: 'manifests' },
+                { icon: '👀', name: 'ops' },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'notes',
+          logo: 'JS',
+          mine: true,
+          title: 'My notes',
+          subtitle: 'Junhan Shin’s lead notebook',
+          meta: '11 tabs',
+          figure: { value: '11', label: 'tabs' },
+          foot: ['Jul 19 to Aug 20'],
+          body: [
+            {
+              type: 'tabs',
+              tabs: [
+                {
+                  label: '11 tabs',
+                  blocks: [
+                    {
+                      type: 'list',
+                      items: [
+                        { icon: '✅', name: 'IRSA check', end: 'Jul 19' },
+                        { icon: '🎓', name: 'Code-flow check', end: 'Jul 20' },
+                        { icon: '📋', name: 'Repo freshness', end: 'Jul 20' },
+                        { icon: '🗳️', name: 'Agenda decisions', end: 'Jul 20' },
+                        { icon: '🌐', name: 'Pre-apply check', end: 'Jul 20' },
+                        { icon: '🔍', name: 'Demo analysis', end: 'Jul 27' },
+                        { icon: '📥', name: 'PR list export', end: 'Jul 28' },
+                        { icon: '🧭', name: 'Learning roadmap', end: 'Jul 29' },
+                        { icon: '🔄', name: 'Branch refresh', end: 'Aug 20' },
+                        { icon: '🛠️', name: 'repo_ops.sh' },
+                        { icon: '🕷️', name: 'PR crawler' },
+                      ],
+                    },
+                  ],
+                },
+                {
+                  label: 'Tools and rules',
+                  tools: true,
+                  blocks: [
+                    {
+                      type: 'terminal',
+                      label: 'repo_ops.sh runs one command across all four repos',
+                      lines: [
+                        { cmd: './repo_ops.sh morning', note: 'doctor + sync + prs' },
+                        { cmd: './repo_ops.sh sync   ', note: 'update all four' },
+                        { cmd: './repo_ops.sh prs    ', note: 'my review queue' },
+                        { cmd: './repo_ops.sh trial  ', note: 'trial merge' },
+                        { cmd: './repo_ops.sh stale  ', note: 'gone-remote branches' },
+                      ],
+                    },
+                    {
+                      type: 'list',
+                      label: 'Safety rules',
+                      items: [
+                        { icon: '🧱', name: 'Keeps the other three repos running when one fails.' },
+                        { icon: '🧪', name: 'Runs destructive commands only with --force.' },
+                        { icon: '🚫', name: 'Keeps trial-merge branches on the local machine.' },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
     },
     // Pending, not absent. The four repositories are public under the
     // `ThisPod-ThatPod` org and the deck exists; which of them this page
@@ -4816,74 +5183,1737 @@ project3-hailcast-manifests/
       presentation: null,
     },
     reflection: {
-      learned:
-        'This was the first project where I owned **nothing that runs in production and everything that stops it going wrong**, and that turned out to be a real job rather than a consolation prize. The lesson underneath all of it: **a safety check that reports without comparing is worse than no check at all**. Our setup script printed the AWS account ID and compared it to nothing, so a session sitting in the wrong account went green on every single check. The output looked like verification and was decoration. Fixing it taught me to ask of any guard **what input would make this fail?** If I cannot answer, it is not a guard. The same pattern kept surfacing everywhere: a schedule that fails at 02:00 rather than at `apply`, a verifier that reads names and never reads values, a 200 OK from a path that does not exist. **Every expensive failure on this project was silent**, and the work that mattered was making failure loud.',
-      differently:
-        'I would put **resource policy into the naming contract on day one**. We got names right and left CPU limits to each team, which is how a load test ended up restarting pods and how the verifier passed a collection interval documented as 2 hours and coded as 4, because it checks names rather than values. The refinement closed both ends of that: limits came out of all six services, and the verifier now compares two numbers across repositories as well as two names. I would also **rebuild from zero much earlier**. Doing it in the last stretch is what exposed the empty secret key, the imageless ECR repository and the CUR bucket migration, and every one of those was a gap in a runbook I believed was finished. The fix was to stop being the person who checked it, and the three places a teammate got stuck were all steps I had been doing without noticing I was doing them. **Wiring OpenCost to the CUR** got done too, and it is the one I would most like the time back on: it took three separate permission failures, none of which a plan or a review could have found, because each one only appeared when something actually ran. That is the same lesson as the account guard in a different costume, and I had already learnt it once. What is still open is **parallelising around the IRSA bottleneck** I could see coming and scheduled around anyway, leaving three tracks waiting on one. Leading six people across four repositories meant the fastest thing I could do for the project was usually not to write anything, which took me longer to accept than it should have.',
+      // One string per paragraph; ReflectionSection renders an array as
+      // separate paragraphs.
+      learned: [
+        'hailcast was the capstone of our course and the largest build I took part in. I led a team of six people across four repositories, and the project asked us to combine Kubernetes, GitOps, machine learning, and FinOps in one system. At the start, I worried about how much of it I understood. None of us knew every part. I learned that a lead’s first job is to **keep the parts connected** while each person learns their own track.',
+        'My own track was the ops repository. I wrote the scripts that set up each teammate’s environment and the scripts that tear the system down. On **July 7**, a practice teardown on EKS failed for 20 minutes on resources that nobody tracked. That failure changed how I saw the job. Every hour that a cluster stays up costs real money, and a teardown that fails quietly keeps billing in the background. From then on, I tested each script against a live run before I trusted it. I also learned to **write the stop conditions first**.',
+        'Review became the other half of my work. Most of the team’s pull requests passed through me, and I read Terraform, Kubernetes manifests, and application code in the same project. At first, I reviewed each change line by line. As the pull requests grew in number, I could not stay the expert on every line in four repositories. That pressure taught me to decide where my attention mattered most. I trusted each track owner’s depth in their own area and put my own depth in **how one change would reach the other repositories**. The prediction service, for example, patched a KEDA object that the scaling track owned. A review there needed the RBAC permission and the object name to match across two repositories. A one-character mismatch in either place would leave the forecast unable to raise the floor, and nothing would report the failure. Checking those two names together became a standard step in my reviews.',
+      ],
+      differently: [
+        'Next time, I would **share the review load** from the first week. Most changes passed through one reviewer. A second reviewer on each repository would spread the knowledge across the team. I would also pair with a teammate on the ops scripts. Two people who know the teardown would keep the team safe when one of them is busy.',
+        'I would also **plan for the end of the project** from the start. The integrated fellowship project began on **August 5**, and I refined hailcast alongside it until the presentation on **August 27**. Splitting my time showed me how much the team relied on written state. With more planning, each track would name a backup owner early. The refinement goals would be set before the overlap began, and new features would be finished before it.',
+      ],
     },
   },
 
   {
     slug: 'kt-fellowship-project',
     group: 'fellowship',
-    // placeholder — this project is still in progress and unnamed. The
-    // title below is a working label, not the real project name.
-    title: 'KT Cloud TECH UP Fellowship Project',
-    // placeholder — the descriptive page heading. `title` above stays the
-    // short name the sidebar shows and the eyebrow repeats.
-    fullTitle:
-      'KT Cloud TECH UP Enterprise Fellowship Project',
-    accent: 'steel',
-    // placeholder
-    period: 'TBD', // placeholder
+    // The product's name. The team called itself 삼성가고싶어요 in Notion and
+    // "Integrated Team 3" on the deck; neither reads as a project name to a
+    // visitor, and the deck's own cover leads with 미담 (Midam). The repo and
+    // the Notion workspace call the same service 장인몰 (Jangin Mall), which
+    // was its working name before the team renamed it.
+    title: 'Midam',
+    // The descriptive page heading, in the same register as the other team
+    // projects' headings: what was built, for what. Chosen 2026-10-16 from
+    // live samples; "AI artisan marketplace" endings were rejected.
+    // "E‑Commerce" uses U+2011, the non-breaking hyphen, so a narrow
+    // screen never splits the word at the hyphen.
+    fullTitle: 'Secure Cloud Infrastructure and GitOps Delivery for an E‑Commerce Platform',
+    // Berry, the newest accent. Steel was the placeholder while this page was
+    // unnamed, and a grey read as a page that had not picked a colour.
+    accent: 'berry',
+    // From the day the team came together. The deck's cover gives Aug 10, the
+    // start of the integrated project proper; Aug 5 to 9 was the onboarding
+    // week (team formation, working rules, and a short ideathon), which is the
+    // first phase of the timeline below.
+    period: 'August 5 – October 6, 2026',
+    // All 20 members of Integrated Team 3, from the deck's team slides (3, 9,
+    // 16, 25, 31, 37, and 42), grouped by track in the deck's order. Avatars
+    // renders a team whose members carry a `track` as one cluster per track
+    // with the code underneath. The Aug 5 kickoff roster in Notion has 21
+    // names: Juyeon Kim (PM) moved to another team after the ideathon and is
+    // not listed here. The Notion retrospective lists 19 and leaves out
+    // Youngwon Jeon.
+    //
+    // Cloud Infrastructure and Cloud Native are separate tracks in the
+    // Notion workspace (eight tracks) and one CI/CN section in the deck.
+    // Roles inside CI come from the infra README and CLAUDE.md: Junhan is
+    // 부팀장 (vice lead) and owned network and security. `initials` is explicit
+    // because Korean given names romanize as two syllables.
     team: [
-      { name: 'Junhan Shin' },
-      { name: 'Teammate Two' }, // placeholder
-      { name: 'Teammate Three' }, // placeholder
+      { name: 'Youngwon Jeon', initials: 'YW', track: MIDAM_TRACKS.PM },
+      { name: 'Jungwoon Yoon', initials: 'JW', track: MIDAM_TRACKS.PM },
+      { name: 'Jihyun Kim', initials: 'JH', track: MIDAM_TRACKS.PD },
+      { name: 'Taekyung Kim', initials: 'TK', track: MIDAM_TRACKS.PD },
+      { name: 'Jungmin Kim', initials: 'JM', track: MIDAM_TRACKS.AI },
+      { name: 'Hoyoung Lee', initials: 'HY', track: MIDAM_TRACKS.AI },
+      { name: 'Juwon Nam', initials: 'JW', track: MIDAM_TRACKS.AI },
+      { name: 'Jooyoung Lee', initials: 'JY', track: MIDAM_TRACKS.FE },
+      { name: 'Mingyo Kim', initials: 'MG', track: MIDAM_TRACKS.FE },
+      { name: 'Junghoon Kang', initials: 'JH', track: MIDAM_TRACKS.BE },
+      { name: 'Changmin Yoo', initials: 'CM', track: MIDAM_TRACKS.BE },
+      { name: 'Yunju Kang', initials: 'YJ', title: 'Team Lead · Edge & Monitoring', track: MIDAM_TRACKS.CI },
+      { name: 'Junhan Shin', initials: 'JS', title: 'Vice Lead · Network & Security', track: MIDAM_TRACKS.CI },
+      { name: 'Dajeong Park', initials: 'DJ', title: 'Accounts, IAM & Cost', track: MIDAM_TRACKS.CI },
+      { name: 'Changwon Lee', initials: 'CW', title: 'Database & Recovery', track: MIDAM_TRACKS.CI },
+      { name: 'Myungsoo Park', initials: 'MS', title: 'Kubernetes & Argo CD', track: MIDAM_TRACKS.CN },
+      { name: 'Youngrong Ko', initials: 'YR', track: MIDAM_TRACKS.SEC },
+      { name: 'Jaeheon Kim', initials: 'JH', track: MIDAM_TRACKS.SEC },
+      { name: 'Seojin Kim', initials: 'SJ', track: MIDAM_TRACKS.SEC },
+      { name: 'Yunjae Lee', initials: 'YJ', track: MIDAM_TRACKS.SEC },
     ],
-    // Whole entry is placeholder: this project's context and role are still placeholder too.
-    glance: {
-      why: 'Placeholder for the problem this project set out to solve, and why it was worth solving. One sentence, for a reader who will not scroll.',
-      how: 'Placeholder for what was actually built: the stack and the shape of it, in one sentence.',
-      result: 'Placeholder for the outcome, with the figure that proves it. Replace once the metrics above are real.',
+    // The opening block above the workspace, approved 2026-10-17 from live
+    // samples. It replaces At a Glance on this page only: LinksSection renders
+    // `overview` above the workspace row and drops the Glance card when both
+    // exist. `glance` below is kept but no longer rendered here.
+    //
+    // Order is by what a hiring manager needs first: the mission and its nine
+    // weeks, the product and Junhan's part in it, what the team delivered, and
+    // the reporting chart last. The phases are the program guide's four
+    // (Analyze, Design, Build, Integrate & Present), drawn at equal widths
+    // because the guide gives no dates for the boundaries.
+    overview: {
+      // The row under "Midam Workspace", approved 2026-10-17 (G2 + V1). It
+      // replaces the four workspace cards. Every public repository in the
+      // Jangingmall organization is listed (checked against the GitHub API);
+      // the security team has no public repository. infra is the one tinted:
+      // it is Junhan's team's code. The deck has no public link, so its card
+      // scrolls to the Resources section, where the slides tab lives.
+      links: {
+        org: {
+          label: 'GitHub organization',
+          note: 'Four public repositories',
+          href: 'https://github.com/Jangingmall',
+          repos: [
+            { name: 'infra', href: 'https://github.com/Jangingmall/infra', mine: true },
+            { name: 'backend', href: 'https://github.com/Jangingmall/backend' },
+            { name: 'frontend', href: 'https://github.com/Jangingmall/frontend' },
+            { name: 'GenAI', href: 'https://github.com/Jangingmall/GenAI' },
+          ],
+        },
+        items: [
+          {
+            icon: 'notion',
+            label: 'Notion workspace',
+            note: 'Project home and notes',
+            href: 'https://plain-dill-f1d.notion.site/04-3-3f7b20762b63811eb9b2c8d9dd4ec032',
+          },
+          {
+            icon: 'security',
+            label: 'Security module',
+            note: 'Network and security code',
+            href: 'https://github.com/Jangingmall/infra/tree/main/terraform/modules/security',
+          },
+          { icon: 'slides', label: 'Final deck', note: '54 slides, under Resources', section: 'source' },
+        ],
+      },
+      program: 'KT Cloud TECH UP Enterprise Fellowship',
+      mission: 'Deliver a production‑ready e‑commerce platform as one cross‑functional team.',
+      timeline: {
+        weeks: '9',
+        start: 'Aug 5, 2026',
+        end: 'Oct 6, 2026',
+        phases: ['Analyze', 'Design', 'Build', 'Integrate & present'],
+      },
+      answer: {
+        logo: '/projects/kt-fellowship-project/midam-logo-mask.png',
+        caption: '미담 (Midam), “capturing beauty”',
+        // The four colours from the deck's brand slide (11).
+        swatches: [
+          { hex: '#121B29', name: 'Nameplate navy' },
+          { hex: '#D3E1E3', name: 'Celadon gray' },
+          { hex: '#E84610', name: 'Seal vermilion' },
+          { hex: '#FFC14C', name: 'Nameplate gold' },
+        ],
+        text: 'South Korea certifies its master artisans through a **national certification program**. Our team built **Midam**, a marketplace made specifically for these certified artisans to sell their work. AI writes each product page, and an AI chatbot helps shoppers find gifts.',
+      },
+      role: {
+        // The cloud infrastructure team's six areas, from the infra README's
+        // team table. `mine` marks the two Junhan owned.
+        layers: [
+          { name: 'Edge & Monitoring', owner: 'YJ' },
+          { name: 'Network', owner: 'Junhan Shin', mine: true },
+          { name: 'Security', owner: 'Junhan Shin', mine: true },
+          { name: 'Accounts, IAM & Cost', owner: 'DJ' },
+          { name: 'Database & Recovery', owner: 'CW' },
+          { name: 'Kubernetes & Argo CD', owner: 'MS' },
+        ],
+        text: 'I was vice lead of the cloud infrastructure team. I owned the **network** and **security** layers. Before the design began, I met with every discipline lead to learn what the infrastructure needed to support.',
+      },
+      // `3` is the three demo clips (listing, gift chat, checkout). `$266` is
+      // CLAUDE.md's running total on Oct 2 against the $330 AWS Budgets
+      // limit. `143` is `git log --merges` on Jangingmall/infra. `10/10` is the
+      // Sep 30 SSM check of the sshd settings on every node.
+      delivered: [
+        { value: '3', label: 'end-to-end user flows', text: 'The demo walks through listing, gift search, and checkout.' },
+        { value: '$266', label: 'AWS spend', text: 'The full platform ran on AWS within the $330 budget.' },
+        { value: '143', label: 'merged pull requests', text: 'The cloud team built the platform on AWS as code.' },
+        { value: '10/10', label: 'servers secured', text: 'Remote login was locked down on all 10 servers.' },
+      ],
+      // The reporting line from the program guide: one team lead, a lead for
+      // each group, and Cloud & Security split into its two teams. Cloud
+      // Native sat under the cloud infrastructure lead, so MS reports there.
+      chart: {
+        lead: { name: 'Team Lead', sub: 'YW, Product Management' },
+        groups: [
+          { name: 'Planning & Design', sub: 'Product Management, Product Design' },
+          { name: 'Development', sub: 'Front‑End, Back‑End' },
+          { name: 'Cloud & Security', sub: 'Cloud Infrastructure, Cloud Security', open: true },
+          { name: 'AI', sub: 'Generative AI' },
+        ],
+        teams: [
+          { name: 'Cloud Infrastructure', sub: 'YJ, Lead', mine: true },
+          { name: 'Cloud Security', sub: 'YR, Lead' },
+        ],
+        me: { name: 'Junhan Shin', sub: 'Vice Lead, Network & Security' },
+        liaison: 'security liaison',
+        members: [
+          { name: 'DJ', sub: 'Cloud Infrastructure' },
+          { name: 'CW', sub: 'Cloud Infrastructure' },
+          { name: 'MS', sub: 'Cloud Native' },
+        ],
+      },
     },
-    // placeholder
-    role: 'Placeholder for the contribution line: one or two sentences on the part of this build that was mine.',
-    // placeholder
-    context:
-      'Placeholder for the problem this project set out to solve, and why it was worth solving. Two or three sentences, written for someone who has not seen the repo. Replace once the scope settles.',
+    // Hyphenated terms use the non-breaking hyphen (‑) as on the other pages.
+    glance: {
+      why: 'The integrated fellowship project brought **20** fellows from eight disciplines into one team for nine weeks. Together we built Midam, a marketplace where only **nationally certified** master artisans can sell. Artisans upload photos and AI writes their product pages, and shoppers find gifts through an AI chatbot. Our cloud infrastructure team of five built and ran the AWS environment behind it. As vice lead, I owned the **network** and **security** layers and answered the cloud security team’s findings for our team.',
+      // Build, Ship, Run, the same rail Lock-N-Lock uses. Every entry traces to
+      // the deck's CI/CN slides (38–41) or to the infra repository.
+      how: {
+        rail: {
+          hops: ['after each merge to main', 'on one manual Promote'],
+          phases: [
+            {
+              key: 'Build',
+              tools: 'Terraform',
+              summary: 'Terraform builds two isolated VPCs, one EKS cluster, and the guardrails around both.',
+              pair: [
+                {
+                  name: 'Private network',
+                  text: 'Nodes and the database sit in private subnets behind one ALB and one NAT Gateway, with no bastion.',
+                },
+                {
+                  name: 'EKS 1.35',
+                  text: 'Six managed node groups keep system, app, database, and GPU work apart with labels and taints.',
+                },
+              ],
+            },
+            {
+              key: 'Ship',
+              tools: 'GitHub Actions + Argo CD',
+              summary: 'Images build without long‑lived keys, and each release waits for a manual promote.',
+              pair: [
+                {
+                  name: 'Actions + CodeBuild',
+                  text: 'GitHub Actions builds the backend, and CodeBuild builds the large GPU images. Both push to ECR through OIDC.',
+                },
+                {
+                  name: 'Argo Rollouts',
+                  text: 'Each version runs as a blue/green preview first and switches only after a person promotes it.',
+                },
+              ],
+            },
+            {
+              key: 'Run',
+              tools: 'EKS + observability',
+              summary: 'The cluster serves the store and two AI models and alerts the team when something breaks.',
+              pair: [
+                {
+                  name: 'GPUs on request',
+                  text: 'The L40S and T4 nodes start at zero and run only while the AI track needs them.',
+                },
+                {
+                  name: 'Prometheus + Discord',
+                  text: 'Prometheus, Loki, and Tempo watch the cluster, and Alertmanager posts each alert to Discord.',
+                },
+              ],
+            },
+          ],
+        },
+      },
+      // `0` is the full-stop test in the HA report (9/30 23:48 → 10/1 09:19,
+      // PV Retain, last WAL archived 14 s before the DB pod stopped). `10/10`
+      // is the 9/30 SSM check of the sshd settings. `$266` is CLAUDE.md's
+      // "10/2 기준 누적 약 $266" against the $330 AWS Budgets limit.
+      result: {
+        figures: [
+          { value: '0', label: 'data lost after a full shutdown' },
+          { value: '10/10', label: 'nodes passing the SSH audit' },
+          { value: '$266', label: 'AWS spend against a $330 budget' },
+        ],
+      },
+    },
+    // Four cards beside At a Glance, Lock-N-Lock's layout. Copy rules for this
+    // section: verb-first lines, no "I", "my", or "The team", and no "·".
+    //
+    // GitHub figures from `git log --merges` on Jangingmall/infra: 143 merged
+    // PRs from Sep 9 to Oct 6, 24 of them from branches Junhan authored. Most
+    // merges were the team lead's; Junhan merged four, including #83 and #145.
+    workspaceCards: {
+      github: {
+        title: 'GitHub',
+        subtitle: 'One infra repository, every change through a PR',
+        lanes: [
+          {
+            branch: 'main',
+            who: 'Yunju Kang, Team Lead',
+            text: 'Merges most pull requests and runs the applies.',
+          },
+          {
+            branch: 'feat/eks-*',
+            who: 'Junhan Shin, Vice Lead',
+            text: 'Builds the network, NAT, EKS, and node group modules.',
+            mine: true,
+          },
+          { branch: 'category/task', who: 'Every member', text: 'Works on one task per branch and pull request.' },
+        ],
+        stats: [
+          { value: '143', label: 'merged PRs' },
+          { value: '24', label: 'authored by me' },
+          { value: '19', label: 'Terraform modules' },
+        ],
+        foot: 'Jangingmall / infra',
+        link: 'github',
+        linkLabel: 'Open in GitHub',
+      },
+      // Counts from the team Notion workspace: four phase deliverable pages,
+      // 37 dated meeting notes from 8/11 to 10/6, and the department pages.
+      // Junhan published his copy of the workspace on 2026-10-16; the two
+      // linked rows are the home page and the Phase 4 deliverables.
+      notion: {
+        title: 'Notion',
+        subtitle: 'Team workspace',
+        figure: { value: '4', label: 'phases' },
+        rows: [
+          { label: 'Project home', href: 'https://plain-dill-f1d.notion.site/04-3-3f7b20762b63811eb9b2c8d9dd4ec032' },
+          { label: 'Phase 4 deliverables', href: 'https://plain-dill-f1d.notion.site/3f7b20762b63813aafdaf60d7ee0be21' },
+          { label: 'Meeting notes', count: '37' },
+          { label: 'Department pages', count: '7' },
+          { label: 'Ideathon pages', count: '3' },
+        ],
+        foot: 'Team Notion.',
+        link: 'notion',
+        linkLabel: 'Open Notion',
+      },
+      // The inbound request path through the security groups, from the
+      // network design doc and modules/security, and the two side doors.
+      network: {
+        title: 'Network',
+        subtitle: 'My design',
+        figure: { value: '4', label: 'groups' },
+        path: [
+          { name: 'Internet', edge: true },
+          { name: 'sg-alb', port: ':443' },
+          { name: 'sg-eks-node', port: ':8080' },
+          { name: 'sg-db', port: ':5432' },
+        ],
+        sideDoors: [
+          { key: 'SSM', text: 'Admin access, SSH closed' },
+          { key: 'NAT', text: 'Outbound only' },
+        ],
+        foot: 'modules/security',
+        href: 'https://github.com/Jangingmall/infra/tree/main/terraform/modules/security',
+        linkLabel: 'View module',
+      },
+      // The CI/CN section of the deck: principles, network, and delivery.
+      presentation: {
+        title: 'Presentation',
+        subtitle: '3 slides from my track',
+        figure: { value: '3', label: 'of 54' },
+        slides: [
+          { number: 38, caption: 'Principles' },
+          { number: 39, caption: 'Network' },
+          { number: 41, caption: 'CI/CD' },
+        ].map((slide) => ({
+          ...slide,
+          src: `/projects/kt-fellowship-project/slides/slide-${String(slide.number).padStart(2, '0')}.webp`,
+        })),
+        foot: 'Final presentation with 54 slides.',
+        link: 'presentation',
+        linkLabel: 'Open slides',
+      },
+    },
+    // Six tiles on hailcast's `areas` grid. Every claim traces to a PR he
+    // authored (#3–#6, #18, #19, #22, #35–#37, #48, #80, #84, #85, #146, #150)
+    // or to CLAUDE.md, which he maintained. The SG egress PR (#83) is Yunju's,
+    // the user-data encoding fixes (#94, #110) are Dajeong's, and the restore
+    // tests are Changwon's; none of them is claimed here.
+    // The `stats` bento, approved 2026-10-17 from live samples. Every figure
+    // was checked against Jangingmall/infra's git history:
+    //   43 files    `git log --author --diff-filter=A` (47 still exist; 43 .tf),
+    //               including 14 of the 31 files in environments/prod and four
+    //               modules he created (eks_nodes, eks_addons, nat, endpoints)
+    //   82 images   PR #84's prod plan (5 ECR repositories, 82 images)
+    //   28 groups   the security liaison triage of 184 Trivy findings
+    //   3 checks    preconditions and validations in nat, eks, and the
+    //               endpoint variable (PRs #19, #35, #85)
+    //   7 days      PRs #3–#6, #18, #19, #22, #35–#37 merged Sep 14 to 20
+    //   2 groups    both GPU node groups start at desired_size 0 (PR #36);
+    //               48.5% is the team's cost analysis GPU share
+    // Copy rules for this section: justified by word spacing only (no
+    // hyphenation), and no tile ends on a single word.
+    role: {
+      title: 'Vice Lead',
+      subtitle: 'Network & Security Owner',
+      layout: 'stats',
+      areas: [
+        'B B B A A A A A A C C C',
+        'D D D A A A A A A E E E',
+        'F F F F F F F H H H H H',
+      ],
+      hero: {
+        title: 'Built the network and the cluster',
+        value: '43',
+        unit: 'files',
+        bars: [
+          { name: 'environments/prod', count: 14, strong: true },
+          { name: 'modules/endpoints', count: 5 },
+          { name: 'modules/eks_nodes', count: 5 },
+          { name: 'modules/eks_addons', count: 5 },
+          { name: 'modules/nat', count: 4 },
+          { name: 'modules/network', count: 3 },
+          { name: 'environments/staging', count: 3 },
+          { name: 'modules/security', count: 2 },
+          { name: 'modules/eks', count: 2 },
+        ],
+        text: 'Created four modules from scratch and **14 of the 31** production files.',
+      },
+      tiles: [
+        {
+          area: 'B',
+          value: '82',
+          unit: 'images saved',
+          text: 'A single commented line put **5 ECR repositories** on a prod deletion plan. Found it and fixed it before apply.',
+        },
+        {
+          area: 'C',
+          size: 'large',
+          value: '0',
+          unit: 'public nodes',
+          text: 'Every node sits in a private subnet. **SSM** is the only way in, and port 22 stays closed.',
+        },
+        {
+          area: 'D',
+          size: 'large',
+          value: '28',
+          unit: 'fix groups',
+          text: 'Sorted the security team’s 184 **Trivy** findings into 28 fix groups and proved one critical finding false.',
+        },
+        {
+          area: 'E',
+          value: '3',
+          unit: 'checks',
+          text: 'An empty IP allowlist, a mistyped zone, or a missing endpoint setting now stops `terraform` `plan` before apply.',
+        },
+        {
+          area: 'F',
+          value: '7',
+          unit: 'days',
+          timeline: [
+            { date: 'Sep 14', text: 'VPC, subnets, security groups' },
+            { date: 'Sep 16', text: 'NAT Gateway, EKS cluster' },
+            { date: 'Sep 18', text: 'Six node groups, add‑ons' },
+            { date: 'Sep 20', text: 'EBS CSI driver' },
+          ],
+          text: 'Stood up two isolated VPCs, the NAT Gateway, and EKS with **six node groups** from September 14 to 20.',
+        },
+        {
+          area: 'H',
+          size: 'large',
+          prose: true,
+          value: '2',
+          unit: 'GPU groups at zero',
+          text: 'Built both GPU node groups to start empty. GPUs were the largest cost, at **48.5%** of the bill.',
+        },
+      ],
+    },
+    // The `pinned` board, approved 2026-10-18 from live samples. Five pinned
+    // notes: the fellowship across the top, the artisan and shopper problems
+    // side by side, then the cloud team's problem and the cost, each across
+    // the full width. Every note is a list of complete sentences, most of them
+    // Junhan's own wording (grammar fixes only). Sources: deck slides 4–6 (TV
+    // program, the Korea Craft & Design Foundation survey's 87.3%, JTBD
+    // interviews, the shopper survey on certification, materials, and
+    // technique), and the team's cost analysis (§6-5, $786) and AWS Budgets
+    // ($330). Two cost lines (the $786 estimate and the comparison to the
+    // budget) were drafted for him and approved.
+    context: {
+      layout: 'pinned',
+      notes: [
+        {
+          area: 'f',
+          visual: 'disciplines',
+          title: 'What Did the Fellowship Ask of Us?',
+          items: [
+            'KT Cloud’s TECH UP Enterprise Fellowship challenged twenty fellows to act as an emerging **startup** company and deliver a profitable service.',
+            'As a team, we decided to build an e‑commerce platform for certified **master artisans** of Korean crafts.',
+            'With a growing interest in Korean culture, we believed the platform could appeal to domestic and international shoppers who love handmade work.',
+          ],
+        },
+        {
+          area: 'a',
+          visual: 'workshopShare',
+          title: 'Why Do Artisans Struggle to Sell Online?',
+          items: [
+            'A master artisan spends years honing a craft, but many artisans sell the work for far less than it is worth.',
+            'In a national survey, **87.3%** of craft makers sold mainly at their own workshops, which were hard to find with no online presence.',
+            'When we researched why artisans do not sell through online marketplaces, we discovered that many struggled with **product pages** and online marketing.',
+          ],
+        },
+        {
+          area: 's',
+          visual: 'proof',
+          title: 'Handmade Work Is Hard to Value',
+          items: [
+            'Every handmade piece is one of a kind, but shoppers rarely see the work or value behind it.',
+            'Our survey found that shoppers judge quality by proof of **certification**, use of materials, and the craftsman’s technique.',
+            'Existing marketplaces list handmade pieces like any other product with no place to display their legitimacy. Without it, a fair price can look too high.',
+          ],
+        },
+        {
+          area: 'e',
+          tone: 'team',
+          visual: 'hub',
+          title: 'Balancing Design and Infrastructure',
+          items: [
+            'Early planning primarily focused on product design and front‑end work without considering the cost of running the platform.',
+            'The back end, cloud infrastructure, and security were treated as concerns for later.',
+            'However, every other department was planned to be built on one shared cloud environment. Their needs often pulled in different directions, and each one added to the cost.',
+          ],
+          needs: {
+            intro: 'Each department needed something different from that environment:',
+            tiles: [
+              { label: 'AI', text: 'The AI models needed costly **GPUs**.' },
+              { label: 'Back end', text: 'The back end needed a resilient database.' },
+              { label: 'Security', text: 'The security team needed a live environment to scan.' },
+              { label: 'Front end', text: 'The front end needed fast image delivery.' },
+            ],
+          },
+          after: [
+            'The cloud infrastructure team needed to plan ahead even if infrastructure was not yet part of the platform design.',
+          ],
+        },
+        {
+          area: 'b',
+          tone: 'team',
+          visual: 'budget',
+          title: 'Consideration of Cost',
+          items: [
+            'The whole team shared one AWS budget of **$330**.',
+            'GPUs were the most expensive part of the platform, and they had to fit inside that budget.',
+            'Our estimate showed that running the full production environment would cost about **$786** a month, even with the GPUs off.',
+            'That monthly cost was more than twice the budget for the entire project.',
+          ],
+        },
+      ],
+    },
+    // Six tiles on Lock-N-Lock's `hero` grid, approved as K2 on 2026-10-19:
+    // outcomes a hiring manager can read without hovering, so every tile
+    // carries a visible `detail`. Sources: the HA report (full stop, 10 and 17
+    // minutes), the restore report (3 min 5 s, 37 tables, PR #122), CLAUDE.md's
+    // Ansible row (FAIL 28 -> 10/10 nodes PASS on 9/30) and security table
+    // (184 / 28 / 147), the team cost model ($2,623 -> $522 a month), and the
+    // portfolio export's [Team] staging count (10 nodes, 110 pods). 143 PRs and
+    // the IRSA count were dropped: the first repeats At a Glance and the second
+    // is a config count rather than an outcome.
+    metricsStyle: 'hero',
+    metricsEven: true,
     metrics: [
-      { size: 'wide', value: '00', label: 'Metric one' }, // placeholder
-      { size: 'square', value: '0 %', label: 'Metric two' }, // placeholder
-      { size: 'square', value: '0 min', label: 'Metric three' }, // placeholder
-    ],
-    stack: [
-      { category: 'Cloud/Infrastructure', items: ['AWS'] },
-      { category: 'IaC/Automation', items: ['Terraform'] },
-      { category: 'Containers', items: ['Kubernetes'] },
-    ],
-    architecture: null,
-    media: null,
-    decisions: [
       {
-        // placeholder
-        keyword: 'Short keyword',
-        title: 'The decision stated in one sentence.',
-        chose: 'The option that shipped',
-        over: 'The option that did not',
-        why: 'One or two sentences on the trade-off actually being made, and what it cost.',
+        size: 'big',
+        value: '0',
+        label: 'Data Lost in a Full Stop',
+        detail: 'We stopped all six node groups overnight and started them again. The database recovered in about 10 minutes and the backend in about 17.',
+      },
+      {
+        size: 'square',
+        value: '3m 5s',
+        label: 'Isolated DB Restore',
+        detail: 'A copy restored from S3 backups and WAL files matched all 37 tables by row count.',
+      },
+      {
+        size: 'square',
+        value: '28 → 0',
+        label: 'Failed SSH Checks',
+        detail: 'The node audit went from 28 failures to a pass on all 10 nodes.',
+      },
+      {
+        size: 'square',
+        value: '80%',
+        label: 'Lower Run Cost',
+        detail: 'Our operating plan cut the monthly estimate from $2,623 to $522.',
+      },
+      {
+        size: 'wide',
+        value: '184 → 28',
+        label: 'Findings Into Fix Groups',
+        detail: 'Trivy’s IaC findings fell into 28 groups. 147 of them targeted Kubernetes manifests.',
+        // 37 is 184 minus 147; CLAUDE.md does not break it down further.
+        split: [
+          { label: 'Kubernetes manifests', value: 147, strong: true },
+          { label: 'other', value: 37 },
+        ],
+      },
+      {
+        size: 'square',
+        value: '110',
+        label: 'Pods in Staging',
+        detail: 'Ten nodes ran the back end, both AI models, the monitoring stack, and the detection rules.',
       },
     ],
+    stack: [
+      { category: 'AWS: Network & Edge', items: ['VPC', 'Route 53', 'CloudFront', 'WAF', 'ALB', 'ACM'] },
+      { category: 'AWS: Compute & Data', items: ['EKS', 'EC2', 'S3', 'ECR', 'KMS', 'Parameter Store'] },
+      { category: 'IaC & Delivery', items: ['Terraform', 'GitHub Actions', 'CodeBuild', 'ArgoCD', 'Argo Rollouts', 'Helm'] },
+      { category: 'Kubernetes Platform', items: ['Kubernetes', 'CloudNativePG', 'Redis', 'Secrets Store CSI'] },
+      {
+        category: 'Observability & Security',
+        items: ['Prometheus', 'Grafana', 'Loki', 'Tempo', 'Alertmanager', 'Discord', 'GuardDuty', 'SSM'],
+      },
+    ],
+    // "We" throughout: none of these was Junhan's call alone. Terraform came
+    // from the Phase 1 tool comparison, EKS and IRSA from the team design,
+    // Argo Rollouts from the cloud native track (deck slide 41), GitHub OIDC
+    // from the no-long-lived-keys rule (infra, backend, GenAI roles in
+    // github_oidc.tf), and SSM from the network design's no-bastion rule.
+    // IRSA counts the eight roles in prod irsa.tf.
+    stackNotes: [
+      {
+        tool: 'Why Terraform?',
+        icon: 'Terraform',
+        text: 'We chose **Terraform** after comparing it with CloudFormation and Pulumi for portability, team experience, and Kubernetes support. Our team wrote **19** modules, and each environment calls them from one folder with one `terraform.tfvars`.',
+      },
+      {
+        tool: 'Why EKS?',
+        icon: 'EKS',
+        text: 'We chose **EKS** because the AI models needed GPU nodes beside the store, and one cluster could schedule both. **Six** managed node groups keep system, app, database, and GPU work apart with labels and taints.',
+      },
+      {
+        tool: 'Why IRSA?',
+        icon: 'IAM',
+        text: 'We chose **IRSA** to keep AWS keys off every node. **Eight** ServiceAccounts each assume their own role through STS, and each role reaches only the resources its workload needs.',
+      },
+      {
+        tool: 'Why Argo Rollouts?',
+        icon: 'Argo Rollouts',
+        text: 'We chose **Argo Rollouts** for a blue/green release with a person in the loop. Each version runs as a preview first, and **one** manual Promote switches the traffic.',
+      },
+      {
+        tool: 'Why GitHub OIDC?',
+        icon: 'GitHub OIDC',
+        text: 'We chose **GitHub OIDC** to keep long-lived AWS keys out of CI. **Three** repositories that build images each assume a short-lived role, and each role pushes only to its own ECR repositories.',
+      },
+      {
+        tool: 'Why SSM?',
+        icon: 'SSM',
+        text: 'We chose **SSM Session Manager** as the only admin path. There is no bastion, port **22** stays closed, and every node carries the SSM policy in its IAM role.',
+      },
+    ],
+    // Junhan's v4 exports, the versions he checked against the Terraform and
+    // Kubernetes code. Translated in the draw.io XML (labels only; layout,
+    // colours and icons untouched) and exported with draw.io's CLI. The Drive
+    // copies and the deck's PNGs are older revisions.
+    architecture: [
+      {
+        src: '/projects/kt-fellowship-project/architecture-01-network-traffic.svg',
+        tab: 'Network & Traffic',
+        alt: 'The Midam AWS network: users reach CloudFront and WAF for images and the ALB for the API, a production VPC in ap-northeast-2 with public, app, and reserved data subnets across AZ-a and AZ-c, one NAT Gateway, an S3 Gateway Endpoint, an EKS cluster with app, system, GPU, and database nodes in AZ-a, SSM for admin access with no bastion, a staging VPC with the same layout and no peering, and tables of the security groups and route tables',
+        address: 'kt-fellowship-project/architecture/01-network-traffic',
+        caption: 'Traffic from users to pods, outbound through one NAT Gateway, and the security group and route tables',
+      },
+      {
+        src: '/projects/kt-fellowship-project/architecture-02-cluster.svg',
+        tab: 'EKS Cluster',
+        alt: 'The EKS cluster: two system node groups running monitoring, Argo CD, the CNPG operator, and cluster add-ons, two app nodes with the backend pods, three database nodes with a CNPG primary and two replicas, and two GPU nodes running SGLang on an L40S and Ollama on a T4, with IRSA roles, the S3 Gateway Endpoint, and the blocked paths marked',
+        address: 'kt-fellowship-project/architecture/02-cluster',
+        caption: 'Six node groups, the pods on each, their IRSA roles, and the paths NetworkPolicy blocks',
+      },
+    ],
+    // Two trees behind one toggle, as on Lock-N-Lock: the files Junhan built,
+    // and the whole repository as delivered (`git ls-files`, 450 files).
+    folderStructure: [
+      {
+        id: 'mine',
+        label: 'My track',
+        root: 'infra/terraform/',
+        address: 'kt-fellowship-project/folder-structure/my-track',
+        tree: `
+infra/
+├── CLAUDE.md                     # the track's decision log: 34 working rules, review checklist
+├── scripts/
+│   ├── bootstrap-tfstate.sh      # S3 + DynamoDB state backend, KMS-encrypted
+│   └── ha_failover_drill.py      # terminates a node or the DB primary and times recovery
+└── terraform/
+    ├── environments/prod/        # calls each module; one terraform.tfvars per environment
+    │   ├── vpc.tf · security.tf · endpoints.tf · nat.tf
+    │   └── eks.tf · nodegroups.tf · addons.tf
+    └── modules/
+        ├── network/              # VPC, six subnets in three tiers, IGW, route tables
+        ├── security/             # four security groups, referenced by group, never by CIDR
+        ├── endpoints/            # S3 Gateway Endpoint on the app and data route tables
+        ├── nat/                  # NAT Gateway, fixed EIP, two CloudWatch alarms
+        ├── eks/                  # cluster, OIDC provider, endpoint allowlist precondition
+        ├── eks_nodes/            # six node groups, node role, DB and size preconditions
+        │   ├── templates/node_user_data.mime   # boot-time SSH hardening
+        │   └── tests/operations.tftest.hcl
+        └── eks_addons/           # VPC CNI with NetworkPolicy, CoreDNS, kube-proxy, EBS CSI
+`,
+      },
+      {
+        id: 'all',
+        label: 'Whole repository',
+        root: 'infra/',
+        address: 'kt-fellowship-project/folder-structure/whole-repository',
+        tree: `
+infra/
+├── .claude/
+│   └── settings.json
+├── .github/
+│   ├── workflows/
+│   │   ├── ai-image-mirror.yml
+│   │   └── k8s-validate.yml
+│   └── PULL_REQUEST_TEMPLATE.md
+├── argocd/
+│   ├── applications/
+│   │   ├── prod/
+│   │   │   ├── backup-project.yaml
+│   │   │   ├── backup.yaml
+│   │   │   ├── cluster-addons.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── networking.yaml
+│   │   │   ├── observability-project.yaml
+│   │   │   ├── observability.yaml
+│   │   │   ├── platform.yaml
+│   │   │   ├── projects.yaml
+│   │   │   ├── tempo.yaml
+│   │   │   └── workloads.yaml
+│   │   └── stage/
+│   │       ├── backup-project.yaml
+│   │       ├── backup.yaml
+│   │       ├── cluster-addons.yaml
+│   │       ├── kustomization.yaml
+│   │       ├── networking.yaml
+│   │       ├── observability-project.yaml
+│   │       ├── observability.yaml
+│   │       ├── platform.yaml
+│   │       ├── projects.yaml
+│   │       ├── tempo.yaml
+│   │       └── workloads.yaml
+│   ├── components/
+│   │   └── observability-discord/
+│   │       ├── prod/
+│   │       │   └── kustomization.yaml
+│   │       └── stage/
+│   │           └── kustomization.yaml
+│   └── README.md
+├── ci-cd/
+│   ├── build-deploy.yml
+│   └── promote.yml
+├── config/
+│   ├── db-backup.prod.json.example
+│   └── db-backup.staging.json.example
+├── k8s/
+│   ├── base/
+│   │   ├── ai/
+│   │   │   ├── vector-db/
+│   │   │   │   ├── 00-load-password.sh
+│   │   │   │   ├── init.sql
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   ├── networkpolicy.yaml
+│   │   │   │   ├── service.yaml
+│   │   │   │   ├── statefulset.yaml
+│   │   │   │   └── storageclass.yaml
+│   │   │   ├── deployment.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── ollama-deployment.yaml
+│   │   │   ├── ollama-service.yaml
+│   │   │   ├── service.yaml
+│   │   │   └── serviceaccount.yaml
+│   │   ├── backend/
+│   │   │   ├── hpa.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── README.md
+│   │   │   ├── rollout.yaml
+│   │   │   ├── service-active.yaml
+│   │   │   ├── service-preview.yaml
+│   │   │   └── serviceaccount.yaml
+│   │   ├── database/
+│   │   │   ├── cluster.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   └── serviceaccount.yaml
+│   │   ├── namespaces/
+│   │   │   ├── kustomization.yaml
+│   │   │   └── namespaces.yaml
+│   │   ├── network-policies/
+│   │   │   ├── ai/
+│   │   │   │   ├── ingress/
+│   │   │   │   │   ├── allow-backend-ingress.yaml
+│   │   │   │   │   ├── default-deny-ingress.yaml
+│   │   │   │   │   └── kustomization.yaml
+│   │   │   │   ├── allow-ai-dns-egress.yaml
+│   │   │   │   ├── allow-ai-traces-egress.yaml
+│   │   │   │   ├── allow-sglang-callback-egress.yaml
+│   │   │   │   ├── allow-vector-db-egress.yaml
+│   │   │   │   ├── default-deny.yaml
+│   │   │   │   └── kustomization.yaml
+│   │   │   ├── backend/
+│   │   │   │   ├── allow-backend-internal-egress.yaml
+│   │   │   │   ├── default-deny.yaml
+│   │   │   │   └── kustomization.yaml
+│   │   │   └── database/
+│   │   │       ├── egress/
+│   │   │       │   ├── allow-cnpg-internal-egress.yaml
+│   │   │       │   ├── default-deny-egress.yaml
+│   │   │       │   └── kustomization.yaml
+│   │   │       ├── allow-cnpg-ingress.yaml
+│   │   │       ├── default-deny-ingress.yaml
+│   │   │       └── kustomization.yaml
+│   │   ├── redis/
+│   │   │   ├── health.sh
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── README.md
+│   │   │   ├── redis.conf
+│   │   │   ├── resources.yaml
+│   │   │   └── start.sh
+│   │   ├── storage/
+│   │   │   ├── gp3-cnpg-storageclass.yaml
+│   │   │   └── kustomization.yaml
+│   │   └── kustomization.yaml
+│   ├── components/
+│   │   ├── ai-model-storage/
+│   │   │   ├── deployment-patch.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── prepare-models.sh
+│   │   │   ├── README.md
+│   │   │   └── storage.yaml
+│   │   ├── ai-sglang-secrets/
+│   │   │   ├── deployment-patch.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   └── start.sh
+│   │   ├── ai-vector-db-secrets/
+│   │   │   ├── ai-deployment-patch.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── README.md
+│   │   │   ├── serviceaccount.yaml
+│   │   │   └── statefulset-patch.yaml
+│   │   ├── backend-configtree/
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── README.md
+│   │   │   └── rollout-patch.yaml
+│   │   ├── cnpg-backup/
+│   │   │   └── kustomization.yaml
+│   │   └── gitops-protection/
+│   │       └── kustomization.yaml
+│   ├── overlays/
+│   │   ├── prod/
+│   │   │   ├── ai-chatbot-secret-provider.yaml
+│   │   │   ├── ai-sglang-secret-provider.yaml
+│   │   │   ├── ai-vector-db-secret-provider.yaml
+│   │   │   ├── backend-secret-provider.yaml
+│   │   │   ├── kustomization.yaml
+│   │   │   └── redis-secret-provider.yaml
+│   │   └── stage/
+│   │       ├── ai-chatbot-secret-provider.yaml
+│   │       ├── ai-sglang-secret-provider.yaml
+│   │       ├── ai-vector-db-secret-provider.yaml
+│   │       ├── backend-secret-provider.yaml
+│   │       ├── kustomization.yaml
+│   │       └── redis-secret-provider.yaml
+│   └── README.md
+├── platform/
+│   ├── argo-rollouts/
+│   │   ├── README.md
+│   │   └── values.yaml
+│   ├── argocd/
+│   │   ├── README.md
+│   │   └── values.yaml
+│   ├── aws-load-balancer-controller/
+│   │   ├── runtime/
+│   │   │   ├── prod.yaml
+│   │   │   └── stage.yaml
+│   │   └── values.yaml
+│   ├── cloudnative-pg/
+│   │   ├── README.md
+│   │   └── values.yaml
+│   ├── cnpg-backup/
+│   │   ├── templates/
+│   │   │   ├── backup.yaml
+│   │   │   ├── objectstore-rbac.yaml
+│   │   │   └── plugin-networkpolicy.yaml
+│   │   ├── backup-on-demand.yaml
+│   │   ├── cert-manager-values.yaml
+│   │   ├── Chart.yaml
+│   │   ├── plugin-values.yaml
+│   │   ├── prod.yaml
+│   │   ├── README.md
+│   │   ├── stage.yaml
+│   │   └── values.yaml
+│   ├── cnpg-restore/
+│   │   ├── templates/
+│   │   │   └── restore.yaml
+│   │   ├── Chart.yaml
+│   │   └── values.yaml
+│   ├── ebs-snapshot-restore-test/
+│   │   ├── config.example.json
+│   │   └── README.md
+│   ├── metrics-server/
+│   │   └── values.yaml
+│   ├── networking/
+│   │   ├── templates/
+│   │   │   └── backend.yaml
+│   │   ├── Chart.yaml
+│   │   ├── prod.yaml
+│   │   ├── README.md
+│   │   ├── stage.yaml
+│   │   └── values.yaml
+│   ├── nvidia-device-plugin/
+│   │   └── values.yaml
+│   ├── observability/
+│   │   ├── ai-metrics/
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── network-policy.yaml
+│   │   │   └── podmonitor.yaml
+│   │   ├── alerts/
+│   │   │   ├── backup-stage/
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   └── prometheus-rules.yaml
+│   │   │   ├── discord/
+│   │   │   │   ├── prod/
+│   │   │   │   │   ├── kustomization.yaml
+│   │   │   │   │   ├── secret-provider.yaml
+│   │   │   │   │   └── values.yaml
+│   │   │   │   ├── stage/
+│   │   │   │   │   ├── kustomization.yaml
+│   │   │   │   │   ├── secret-provider.yaml
+│   │   │   │   │   └── values.yaml
+│   │   │   │   └── values.yaml
+│   │   │   ├── rules/
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   └── prometheus-rules.yaml
+│   │   │   ├── tests/
+│   │   │   │   └── rules.test.yaml
+│   │   │   └── README.md
+│   │   ├── backend/
+│   │   │   ├── dashboard.json
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── network-policy.yaml
+│   │   │   ├── podmonitor.yaml
+│   │   │   └── README.md
+│   │   ├── collectors/
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── log-buffer.alloy
+│   │   │   ├── trace-buffer.yaml
+│   │   │   ├── trace-deployment.yaml
+│   │   │   ├── trace-monitor.yaml
+│   │   │   └── trace-network-policy.yaml
+│   │   ├── gpu/
+│   │   │   ├── policies/
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   └── network-policy.yaml
+│   │   │   ├── dashboard.json
+│   │   │   ├── README.md
+│   │   │   └── values.yaml
+│   │   ├── logs/
+│   │   │   ├── policies/
+│   │   │   │   ├── ingress.yaml
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   └── monitors.yaml
+│   │   │   ├── alloy-events.yaml
+│   │   │   ├── alloy-pods.yaml
+│   │   │   ├── events.alloy
+│   │   │   ├── loki.yaml
+│   │   │   ├── pods.alloy
+│   │   │   ├── prod.yaml
+│   │   │   ├── README.md
+│   │   │   └── stage.yaml
+│   │   ├── metrics/
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── prod.yaml
+│   │   │   ├── README.md
+│   │   │   ├── stage.yaml
+│   │   │   ├── storage-class.yaml
+│   │   │   └── values.yaml
+│   │   ├── platform/
+│   │   │   ├── argo-dashboard.json
+│   │   │   ├── cnpg-dashboard.json
+│   │   │   ├── kustomization.yaml
+│   │   │   ├── monitors.yaml
+│   │   │   ├── network-policies.yaml
+│   │   │   └── README.md
+│   │   ├── runtime/
+│   │   │   ├── prod.yaml
+│   │   │   └── stage.yaml
+│   │   ├── sizing/
+│   │   │   ├── alloy.yaml
+│   │   │   ├── charts.yaml
+│   │   │   ├── controller-requests.yaml
+│   │   │   ├── loki.yaml
+│   │   │   ├── otel.yaml
+│   │   │   ├── prometheus.yaml
+│   │   │   ├── README.md
+│   │   │   ├── rendered-containers.csv
+│   │   │   └── tempo.yaml
+│   │   ├── targets/
+│   │   │   ├── stage/
+│   │   │   │   └── kustomization.yaml
+│   │   │   └── kustomization.yaml
+│   │   ├── templates/
+│   │   │   ├── assets.yaml
+│   │   │   └── tempo.yaml
+│   │   ├── tempo/
+│   │   │   ├── runtime/
+│   │   │   │   ├── prod.yaml
+│   │   │   │   └── stage.yaml
+│   │   │   ├── prod.yaml
+│   │   │   ├── README.md
+│   │   │   ├── stage.yaml
+│   │   │   └── values.yaml
+│   │   ├── traces/
+│   │   │   ├── application-egress/
+│   │   │   │   ├── kustomization.yaml
+│   │   │   │   └── network-policy.yaml
+│   │   │   ├── prod/
+│   │   │   │   └── kustomization.yaml
+│   │   │   ├── stage/
+│   │   │   │   └── kustomization.yaml
+│   │   │   └── README.md
+│   │   ├── capacity.md
+│   │   ├── Chart.yaml
+│   │   ├── README.md
+│   │   └── values.yaml
+│   ├── secrets-store-csi/
+│   │   └── values.yaml
+│   ├── cluster-addons.md
+│   └── README.md
+├── scripts/
+│   ├── tests/
+│   │   ├── test_backup_plan.py
+│   │   └── test_node_user_data.py
+│   ├── bootstrap-github-oidc.sh
+│   ├── bootstrap-tfstate.sh
+│   ├── check_backup_plan.py
+│   ├── check_node_user_data.py
+│   ├── ebs_snapshot_restore_test.py
+│   ├── ha_failover_drill.py
+│   ├── mirror-ai-image.sh
+│   ├── render-logs.sh
+│   ├── render-observability.rb
+│   ├── Test-Ecr.ps1
+│   ├── validate-ai-observability.rb
+│   ├── validate-ai-observability.sh
+│   ├── validate-ai-runtime.rb
+│   ├── validate-alerting.rb
+│   ├── validate-alerting.sh
+│   ├── validate-cluster-addons.rb
+│   ├── validate-data-services.rb
+│   ├── validate-detection.sh
+│   ├── validate-gitops.rb
+│   ├── validate-k8s.sh
+│   ├── validate-logs.rb
+│   ├── validate-networking.rb
+│   ├── validate-observability-gitops.sh
+│   ├── validate-observability.rb
+│   ├── validate-observability.sh
+│   ├── validate-platform-monitoring.rb
+│   ├── validate-tempo.rb
+│   ├── validate-workload-secrets.rb
+│   └── verify-redis.sh
+├── terraform/
+│   ├── environments/
+│   │   ├── dev/
+│   │   │   └── README.md
+│   │   ├── prod/
+│   │   │   ├── policies/
+│   │   │   │   └── alb-controller-policy.json
+│   │   │   ├── tests/
+│   │   │   │   └── edge.tftest.hcl
+│   │   │   ├── .terraform.lock.hcl
+│   │   │   ├── account_security.tf
+│   │   │   ├── addons.tf
+│   │   │   ├── backend.tf
+│   │   │   ├── codebuild_runner.tf
+│   │   │   ├── ecr.tf
+│   │   │   ├── edge.tf
+│   │   │   ├── eks.tf
+│   │   │   ├── eks_access.tf
+│   │   │   ├── endpoints.tf
+│   │   │   ├── github_oidc.tf
+│   │   │   ├── irsa.tf
+│   │   │   ├── kms.tf
+│   │   │   ├── locals.tf
+│   │   │   ├── nat.tf
+│   │   │   ├── nodegroups.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── providers.tf
+│   │   │   ├── README.md
+│   │   │   ├── s3_access.tf
+│   │   │   ├── s3_backup.tf
+│   │   │   ├── s3_cf_logs.tf
+│   │   │   ├── s3_images.tf
+│   │   │   ├── s3_logs.tf
+│   │   │   ├── s3_models.tf
+│   │   │   ├── s3_returns.tf
+│   │   │   ├── s3_waf_logs.tf
+│   │   │   ├── security.tf
+│   │   │   ├── ssm.tf
+│   │   │   ├── terraform.tfvars.example
+│   │   │   ├── threat_detection.tf
+│   │   │   ├── variables.tf
+│   │   │   ├── versions.tf
+│   │   │   └── vpc.tf
+│   │   └── staging/
+│   │       ├── detection/
+│   │       │   ├── patterns/
+│   │       │   │   ├── cloudtrail-tampering.json
+│   │       │   │   ├── eks-cluster-destructive.json
+│   │       │   │   ├── iam-user-and-key.json
+│   │       │   │   ├── root-activity.json
+│   │       │   │   └── threat-detection-disable.json
+│   │       │   └── tests/
+│   │       │       ├── cloudtrail-tampering.match.json
+│   │       │       ├── cloudtrail-tampering.nomatch.json
+│   │       │       ├── eks-cluster-destructive.match.json
+│   │       │       ├── eks-cluster-destructive.nomatch.json
+│   │       │       ├── iam-user-and-key.match.json
+│   │       │       ├── iam-user-and-key.nomatch.json
+│   │       │       ├── root-activity.match-apne2.json
+│   │       │       ├── root-activity.match.json
+│   │       │       ├── root-activity.nomatch.json
+│   │       │       ├── threat-detection-disable.match.json
+│   │       │       └── threat-detection-disable.nomatch.json
+│   │       ├── policies/
+│   │       │   └── alb-controller-policy.json
+│   │       ├── tests/
+│   │       │   └── edge.tftest.hcl
+│   │       ├── .terraform.lock.hcl
+│   │       ├── addons.tf
+│   │       ├── backend.tf
+│   │       ├── cnpg_restore.tf
+│   │       ├── detection.tf
+│   │       ├── ecr.tf
+│   │       ├── edge.tf
+│   │       ├── eks.tf
+│   │       ├── eks_access.tf
+│   │       ├── endpoints.tf
+│   │       ├── github_oidc.tf
+│   │       ├── irsa.tf
+│   │       ├── kms.tf
+│   │       ├── locals.tf
+│   │       ├── nat.tf
+│   │       ├── nodegroups.tf
+│   │       ├── outputs.tf
+│   │       ├── providers.tf
+│   │       ├── README.md
+│   │       ├── s3_access.tf
+│   │       ├── s3_backup.tf
+│   │       ├── s3_cf_logs.tf
+│   │       ├── s3_images.tf
+│   │       ├── s3_logs.tf
+│   │       ├── s3_models.tf
+│   │       ├── s3_returns.tf
+│   │       ├── s3_waf_logs.tf
+│   │       ├── security.tf
+│   │       ├── ssm.tf
+│   │       ├── terraform.tfvars.example
+│   │       ├── variables.tf
+│   │       ├── versions.tf
+│   │       └── vpc.tf
+│   ├── modules/
+│   │   ├── acm_alb/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── acm_cloudfront/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── alb/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── cloudfront/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── codebuild/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── detection/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── ecr/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── eks/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── eks_addons/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── eks_nodes/
+│   │   │   ├── templates/
+│   │   │   │   └── node_user_data.mime
+│   │   │   ├── tests/
+│   │   │   │   └── operations.tftest.hcl
+│   │   │   ├── .terraform.lock.hcl
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── endpoints/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── github_oidc/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── irsa/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── kms/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── nat/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── network/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── s3/
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   ├── security/
+│   │   │   ├── locals.tf
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   ├── variables.tf
+│   │   │   └── versions.tf
+│   │   └── waf/
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── variables.tf
+│   │       └── versions.tf
+│   └── workload-secrets.md
+├── tests/
+│   └── ecr/
+│       ├── .terraform.lock.hcl
+│       ├── environment.tftest.hcl
+│       ├── inputs.tftest.hcl
+│       └── versions.tf
+├── .gitignore
+├── CLAUDE.md
+├── CONVENTION.md
+└── README.md
+`,
+      },
+    ],
+    // Phase one is the onboarding week (Aug 5 to 9), worded with Junhan on
+    // 2026-10-16: "fellows", "disciplines", and "PM team" in place of
+    // trainee and track vocabulary. The rest follow the course's four
+    // deliverable deadlines in the Notion ground rules (8/21, 9/4, 9/18,
+    // 10/1), then submission and the final presentation. Team flow in "we", with two lines about Junhan,
+    // and each phase from Discovery to Integration opens with one sourced line
+    // about another discipline (deck), approved as I2 on 2026-10-19. The
+    // highlight rule: every technology named, plus the presentation date.
+    implementation: {
+      months: ['2026-08', '2026-09', '2026-10'],
+      span: { from: '2026-08-05', to: '2026-10-06' },
+      phases: [
+        {
+          id: 'onboard',
+          title: 'Onboarding & Requirements',
+          range: 'Aug 5 – Aug 9',
+          from: '2026-08-05',
+          to: '2026-08-09',
+          text: 'The program assigned 20 fellows from eight disciplines to form one integrated team. The PM team led the project and managed how the team worked. Together, we agreed to track every task in a shared WBS and to meet at a daily stand‑up. We logged blockers in one issue list and tested these rules during a short ideathon. During this period, I took the initiative to meet with the lead of each discipline to hear how they planned to use the budget allocated to our project. Those conversations became the first inputs to our infrastructure design.',
+        },
+        {
+          id: 'discover',
+          title: 'Discovery & Planning',
+          range: 'Aug 10 – Aug 21',
+          from: '2026-08-10',
+          to: '2026-08-21',
+          text: 'The PM and design teams interviewed three master artisans and compared their answers with a national craft survey. We defined Midam’s two AI features and compared cloud designs for cost, availability, and recovery. Our team chose **Terraform** on **AWS** after weighing it against CloudFormation and Pulumi.',
+        },
+        {
+          id: 'design',
+          title: 'Design & Interfaces',
+          range: 'Aug 22 – Sep 4',
+          from: '2026-08-22',
+          to: '2026-09-04',
+          text: 'The back‑end team documented its API in **OpenAPI**, and the front‑end team built screens against mock API contracts. We designed two isolated VPCs with a three‑tier subnet layout and an **IRSA** role for each workload. We wrote one interface spec to keep the ports, health checks, and secret paths the same across every discipline.',
+        },
+        {
+          id: 'build',
+          title: 'Infrastructure as Code',
+          range: 'Sep 5 – Sep 18',
+          from: '2026-09-05',
+          to: '2026-09-18',
+          text: 'The AI team compared nine models and selected **gemma4:12b** for the chatbot. We wrote the infrastructure as **Terraform** modules and held every paid resource at `plan` until one shared apply on September 18. I built the network, the **NAT Gateway**, the **EKS** cluster, and its six node groups. My preconditions stop an unsafe plan before it reaches AWS.',
+        },
+        {
+          id: 'integrate',
+          title: 'Integration & Security',
+          range: 'Sep 19 – Oct 1',
+          from: '2026-09-19',
+          to: '2026-10-01',
+          text: 'The security team scanned our infrastructure on September 23 and the application on September 30. The staging cluster went live on September 21. The back end, both AI models, **CloudNativePG**, and the monitoring stack deployed through **Argo CD** within two days. We answered the security team’s scans and tested the backups with isolated restores. I traced a prod plan that would have deleted all five shared **ECR** repositories and fixed it before apply.',
+        },
+        {
+          id: 'deliver',
+          title: 'Delivery & Teardown',
+          range: 'Oct 2 – Oct 6',
+          from: '2026-10-02',
+          to: '2026-10-06',
+          text: 'We submitted our deliverables on October 2 and scaled every node to zero to stop the spending. We presented Midam on **October 6** and destroyed the environment the same day.',
+        },
+      ],
+    },
+    // Junhan's files, in the order the page argues them: the NAT that every
+    // outbound call leaves through, the cluster and its endpoint guard, the
+    // node groups and their preconditions, the add-on that makes NetworkPolicy
+    // real, and the drill that would have timed a failover. Comments and
+    // human-readable messages are translated; every identifier, flag, value,
+    // and line of logic is byte-for-byte what the repository holds. The drill's
+    // timing labels are dictionary keys and were translated identically at
+    // every use. `eks_nodes/main.tf` also carries Dajeong's user-data notes
+    // and Changwon's tag change.
+    terraform: [
+      // `note` is the line under each sub-tab: four of the five are main.tf.
+      { path: 'terraform/modules/nat/main.tf', note: 'NAT Gateway', content: ktNatTf },
+      { path: 'terraform/modules/eks/main.tf', note: 'EKS cluster', content: ktEksTf },
+      { path: 'terraform/modules/eks_nodes/main.tf', note: 'Node groups', content: ktEksNodesTf },
+      { path: 'terraform/modules/eks_addons/main.tf', note: 'EKS add-ons', content: ktEksAddonsTf },
+      { path: 'scripts/ha_failover_drill.py', note: 'Failover drill', content: ktHaDrill },
+    ],
+    recoveryPolicy: null,
+    // Cut from the team's demo recording (1930x1080, 4 min 44 s). The app is
+    // the work of the AI, FE, and BE tracks; this section shows what the
+    // infrastructure served. Clips: 0:00–2:00 at 8x, 2:00–2:52 at 4x, and
+    // 2:52–4:44 at 8x. Stills are full-resolution frames from the same video.
+    media: {
+      clipNote: "Cut from the team's demo recording of the staging service. It has no sound and plays on a loop.",
+      stillsNote: 'These frames come from the same recording. Click one to open it at full size.',
+      scenarios: [
+        {
+          id: 'ai-studio',
+          tab: 'AI product page',
+          label: 'Demo 1: An artisan builds a product page with AI',
+          lead: 'An artisan enters a product name, the making process, and photos. **Qwen3.8 27B** drafts the page, **FLUX.2** adds staged shots, and the artisan edits each section before publishing.',
+          clip: {
+            src: '/projects/kt-fellowship-project/clip-01-ai-studio.mp4',
+            width: 1280,
+            height: 716,
+            poster: '/projects/kt-fellowship-project/clip-01-ai-studio.jpg',
+            speed: '8x',
+            alt: 'The seller studio: product details and photos entered, an AI-generated detail page with eight sections, the sections edited and reordered, and the shopper view previewed on desktop and mobile',
+          },
+          shots: [
+            {
+              src: '/projects/kt-fellowship-project/demo-01-studio-sections.jpg',
+              state: 'AI sections ready to edit',
+              alt: 'The seller studio with a list of eight AI-generated sections on the left and the first section open in an inline text editor',
+            },
+            {
+              src: '/projects/kt-fellowship-project/demo-01-studio-preview.jpg',
+              state: 'Shopper view before publishing',
+              alt: 'The desktop preview of the generated page for a celadon teacup, with staged product photos beside the price and the buy buttons',
+            },
+          ],
+        },
+        {
+          id: 'chatbot',
+          tab: 'AI chatbot',
+          label: 'Demo 2: A shopper asks the chatbot for a gift',
+          lead: 'A shopper types a short request, and the chatbot on **Ollama** reads the intent and the budget. It answers with up to three picks and a reason for each.',
+          clip: {
+            src: '/projects/kt-fellowship-project/clip-02-chatbot.mp4',
+            width: 1280,
+            height: 716,
+            poster: '/projects/kt-fellowship-project/clip-02-chatbot.jpg',
+            speed: '4x',
+            alt: 'The Midam home page, the chatbot panel opening with suggested questions, a gift request typed in, and three product picks returned with reasons',
+          },
+          shots: [
+            {
+              src: '/projects/kt-fellowship-project/demo-02-chatbot-picks.jpg',
+              state: 'Picks with reasons',
+              alt: 'The chatbot panel beside the home page, explaining its recommendation above three product cards with prices',
+            },
+            {
+              src: '/projects/kt-fellowship-project/demo-02-product-story.jpg',
+              state: 'The product page',
+              alt: 'A product page showing the product information, the making process, and the care guide, with option selectors and the buy button on the right',
+            },
+          ],
+        },
+        {
+          id: 'checkout',
+          tab: 'Checkout',
+          label: 'Demo 3: From the product page to a finished order',
+          lead: 'The shopper picks options, fills in the checkout, and pays through **Toss Payments** in a demo mode that creates no real charge. The last page confirms the order number.',
+          clip: {
+            src: '/projects/kt-fellowship-project/clip-03-checkout.mp4',
+            width: 1280,
+            height: 716,
+            poster: '/projects/kt-fellowship-project/clip-03-checkout.jpg',
+            speed: '8x',
+            alt: 'A product page with options chosen, the checkout form with delivery details, points, and coupons, the Toss Pay window, and the order confirmation page',
+          },
+          shots: [
+            {
+              src: '/projects/kt-fellowship-project/demo-03-checkout-form.jpg',
+              state: 'Checkout with points and coupons',
+              alt: 'The checkout page showing the ordered item, discount code, points, and coupon fields above the payment methods',
+            },
+            {
+              src: '/projects/kt-fellowship-project/demo-03-order-complete.jpg',
+              state: 'Order confirmed',
+              alt: 'The order complete page with the order number and buttons to view the order or keep browsing',
+            },
+          ],
+        },
+      ],
+      video: null,
+    },
+    // `I` only where the call was Junhan's (preconditions, the endpoint
+    // review, root EBS for the GPUs, explicit variables). The rest were team
+    // decisions recorded in CLAUDE.md and the deck's principles slide.
+    decisions: [
+      {
+        keyword: 'Single NAT Gateway',
+        title: 'Outbound internet traffic from the app subnets leaves through one NAT Gateway in AZ-a.',
+        glyph: 'route',
+        chose: 'One **NAT Gateway** with a fixed EIP',
+        over: 'a NAT Gateway in each AZ',
+        why: 'A second NAT Gateway would add about **$43** a month to a $330 budget. We placed the nodes in the same AZ to avoid cross-AZ charges and accepted that outbound traffic stops if AZ-a fails. The EIP stays fixed because the courier API allowlists it.',
+      },
+      {
+        keyword: 'No bastion host',
+        title: 'Admins reach the nodes only through SSM, and port 22 stays closed.',
+        glyph: 'channels',
+        chose: '**SSM Session Manager** only',
+        over: 'a bastion host with SSH',
+        why: 'A bastion is one more server to patch and one more door to watch. Every node carries the SSM policy in its IAM role. With every node at zero, the cluster API stays reachable through an IP allowlist.',
+      },
+      {
+        keyword: 'Plan-time preconditions',
+        title: 'The node and endpoint rules fail `terraform plan` before a bad value reaches AWS.',
+        glyph: 'process',
+        chose: '`precondition` blocks in the modules',
+        over: 'rules written as comments',
+        why: 'A comment protects a rule only for the person who reads it. I moved the database rules (three nodes, On-Demand only) and the endpoint allowlist into **preconditions**. Lowering the database node count to save money now stops at `plan`.',
+      },
+      {
+        keyword: 'Public endpoint, IP-limited',
+        title: 'The EKS API stays public during the build and accepts only teammates’ IP addresses.',
+        glyph: 'channels',
+        chose: 'A public endpoint limited to **team IPs**',
+        over: 'a private-only endpoint',
+        why: 'With no bastion and no VPN, a private-only endpoint would block the first Helm installs and every kubectl session once the nodes went to zero. I raised this with the team lead, and we kept the allowlist and recorded it as a time-limited exception for the security team.',
+      },
+      {
+        keyword: 'Root EBS for GPUs',
+        title: 'The GPU nodes keep model files on a larger root EBS volume.',
+        glyph: 'depth',
+        chose: 'A **200 GB** and **120 GB** root EBS volume',
+        over: 'the instances’ local NVMe disks',
+        why: 'Using local NVMe needed custom boot scripts that only a running cluster could test. The cluster did not exist yet. I chose root EBS for about **$6** more, and the decision stayed reversible once the build was stable.',
+      },
+      {
+        keyword: 'No ECR endpoint',
+        title: 'Image pulls go through the NAT Gateway, and S3 traffic uses the free Gateway Endpoint.',
+        glyph: 'route',
+        chose: 'NAT for ECR and an **S3 Gateway Endpoint**',
+        over: 'ECR interface endpoints',
+        why: 'The interface endpoints would cost about **$10.28** for the project, and pulling the same images through the NAT would cost about **$2.95**. Model weights, backups, and logs travel through the free S3 Gateway Endpoint instead of the NAT.',
+      },
+      {
+        keyword: 'GPUs start at zero',
+        title: 'Both GPU node groups start with zero nodes and scale up only when the AI team asks.',
+        glyph: 'pipeline',
+        chose: '`desired_size = 0` for both GPU groups',
+        over: 'GPU nodes running all day',
+        why: 'The two GPUs cost about **$70** a day together and took 48.5% of the measured bill. Starting them at zero kept the AI features testable while the rest of the cluster stayed within budget.',
+      },
+      {
+        keyword: 'Explicit risky variables',
+        title: 'Variables that are hard to undo have no default and must be set on purpose.',
+        glyph: 'note',
+        chose: 'No default plus a `validation` check',
+        over: 'defaults that apply silently',
+        why: 'A commented line in an example file once set a value to its default and planned the deletion of all five shared ECR repositories. I removed the defaults from variables like the endpoint setting in **PR #85**. A missing value now stops `plan` with a clear message.',
+      },
+    ],
+    // The detailed cost report (`layout: 'report'`), approved 2026-10-19.
+    // Every figure is real. Sources: Dajeong's cost analysis (Notion, written
+    // from Cost Explorer on 10/1: daily, per-service, and per-instance cost,
+    // the unit-price check, the savings levers, and the production forecast),
+    // CLAUDE.md (budget, $7 a day with zero nodes, the 10/1 GPU restart and
+    // rule 33, the lost credits, Spot kept off for the demo), and Junhan's
+    // portfolio export for "My Part" (three pricing errors, the teardown
+    // checklist's seven reasons). Levers are marked saved or not saved only
+    // where a source says so; two unsourced levers (CodeBuild frequency, EBS
+    // and ECR cleanup) were left out on purpose.
+    cost: {
+      layout: 'report',
+      headline: [
+        {
+          value: '$266',
+          suffix: 'of $330',
+          label: 'Spent Sep 7 – Oct 1',
+          bar: [{ share: 266, tone: 'accent' }, { share: 64, tone: 'track' }],
+          keys: ['**81%** used', '$64 left'],
+        },
+        {
+          value: '48.5%',
+          label: 'GPU share of the bill',
+          note: 'Two GPUs cost 4.2 times all eight other nodes.',
+          bar: [{ share: 48.5, tone: 'accent' }, { share: 51.5, tone: 'muted' }],
+          keys: ['**GPUs**', 'Other nodes and services'],
+        },
+        {
+          value: '1.6%',
+          label: 'Bill from user traffic',
+          note: 'Only $3.23 of $207.35 moved with traffic. The rest billed by the hour.',
+          bar: [{ share: 1.6, tone: 'accent' }, { share: 98.4, tone: 'muted' }],
+          keys: ['**Traffic**', 'Hourly infrastructure'],
+        },
+        {
+          value: '$7',
+          suffix: '/ day',
+          label: 'Cost with zero nodes',
+          note: 'The control plane, NAT Gateway, EBS, and ALB kept billing.',
+          bar: [
+            { share: 2.4, tone: 'ink-4' },
+            { share: 1.4, tone: 'ink-3' },
+            { share: 0.8, tone: 'ink-2' },
+            { share: 2.4, tone: 'ink-1' },
+          ],
+          keys: ['EKS', 'NAT', 'EBS', 'Other'],
+        },
+      ],
+      daily: {
+        title: 'Daily Cost',
+        sub: 'Daily AWS cost, Cost Explorer, read Oct 1',
+        // 9/22 to 9/25 are missing from the analysis as single days; it gives
+        // only their range, which the legend states.
+        days: [
+          { label: '9/7–20', total: 0.05 },
+          { label: '9/21', total: 6.06 },
+          { label: '9/26', total: 7.52 },
+          { label: '9/27', total: 11.38, gpu: 2.92 },
+          { label: '9/28', total: 42.55, gpu: 26.49 },
+          { label: '9/29', total: 46.6, gpu: 29.21 },
+          { label: '9/30', total: 55.51, gpu: 35.69 },
+        ],
+        legend: ['GPU nodes', 'Everything else', '9/22–25 ranged $5.93–15.76'],
+        text: 'Spending stayed near $0.05 a day until the cluster went up on September 21. Both GPUs began full testing on September 28. The daily cost jumped to $42.55 that day and peaked at $55.51 on September 30. On those three days, everything except the GPUs cost $16 to $20 a day.',
+      },
+      budget: {
+        title: 'Three Bills Against One Budget',
+        sub: 'Monthly estimates and the real bill',
+        limit: 330,
+        bars: [
+          { value: 2623, display: '$2,623', per: '/ mo', label: 'Always On', detail: 'Every node, 24 hours a day', tone: 'muted' },
+          { value: 522, display: '$522', per: '/ mo', label: 'Operating Plan', detail: 'GPUs 2 h, nodes 10 h a day', tone: 'soft' },
+          { value: 266, display: '$266', label: 'Actual Bill', detail: 'Sep 7 – Oct 1', tone: 'accent' },
+        ],
+        text: [
+          'The plan cut the estimate by **80%** and still sat above the budget. Scaling to zero between tests kept the real bill under it.',
+          'The cost model behind both estimates matched the measured bill within **10%** for EKS, the NAT Gateway, the ALB, and EBS.',
+        ],
+      },
+      breakdown: [
+        {
+          title: 'Cost by Service',
+          sub: 'Sep 7 – 30, $207.35 in total',
+          rows: [
+            { label: 'EC2 compute', value: 124.34, strong: true },
+            { label: 'EC2 other (EBS, NAT)', value: 24.96 },
+            { label: 'EKS control plane', value: 22.49 },
+            { label: 'CodeBuild', value: 12.12 },
+            { label: 'CloudWatch logs', value: 6.47 },
+            { label: 'ALB', value: 5.07 },
+            { label: 'VPC', value: 3.38 },
+            { label: 'WAF', value: 2.66 },
+            { label: 'ECR, KMS, R53, S3', value: 5.86 },
+            { label: 'CloudFront', value: 0 },
+          ],
+          text: 'Compute made up 60% of the bill. CloudFront cost nothing because no shopper traffic reached it yet.',
+        },
+        {
+          title: 'Cost by Node Type',
+          sub: 'EC2 compute, Sep 7 – 30',
+          rows: [
+            { label: 'L40S (g6e)', value: 81.16, strong: true },
+            { label: 'T4 (g4dn)', value: 19.45, strong: true },
+            { label: 't3.medium ×4', value: 12.12 },
+            { label: 't3.large ×1', value: 6.65 },
+            { label: 't3.small ×3', value: 4.97 },
+          ],
+          text: 'The two GPUs took 80.9% of compute. The L40S for page generation alone cost more than every other node together.',
+        },
+      ],
+      levers: {
+        title: 'Savings Options',
+        sub: 'Estimated monthly saving for each option',
+        head: ['Option and trade-off', 'Monthly saving'],
+        items: [
+          { action: 'Run the GPUs 2 hours a day instead of 24', tradeoff: 'AI features work only during set test windows.', amount: '$1,937', saved: true },
+          { action: 'Stop every node at night and on weekends', tradeoff: 'The service is down during those hours.', amount: '$164', saved: true },
+          { action: 'Move the GPUs to Spot', tradeoff: 'AWS can reclaim a Spot GPU with 2 minutes’ notice, and a reclaim during the demo would stop it.', amount: '$1,300', saved: false },
+          { action: 'Turn the NAT Gateway off', tradeoff: 'Payments, sign-in, mail, and image pulls would all stop.', amount: '$48', saved: false },
+          { action: 'Drop audit logs from the control plane', tradeoff: 'The team would lose its audit trail.', amount: '$15', saved: false },
+        ],
+        text: 'We took the two largest savings that were safe to take. We kept the GPUs on demand because a Spot reclaim during the October 6 demo would have stopped the AI features.',
+      },
+      misses: {
+        title: 'Mistakes and Fixes',
+        sub: 'Honest misses and what we changed',
+        items: [
+          { amount: '$15', text: '**A plain apply restarted both GPUs.** On October 1, a `terraform` `apply` reset the node groups to their defaults, and both GPUs ran for about five hours. We added a rule to change node counts only through the CLI.' },
+          { amount: '$19/mo', text: '**The estimate missed the control plane logs.** Five log types cost $6.47 in ten days, and the first estimate left them out.' },
+          { amount: '$1,601', text: '**The full-testing pace broke the budget.** AWS Budgets forecast $1,600.67 a month at the September 28 to 30 pace, 4.6 times the budget.' },
+          { amount: '2 days', text: '**The bill arrived late.** The September 30 total rose from $43 to $55.51 across three reads on October 1. The analysis records the time of every read.' },
+          { amount: '$0', text: '**We started with no credits.** Turning on IAM Identity Center as an organization instance removed the account’s credits. Every dollar came from the budget.' },
+        ],
+      },
+      production: {
+        title: 'Production Estimate',
+        sub: 'Monthly estimate for a production launch, no GPUs',
+        segments: [
+          { value: 510, label: '$510 base', tone: 'ink-4' },
+          { value: 52, label: '$52', tone: 'ink-2' },
+          { value: 99, label: '+$99', tone: 'accent' },
+          { value: 125, label: '+$125', tone: 'soft' },
+        ],
+        ticks: ['Fixed services, 8 nodes, and CI', 'Traffic · Required · Advised', '$786'],
+        text: [
+          'Even with the GPUs off, a production launch would cost about **$786** a month. The required changes were a node autoscaler, larger database nodes, and a second NAT Gateway. Two GPU hours a day would bring it to $962, and GPUs on all day to $2,899. With a $330 budget, we kept production as code and ran staging only.',
+          'A traffic spike would add only $26 a month, but without a node autoscaler, it would return 503 errors first. For an event, the team planned to add capacity ahead of time.',
+        ],
+      },
+      mine: {
+        title: 'My Part',
+        text: [
+          'I priced the node sizes and found three errors in the first estimate: a regional price that does not exist, a NAT rate at half its real value, and a missing EBS cost. I checked the cost analysis against the code and corrected it before submission.',
+          'I wrote the teardown checklist. It lists seven reasons one `terraform` `destroy` would not finish cleanly. One reason was three database volumes that Terraform does not own. Those volumes would keep billing after the destroy.',
+        ],
+      },
+    },
+    // The other teams' repositories, linked under the README rather than shown:
+    // their READMEs describe other teams' work, in Korean.
+    relatedRepos: {
+      label: 'Other team repositories',
+      repos: [
+        { name: 'backend', url: 'https://github.com/Jangingmall/backend' },
+        { name: 'frontend', url: 'https://github.com/Jangingmall/frontend' },
+        { name: 'GenAI', url: 'https://github.com/Jangingmall/GenAI' },
+      ],
+    },
     links: {
-      github: null, // placeholder
-      notion: null, // placeholder
+      github: 'https://github.com/Jangingmall/infra',
+      notion: 'https://plain-dill-f1d.notion.site/04-3-3f7b20762b63811eb9b2c8d9dd4ec032',
       terraform: null,
       presentation: null,
     },
+    // Approved 2026-10-20 after a long review round: his arc (infrastructure
+    // first, then the product led, then adapting), the technical lessons, one
+    // paragraph per team request, and a technical 'differently' list. Every
+    // fact is sourced in CLAUDE.md, the runbook, the deck, or the repo. The last
+    // two words of each paragraph are joined by a no-break space.
+    //
+    // Laid out as a story (approved 2026-10-21): the first two chapters run
+    // down a timeline as text, and each team and next-time paragraph sits
+    // beside its own diagram. `paragraph` indexes the arrays below, and
+    // `split` is where a next-time paragraph turns from what happened to the
+    // plan.
     reflection: {
-      // placeholder
-      learned: 'What the project taught me.',
-      differently: "What I'd do differently with the same brief again.",
+      layout: 'story',
+      story: {
+        chapters: [
+          {
+            label: 'What I expected',
+            kind: 'timeline',
+            items: [
+              { title: 'Expectation', mark: '1', paragraph: 0 },
+              { title: 'Reality', mark: '2', paragraph: 1 },
+            ],
+          },
+          {
+            label: 'What I learned to do',
+            kind: 'timeline',
+            items: [
+              { title: 'Cost and Change Control', icon: 'Terraform', paragraph: 2 },
+              { title: 'Scheduling on EKS', icon: 'EKS', paragraph: 3 },
+            ],
+          },
+          {
+            label: 'Working with each team',
+            kind: 'paired',
+            source: 'learned',
+            items: [
+              { eyebrow: 'Back‑End Team', title: 'Keep a design open enough to absorb late requirements.', paragraph: 4, visual: 'backendRequests' },
+              { eyebrow: 'AI Team', title: 'Build for requirements that are still moving.', paragraph: 5, visual: 'aiMove' },
+              { eyebrow: 'Front‑End Team', title: 'Carry the complexity on the infrastructure side.', paragraph: 6, visual: 'frontendUploads' },
+              { eyebrow: 'Security Team', title: 'Support every answer with evidence from the code and the live account.', paragraph: 7, visual: 'securityEvidence' },
+            ],
+          },
+          {
+            label: 'What I would do differently',
+            kind: 'paired',
+            source: 'differently',
+            items: [
+              { title: 'Terraform CI Pipeline', paragraph: 0, split: 'To close that gap,', visual: 'terraformPipeline' },
+              { title: 'Node Autoscaler', paragraph: 1, split: 'On the cluster side,', visual: 'nodeAutoscaler' },
+              { title: 'Zone Failure', paragraph: 2, split: 'For resilience,', visual: 'zoneFailure' },
+              { title: 'Cost Alerts', paragraph: 3, split: '**I would set cost alerts', visual: 'costAlerts' },
+            ],
+          },
+        ],
+      },
+      learned: [
+        '**I joined the fellowship believing that cloud infrastructure came first in building a platform like Midam**. After months of studying how everything begins with a **network**, a **cluster**, and a **security plan**, I expected our team to set the pace and lead the rest of the build.',
+        'In practice, **the project worked very differently**. **The team lead set the team’s priorities around the user‑facing features of the product**. The PM team shaped the plan from the shopper’s point of view, and infrastructure design often came last on the agenda. When I raised concerns about the project’s cloud infrastructure, they were usually set aside for a later phase. This was difficult for me, and I struggled with it at first. Over time, I learned to follow the PM team’s direction and to build the platform around the product’s schedule.',
+        'Building around the product changed how I approached the technical work. I began treating cost as a design input. I priced each change before I proposed it, and I wrote down the risk we accepted whenever we chose the cheaper option. I also learned that a shared environment needs **change control**. Paid resources stayed at the `plan` stage until one shared apply, and every change went through a reviewed **pull request**.',
+        'Working with EKS showed me how much reliability depends on scheduling. **Labels** and **taints** kept the GPU workloads and the database pods on their own node groups. A required **anti‑affinity rule** placed each database replica on a separate node. The same rules also limited where pods could run. With no node autoscaler, a pod that did not fit stayed Pending until someone added a node. I learned to read the Pending reason first and to treat node capacity as part of every deploy.',
+        'Each team’s requests then tested how quickly the platform could adapt. The back‑end team taught me to keep a design open enough to absorb late requirements. Our schedule called for both teams to build in parallel, and we stayed in close contact as their service took shape. Three days into the infrastructure code, the back‑end team shared new needs. First, their service now needed **Redis**. On top of that, their Java service would reserve up to three gigabytes of heap per pod. Their AI responses would also stream over long connections. None of that was in our resource plan or our cost estimate. Within a week, we needed to resize the node groups, give each backend pod its own node, and add Redis to the cluster. We also raised the **ALB idle timeout** from 60 to 300 seconds.',
+        'The AI team, in contrast, taught me to build for requirements that are still moving. Their first plan ran the models on an outside GPU service. To keep shopper data on servers we controlled, the AI team later chose to run the models on our own **EKS cluster**. That move put two **GPU node groups** on our side. The AI team was still comparing nine candidate chatbot models for accuracy and safety when we started building. The first manifests used placeholder image addresses in the meantime. To keep both teams on schedule, we built both GPU node groups in parallel and kept them at zero nodes. We also sized their disks for model images larger than ten gigabytes. When the AI team delivered the real images, the pods could start right away. Until then, the empty node groups cost nothing.',
+        'Meanwhile, the front‑end team showed me that adapting to another team often means carrying the complexity on the infrastructure side. The front‑end team chose **Vercel** to host their site. Vercel ran outside our AWS account. The browser code converted each photo into three WebP sizes and uploaded them straight to S3. The team’s build could not ship until the domain names and the upload rules were settled. We split the domains between Vercel and the ALB, limited the bucket’s **CORS rule** to that one upload method, and kept encryption as the bucket default. The front‑end team never needed to change their upload code. Keeping the rules on the bucket also helped our own team. We could tighten a rule without waiting for a front‑end release, and every upload followed the same encryption and origin rules.',
+        'Finally, as our team’s contact for the cloud security team, I reviewed their scan reports and wrote our responses. That work taught me to separate a scanner’s report from the real configuration. Most of the infrastructure findings targeted Kubernetes manifests outside our Terraform code. One critical finding was a **false positive**. Showing that took three separate pieces of evidence: **the code defaults**, **a plan‑time guardrail**, and **a query against the live cluster**. I learned to support every security answer with evidence from both the code and the live account.',
+      ],
+      differently: [
+        'Our **Kubernetes changes** already passed through a **GitHub Actions** workflow on every pull request. It rendered each manifest and linted each Helm chart before anyone merged. **Terraform changes**, however, still depended on reviewers reading each plan by hand. We planned a **Terraform pipeline** as a deliverable, but the two‑week infrastructure‑as‑code phase from September 5 to 18 left no time to finish it. To close that gap, **I would run every Terraform change through a CI pipeline**. That pipeline would **format**, **validate**, and **test** every change. It would also post the plan to the pull request for review. Additionally, adding the **IaC security scan** to that pipeline would change how security reviews worked. The security team ran its scans after the build ended, and its findings arrived as one large batch. By then, many changes were days or weeks old, and each fix started with relearning the code. With a pipeline, a scan on every pull request would flag a problem while its author was still working on that change. Fixing it would take minutes, and the security review would confirm a short list in place of a long backlog.',
+        'We chose a fixed node count on purpose. **A fixed count kept the monthly cost ceiling predictable on a small budget**. In practice, a person changed that count by hand. When the backend scaled out or a GPU test began, the new pods waited in Pending until someone added a node. On the cluster side, **I would add a node autoscaler**. With **Karpenter**, that wait would disappear. Karpenter would watch for Pending pods and launch a node that fits them. For an AI pod, it would choose a GPU instance. Once the pods finished and a node sat empty, Karpenter would remove it. As a result, GPU capacity would exist only during real use. The bill would follow actual demand, and nobody would need to scale the GPUs by hand.',
+        'To save cost, we kept every node and volume in one Availability Zone. A second NAT Gateway for another zone would add about $43 a month, and traffic between zones would add more. For resilience, **I would plan for a zone failure earlier**. **Topology spread constraints** would place the database replicas in two separate zones. Even though that layout would raise the bill slightly, **it would remove the largest single‑zone risk**. A failover drill on that layout would then give the HA report measured recovery times.',
+        'The **AWS Budgets** limit for the whole project was our only alert. The program gave us one fixed budget for the entire fellowship, and we set that limit once at $330. The alert compared total spending against that limit and could not show a sudden daily rise. **Cost Explorer** also showed our real spending pace only two days later. **I would set cost alerts before the first apply**. A **daily budget alert** would catch a spike on the day it starts. **Cost anomaly detection** would then trace that spike to its node group through the tags we already used.',
+      ],
     },
   },
 
@@ -4901,70 +6931,263 @@ project3-hailcast-manifests/
     // alongside it rather than after it: the team project's four servers by
     // day, my own copy of the same four in the evenings.
     period: 'April 20 – May 22, 2026',
+    // Approved 2026-10-22 from live samples. How follows deploy.yml's jobs:
+    // code checks, the Docker Hub image, then Ansible on both sides, with the
+    // AWS side destroyed at the end of each run. ~6s is the nginx self-heal
+    // capture (active again at t=6.0). `oneLine` keeps each figure label on a
+    // single line while the row sits beside the workspace tiles.
     glance: {
-      why: 'I owned the infrastructure build on EchoChallengers, which meant there were parts of the system I had reviewed without ever typing them out. So I kept my own repository alongside the team one and built the whole thing again by myself.',
-      how: 'Four servers on VMware and four more on AWS, provisioned by Terraform, configured by 15 Ansible roles, joined into one network by Tailscale, and deployed by a single GitHub Actions workflow.',
-      result: 'One push to `main` provisions the AWS side, configures every host, checks the load balancer, and destroys the whole environment again, so a full rehearsal costs about an hour of instance time.',
+      why: 'In this project, I wanted to rebuild our first team project’s infrastructure entirely on my own. As the infra build lead on EchoChallengers, I wrote the **Terraform** and **Ansible** foundation that the rest of the team built on. This time, I started from an empty repository and also wrote the monitoring and recovery layers myself. I finished it with a **GitHub Actions** pipeline that deploys both environments.',
+      how: {
+        flow: {
+          steps: [
+            { key: 'Check', tools: 'Python + YAML', caption: 'syntax on every push' },
+            { key: 'Image', tools: 'Docker Hub', caption: 'builds the FastAPI image' },
+            { key: 'Deploy', tools: 'On‑prem + AWS', caption: 'runs Ansible on both sides' },
+          ],
+          base: { name: 'Terraform destroy', text: 'removes the AWS side at the end of every run' },
+        },
+      },
+      result: {
+        oneLine: true,
+        figures: [
+          { value: '1 push', label: 'deploys both environments' },
+          { value: '15', label: 'Ansible roles reused on AWS' },
+          { value: '~6s', label: 'Nginx restart after a kill' },
+        ],
+      },
     },
-    // Solo, so this is the whole scope rather than a slice of it. Prose rather
-    // than the bento the team pages use: a tile grid divides a contribution
-    // into parts, and there is nobody here to divide it from.
-    role: 'Solo build from an empty repository. I wrote the Terraform, all 15 Ansible roles, the recovery webhook, the chaos script and the GitHub Actions workflow myself. Nothing here was copied across from the team repository.',
-    context: {
-      notes: [
+    // The workspace as four tiles beside At a Glance, each led by one figure,
+    // rendered by WorkspaceFaces.jsx. Counted from the public repository:
+    // commits per day across its whole history (the Sep commits removed
+    // secrets and published it), the four jobs in deploy.yml, and the four
+    // hosts in inventory/hosts.ini. `hot` marks the May build days.
+    workspaceFaces: [
+      {
+        icon: 'github',
+        title: 'GitHub',
+        subtitle: 'Solo repository',
+        value: '75',
+        label: 'commits on main',
+        bars: {
+          days: [
+            { day: 'Apr 27', commits: 1 },
+            { day: 'May 13', commits: 8, hot: true },
+            { day: 'May 14', commits: 9, hot: true },
+            { day: 'May 15', commits: 10, hot: true },
+            { day: 'May 16', commits: 42, hot: true },
+            { day: 'Sep 9', commits: 1 },
+            { day: 'Sep 10', commits: 3 },
+            { day: 'Sep 12', commits: 1 },
+          ],
+        },
+      },
+      {
+        icon: 'workflow',
+        title: 'GitHub Actions',
+        subtitle: 'deploy.yml',
+        value: '4',
+        label: 'jobs per push',
+        chips: [{ text: 'checks' }, { text: 'image' }, { text: 'on-prem', on: true }, { text: 'AWS', on: true }],
+      },
+      {
+        icon: 'server',
+        title: 'VMware lab',
+        subtitle: 'On-premise hosts',
+        value: '4',
+        label: 'virtual machines',
+        chips: [{ text: 'proj-mgmt', on: true }, { text: 'rocky1' }, { text: 'rocky2' }, { text: 'ubuntu1' }],
+      },
+      {
+        icon: 'people',
+        title: 'EchoChallengers',
+        subtitle: 'Team counterpart',
+        value: '5',
+        label: 'weeks side by side',
+        link: { label: 'View EchoChallengers', href: '#/projects/echochallengers' },
+      },
+    ],
+    // Approved 2026-10-22 from live samples. The team pages' avatar template
+    // with a figures band and an areas bento. Every figure and visual is
+    // counted from the repository: 33 resource blocks in terraform/*.tf, the
+    // 15 directories under roles/, the four jobs and the notify steps in
+    // deploy.yml, the two alert names in recovery/webhook_server.py, the
+    // seven cases in chaos/inject.sh, and the Tailscale action on the runner.
+    // The role chips are ordered to fill four rows at desktop width.
+    role: {
+      title: 'Solo Engineer',
+      subtitle: 'Infra and CI/CD',
+      layout: 'areas',
+      areas: ['L L L L L L P P P P P P', 'W W W W C C C C N N N N'],
+      figuresInline: true,
+      figures: [
+        { value: '33', unit: 'Terraform resources' },
+        { value: '15', unit: 'Ansible roles' },
+        { value: '4', unit: 'jobs per push' },
+      ],
+      tiles: [
         {
           size: 'lead',
-          label: 'Why do it twice',
-          text: 'Owning the infrastructure build on a five-person team meant some parts of the system reached me as a pull request to review rather than as something I had written. Building the whole thing alone was the fastest way to find out which parts those were.',
+          area: 'L',
+          label: 'Solo Build',
+          text: 'Wrote the **Terraform** for the AWS side and all **15 Ansible roles** that configure the four VMware hosts and the four AWS instances.',
+          footer: {
+            type: 'chipRows',
+            rows: [
+              [{ text: 'haproxy' }, { text: 'nginx' }, { text: 'docker' }, { text: 'fastapi' }, { text: 'certbot' }],
+              [{ text: 'nginx_selfheal' }, { text: 'postgresql' }, { text: 'recovery_service', accent: true }],
+              [{ text: 'node_exporter' }, { text: 'prometheus_bot', accent: true }, { text: 'docker_fastapi' }],
+              [{ text: 'tailscale' }, { text: 'monitoring', accent: true }, { text: 'telegram' }, { text: 'cloudflared' }],
+            ],
+          },
         },
         {
-          size: 'lead',
-          label: 'The rule I set',
-          text: 'I started from an empty repository and wrote every file again from scratch, so the architecture is familiar and the code is my own. Where I could not remember how something worked, I had to go and read the documentation.',
+          size: 'medium',
+          area: 'P',
+          tone: 'accent',
+          label: 'Pipeline',
+          text: 'Built one **GitHub Actions** workflow that deploys both environments on every push and **destroys the AWS side** at the end of each run.',
+          visual: {
+            type: 'flow',
+            steps: ['checks', 'image', 'deploy'],
+            rows: [
+              { name: 'On-prem', text: 'self-hosted runner' },
+              { name: 'AWS', text: 'apply, configure, check, destroy', active: true },
+              { name: 'Notify', text: 'Slack and Telegram' },
+            ],
+          },
         },
         {
-          size: 'support',
-          label: 'What I added',
-          text: 'The team chose to spend its last week rehearsing the demo rather than building a pipeline, so this repository is where the CI/CD went. One GitHub Actions workflow runs the checks, builds the image, deploys to both environments and tears the AWS side down.',
+          size: 'small',
+          area: 'W',
+          label: 'Recovery webhook',
+          text: 'Wrote a **FastAPI webhook** that matches each critical alert to its fix and runs it over SSH.',
+          visual: {
+            type: 'routes',
+            rows: [
+              { when: 'FastAPIDown', profile: 'docker restart', active: true },
+              { when: 'NodeDown', profile: 'systemctl restart' },
+            ],
+          },
         },
         {
-          size: 'support',
-          label: 'What I kept simple',
-          text: 'The recovery service is a small FastAPI webhook that maps an alert name to the command that recovers it and runs that command over SSH. It handles two alerts, one container and one systemd unit, and that was enough to prove the loop closes.',
+          size: 'small',
+          area: 'C',
+          label: 'Chaos script',
+          text: 'Built a **chaos script** to trigger seven different failures on demand in both environments.',
+          visual: {
+            type: 'chips',
+            grid: true,
+            items: [
+              { text: 'fastapi1' }, { text: 'fastapi2' }, { text: 'nginx1' }, { text: 'nginx2' },
+              { text: 'db' }, { text: 'cpu1' }, { text: 'haproxy' }, { text: '--aws', accent: true },
+            ],
+          },
         },
         {
-          size: 'support',
-          label: 'Where it stops',
-          text: 'This is a study build. Secrets sit in GitHub Actions secrets rather than in a vault, Terraform state is local, and the environment is expected to live for the length of a workflow run.',
+          size: 'small',
+          area: 'N',
+          label: 'Tailscale runner',
+          text: 'Joined the CI runner to the **Tailscale** network to reach the private instances directly.',
+          visual: {
+            type: 'routes',
+            rows: [
+              { when: 'GitHub runner', profile: 'tailnet', active: true },
+              { when: 'tailnet', profile: 'private EC2' },
+            ],
+          },
         },
       ],
     },
-    // Every figure below is counted from the repository tree rather than
-    // estimated: 33 `resource` blocks across terraform/*.tf, 15 directories
-    // under roles/, 17 playbooks, 7 failure cases in chaos/inject.sh besides
-    // `all` and `status`, 4 rules in monitoring/alert.rules.yml and 6 alarms
-    // in terraform/cloudwatch.tf.
+    // Approved 2026-10-22 from live samples. A self-study told as a confidence
+    // story: one wide note for why the project exists, then a track of four
+    // stages with one note under each. The bold ledes were reworded so each
+    // justifies cleanly in a narrow card with no word alone on a line.
+    context: {
+      layout: 'track',
+      notes: [
+        {
+          label: 'Why This Project Exists',
+          text: 'By the time the first team project began, the course was moving faster than my confidence in each tool. Delivering a working build with my team showed me how a hybrid system comes together across VMware and AWS. **Terraform** creates the cloud servers, **Ansible** configures every host, and **monitoring** watches over them all. The same build also showed me how much more practice I wanted with each tool. Rebuilding the same infrastructure on my own became a way to strengthen that foundation one layer at a time.',
+        },
+        {
+          stage: 'Uncertain',
+          label: 'What Felt Uncertain',
+          lede: 'Writing **Terraform** and **Ansible** from a blank file still felt uncertain at first.',
+          text: 'A worked example felt easy to follow. Starting from an empty file felt like a different skill.',
+        },
+        {
+          stage: 'Practicing',
+          label: 'How It Was Practiced',
+          lede: 'Each step of the same design was repeated until it felt routine.',
+          text: 'Each part was also broken on purpose and brought back to see how it recovers.',
+        },
+        {
+          stage: 'Learning',
+          label: 'Where Answers Came From',
+          lede: 'Most of the learning came from **official guides** and **error logs**.',
+          text: 'A failed step meant reading until the cause was clear.',
+        },
+        {
+          stage: 'Confident',
+          label: 'What Changed',
+          lede: 'Over time, errors started to read as clues.',
+          text: 'Each clean run made the next layer less intimidating. By the end, the whole hybrid build ran from one repository.',
+        },
+      ],
+    },
+    // Every figure is counted from the repository tree rather than estimated:
+    // 33 `resource` blocks across terraform/*.tf, 15 directories under roles/,
+    // 17 playbooks, 7 failure cases in chaos/inject.sh besides `all` and
+    // `status`, and 4 rules in monitoring/alert.rules.yml plus 6 alarms in
+    // terraform/cloudwatch.tf. Each detail line says what the number makes
+    // possible. "Under 40 seconds" is the end-to-end test in commit aef4c22:
+    // the alert fired at about 38s and the container restarted in 0.9s.
+    // `metricsStyle: 'tiles'` gives this page its own grid, placed by `area`.
+    metricsStyle: 'tiles',
     metrics: [
-      { size: 'big', value: '33', label: 'Terraform Resource Blocks' },
-      { size: 'square', value: '15', label: 'Ansible Roles' },
-      { size: 'square', value: '17', label: 'Playbooks' },
       {
-        size: 'square',
+        area: 'tf',
+        art: 'stack',
+        accent: true,
+        value: '33',
+        label: 'Terraform Resource Blocks',
+        detail: 'Builds the full AWS environment on demand and removes it after testing',
+      },
+      {
+        area: 'roles',
+        art: 'modules',
+        value: '15',
+        label: 'Ansible Roles',
+        detail: 'Configures all eight servers from one change',
+      },
+      {
+        area: 'pb',
+        art: 'book',
+        value: '17',
+        label: 'Playbooks',
+        detail: 'Restores a single broken service without touching the rest',
+      },
+      {
+        area: 'chaos',
+        art: 'bolt',
         value: '7',
         label: 'Failure Injections',
-        hint: 'Failure cases chaos/inject.sh can trigger on demand',
+        detail: 'Triggers seven real failures to test the recovery paths',
       },
       {
-        size: 'wide',
+        area: 'alerts',
+        art: 'bell',
+        value: '10',
+        label: 'Alerts Configured',
+        detail: 'Catches a stopped application and brings it back in under 40 seconds',
+      },
+      {
+        area: 'env',
+        art: 'hybrid',
         value: '2',
         label: 'Environments',
-        detail: 'VMware and AWS, from one set of roles',
-      },
-      {
-        size: 'square',
-        value: '10',
-        label: 'Alerts Wired',
-        hint: '4 Prometheus rules and 6 CloudWatch alarms',
+        detail: 'Verifies both sites with health checks before calling a deploy done',
       },
     ],
     stack: [
@@ -4982,22 +7205,22 @@ project3-hailcast-manifests/
       {
         tool: 'Why Tailscale?',
         icon: 'Tailscale',
-        text: 'Every instance joins the mesh from its own `user_data` script, before Ansible ever runs. The GitHub Actions runner joins the same mesh with an OAuth key, so it addresses a private EC2 instance by a **100.x address** and needs no jump host.',
+        text: 'When working on EchoChallengers, I used **Tailscale** to join our VMware lab to AWS without opening a public port. In this build, I took it a step further by adding the GitHub Actions runner to the same private network. Each AWS instance joins from its own startup script, and Ansible reaches every private server at its **100.x** address.',
       },
       {
         tool: 'Why GitHub Actions?',
         icon: 'GitHub Actions',
-        text: 'The team project ended without a pipeline, so building one was half the point of this repository. A hosted runner drives AWS and a **self-hosted runner** on the on-premises mgmt node drives VMware, from the same workflow file.',
+        text: 'During the course of the first team project, **GitHub Actions** was still new to most of us because our class was only beginning to cover it. The team kept to a Makefile everyone could run by hand, and I used this project to take on the challenge myself. The result is one workflow with **four jobs** that checks the code, builds the image, and deploys both environments on every push.',
       },
       {
         tool: 'Why Docker for FastAPI?',
         icon: 'Docker',
-        text: 'The first version ran uvicorn under systemd and needed a compiler toolchain on every web server just to build `psycopg2`. Moving the app into an image built once in CI made the two web servers **interchangeable**, and Nginx stayed on the host as a plain reverse proxy.',
+        text: 'The first version of this build ran FastAPI directly on each web server, and every server needed its own compilers to install the Python packages. I moved the app into **Docker** to make both servers run the same code in the same way. The pipeline now builds **one image**, both web servers pull it, and **Nginx** stays on the host as the reverse proxy.',
       },
       {
         tool: 'Why keep HAProxy?',
         icon: 'HAProxy',
-        text: 'On VMware there is no ALB, so HAProxy is the load balancer. On AWS it stays on the mgmt node with its **stats page on :8404**, which is what lets the on-premises and AWS deployments run the same roles.',
+        text: 'EchoChallengers used **HAProxy** on the mgmt server because a VMware lab has no cloud load balancer. I kept the same approach to stay close to the team’s design on the on‑premise side. It spreads traffic across the two web servers and shows their health on a **stats page at :8404**, and the same role also runs on AWS.',
       },
     ],
     // Five files, chosen the way the team pages choose theirs: each one has to
@@ -5012,12 +7235,15 @@ project3-hailcast-manifests/
       { path: 'terraform/mgmt_bootstrap.sh', content: ipoMgmtBootstrap },
       { path: 'roles/nginx_selfheal/tasks/main.yml', content: ipoSelfheal },
     ],
-    // The two halves of the question the Alert-to-restart diagram answers:
-    // what has to be true before anything fires, and where it goes once it
-    // does. `alertmanager.yml` is the more interesting of the pair, because
-    // the `continue: true` on both severity routes is why one alert reaches
-    // Slack and Telegram and the webhook without being three alerts.
+    // The recovery map first, the order the team pages use, then the two
+    // halves of the question the Alert-to-restart diagram answers: what has
+    // to be true before anything fires, and where it goes once it does. The
+    // webhook also stays under Resources with the rest of the source.
+    // `alertmanager.yml` carries the `continue: true` on both severity routes,
+    // which is why one alert reaches Slack and Telegram and the webhook
+    // without being three alerts.
     recoveryPolicy: [
+      { path: 'recovery/webhook_server.py', content: ipoWebhook },
       { path: 'monitoring/alert.rules.yml', content: ipoAlertRules },
       { path: 'monitoring/alertmanager.yml', content: ipoAlertmanager },
     ],
@@ -5056,7 +7282,7 @@ project3-hailcast-manifests/
             { id: 'projubuntu1', label: 'proj-ubuntu1', sub: 'PostgreSQL', glyph: 'database', x: 845, y: 136, w: 195, h: 56 },
 
             { id: 'runner', label: 'GitHub Actions runner', sub: 'joins with an OAuth key', glyph: 'pipeline', x: 165, y: 252, w: 250, h: 56 },
-            { id: 'tailnet', label: 'Tailscale mesh', sub: 'every host gets a 100.x address', glyph: 'vpn', x: 560, y: 252, w: 320, h: 56 },
+            { id: 'tailnet', label: 'Tailscale mesh', sub: 'mgmt, AWS hosts, and the runner', glyph: 'vpn', x: 560, y: 252, w: 320, h: 56 },
 
             { id: 'alb', label: 'ALB', sub: 'HTTP 80 · /health every 15s', glyph: 'balancer', x: 210, y: 432, w: 240, h: 52 },
             { id: 'awsmgmt', label: 'aws-mgmt', sub: 'HAProxy · Prometheus · Grafana', glyph: 'monitor', x: 560, y: 432, w: 300, h: 52 },
@@ -5086,12 +7312,12 @@ project3-hailcast-manifests/
               x: 20,
               y: 660,
               tone: 'accent',
-              text: 'One inventory file per environment and one set of 15 roles. The AWS run swaps hosts.ini for hosts_aws_ts.ini and nothing else changes.',
+              text: 'One set of roles serves both sites. The AWS playbook connects Tailscale first and moves monitoring into Docker.',
             },
             {
               x: 20,
               y: 682,
-              text: 'Public subnets are 10.0.1.0/24 and 10.0.2.0/24, private are 10.0.11.0/24 and 10.0.12.0/24. All four instances are t4g.small on Graviton.',
+              text: 'All four instances use t4g.small, an Arm type built on AWS Graviton chips. It costs less per hour than the matching x86 type.',
             },
           ],
         },
@@ -5141,7 +7367,10 @@ project3-hailcast-manifests/
           edges: [
             { from: 'exporters', to: 'prometheus' },
             { from: 'appmetrics', to: 'prometheus' },
-            { from: 'prometheus', to: 'alertmanager', label: 'for: 30s' },
+            // The four rules wait 30s (FastAPIDown), 1m (NodeDown, HighCPU) or
+            // 3m (HighMemory) before firing. The label sits above the boxes:
+            // the 70-unit gap between them is no wider than the text.
+            { from: 'prometheus', to: 'alertmanager', label: 'for: 30s–3m', labelAt: [645, 72] },
             // One alert leaves Alertmanager on a single stem and splits in the
             // gutter between the bands, which is what the routing config does.
             { from: 'alertmanager', to: 'slack', via: [[800, 172], [165, 172]] },
@@ -5159,17 +7388,17 @@ project3-hailcast-manifests/
               x: 20,
               y: 640,
               tone: 'accent',
-              text: 'The webhook restarts a service only when both maps match. Anything it does not recognise is logged and passed to a person instead of guessed at.',
+              text: 'A restart runs only when the alert name and job both match the webhook’s maps. Any unmatched alert stays in the log for a manual check.',
             },
             {
               x: 20,
               y: 662,
-              text: 'Slack and Telegram both receive every alert. Only Slack receives the recovery result, because that message is posted by the webhook rather than by Alertmanager.',
+              text: 'Every alert reaches Slack and Telegram. Recovery results reach Slack only because the webhook posts them there itself.',
             },
             {
               x: 20,
               y: 684,
-              text: 'Nginx sits outside this flow. It carries a Restart=always systemd drop-in, so systemd brings it back in about 5 seconds and no alert ever fires.',
+              text: 'A Restart=always drop-in lets systemd restart Nginx on its own. Nginx comes back in about 5 seconds with no alert raised.',
             },
           ],
         },
@@ -5177,7 +7406,7 @@ project3-hailcast-manifests/
       {
         tab: 'One workflow',
         caption:
-          'One GitHub workflow that always ends on a terraform destroy',
+          'Automated deployment and teardown',
         alt: 'A pipeline triggered by a push to main. Job 1 parses main.py and every playbook and role YAML file. Job 2 builds the FastAPI image and pushes it tagged latest and by commit sha. Job 3A runs on a self-hosted runner: git pull on proj-mgmt, ansible-playbook site.yml against hosts.ini, and a curl of /health. Job 3B runs on a hosted runner: terraform apply of 33 resource blocks, the runner joining the tailnet, ansible-playbook site_aws.yml, a curl of the ALB /health, and terraform destroy, which runs even when an earlier step fails.',
         diagram: {
           width: 1000,
@@ -5222,55 +7451,50 @@ project3-hailcast-manifests/
               x: 20,
               y: 660,
               tone: 'accent',
-              text: 'Both deploy jobs wait on the image build and then run in parallel, so one push updates VMware and AWS from the same commit.',
+              text: 'The on-prem and AWS jobs wait for the image and then run side by side. A single push updates both environments from one commit.',
             },
             {
               x: 20,
               y: 682,
-              text: 'Slack and Telegram get a message at every outcome: on-prem success, AWS success, destroy complete, and either failure.',
+              text: 'Each outcome posts to Slack. Successes and failures also post to Telegram, and the destroy notice stays in Slack.',
             },
           ],
         },
       },
     ],
-    // The same span as EchoChallengers, split by what this repository was
-    // actually built in the order of: hosts first, then the things that watch
-    // them, then the cloud copy, then the pipeline over both.
+    // Dated from the public repository's history. The first commit (Apr 27)
+    // already holds the hosts, monitoring, the webhook and chaos/inject.sh;
+    // Docker, the self-heal drop-in and Terraform all land in one commit on
+    // May 13; the workflow fixes and Tailscale run May 13 to 16. The Apr 20
+    // start is the course start, earlier than any commit. The September
+    // commits were demo prep for this page and are left out.
     implementation: {
       months: ['2026-04', '2026-05'],
-      span: { from: '2026-04-20', to: '2026-05-22' },
+      span: { from: '2026-04-20', to: '2026-05-16' },
       phases: [
         {
           id: 'onprem',
-          title: 'On-Premises Base',
-          range: 'Apr 20–May 3',
+          title: 'On-Premises Base & Monitoring',
+          range: 'Apr 20 – Apr 27',
           from: '2026-04-20',
-          to: '2026-05-03',
-          text: 'Four VMware machines, then the first roles: PostgreSQL on Ubuntu, Nginx and FastAPI on the two Rocky hosts, and HAProxy on mgmt. This first version ran uvicorn under systemd and needed a compiler toolchain on both web servers.',
+          to: '2026-04-27',
+          text: 'I set up four VMware machines with one management server, two web servers, and one database server. I practiced writing **Ansible** roles for PostgreSQL, Nginx, FastAPI, and HAProxy to set each one up the same way every time. **Prometheus** collected metrics from every machine, and **Alertmanager** sent alerts to Slack. A small webhook restarted a service over SSH when a critical alert fired. A short chaos script let me break things on purpose and watch the recovery happen.',
         },
         {
-          id: 'monitoring',
-          title: 'Monitoring and Recovery',
-          range: 'May 4–10',
-          from: '2026-05-04',
-          to: '2026-05-10',
-          text: 'Node Exporter on every host, Prometheus and Alertmanager on mgmt, four alert rules, and the FastAPI webhook that restarts a service over SSH when a critical alert fires. Nginx got a Restart=always drop-in instead of a place in that pipeline.',
-        },
-        {
-          id: 'aws',
-          title: 'AWS and Tailscale',
-          range: 'May 11–17',
-          from: '2026-05-11',
-          to: '2026-05-17',
-          text: 'Terraform for the VPC, the subnets, the four instances, the ALB and the CloudWatch alarms, with Tailscale installed from user_data so every instance is addressable before Ansible runs. Moving to arm64 here is what broke the binary downloads.',
+          id: 'build',
+          title: 'Docker, Self-Healing & AWS',
+          range: 'Apr 28 – May 12',
+          from: '2026-04-28',
+          to: '2026-05-12',
+          text: 'Next, I moved the app into **Docker** to run the same image on both web servers. I tried writing the AWS side with **Terraform**, including a VPC, public and private subnets, a load balancer, and four servers. Because the AWS servers used Arm processors, the monitoring downloads needed Arm versions, and the Telegram bot needed to be built from source.',
         },
         {
           id: 'pipeline',
-          title: 'Pipeline and Chaos',
-          range: 'May 18–22',
-          from: '2026-05-18',
-          to: '2026-05-22',
-          text: 'The GitHub Actions workflow that runs the checks, builds the image, deploys both environments and destroys the AWS side, plus chaos/inject.sh so the recovery path can be triggered on demand rather than waited for.',
+          title: 'Pipeline & Tailscale',
+          range: 'May 13 – May 16',
+          from: '2026-05-13',
+          to: '2026-05-16',
+          text: 'Connecting everything with **GitHub Actions** took many small fixes over four days. The workflow checks the code, builds the image, and deploys to both environments. A self-hosted runner handles the VMware side, and **Tailscale** lets the hosted runner reach the private servers on AWS. The AWS servers are deleted at the end of every run to keep the cost down.',
         },
       ],
     },
@@ -5292,18 +7516,18 @@ project3-hailcast-manifests/
     // a tab explains itself whether or not it moves.
     media: {
       clipNote:
-        'Cut from one screen recording of the on-premises run, at 1440 rather than 1280 because four panes of console text are what there is to read. Silent, and it loops.',
+        'Clips come from one silent screen recording of the on-premises run and loop continuously. Each one is 1440 pixels wide to keep four panes of console text readable.',
       // Said once, because a reader who compares two stills will notice the
       // clocks before the page gets a chance to explain them.
       stillsNote:
-        'Full-resolution captures from several runs of the same environment across two days, so the clocks in them do not line up with each other or with the clips. Click one to open it at full size.',
+        'Captures come from several runs across two days, and their clocks do not match each other or the clips. Click one to open it at full size.',
       scenarios: [
         {
           id: 'baseline',
           tab: 'Baseline',
           label: 'Scenario 1: Baseline monitoring across both environments',
           lead:
-            'Seven jobs up on both environments. On VMware Prometheus reaches them at `192.168.61.x`. On AWS it reaches the same seven at **100.x** over the Tailscale mesh, with no jump host in between.',
+            'Prometheus monitors seven jobs in the VMware lab and the same seven on AWS. VMware hosts answer at `192.168.61.x`. AWS application and database hosts answer at **100.x** through Tailscale, and the mgmt host answers on its VPC address.',
           before: {
             src: '/projects/project1-self-build/demo-01-onprem-targets.png',
             state: 'Prometheus has all seven jobs up on the VMware hosts',
@@ -5311,8 +7535,8 @@ project3-hailcast-manifests/
           },
           after: {
             src: '/projects/project1-self-build/demo-02-aws-targets.png',
-            state: 'The same seven jobs report up over the Tailscale mesh',
-            alt: 'The Prometheus targets page for the AWS environment, listing the same seven jobs all 1/1 up and labelled environment="aws", with every endpoint addressed by a 100.x Tailscale address rather than a VPC address, except node-mgmt which Prometheus reaches on 10.0.1.206 because it runs on the same host',
+            state: 'Every AWS job reports up through Tailscale and the VPC',
+            alt: 'The Prometheus targets page for the AWS environment, listing the same seven jobs all 1/1 up and labelled environment="aws", with the application and database endpoints on 100.x Tailscale addresses, node-mgmt on its VPC address 10.0.1.206, and Prometheus scraping itself on localhost',
           },
         },
         {
@@ -5320,7 +7544,7 @@ project3-hailcast-manifests/
           tab: 'Terraform',
           label: 'Scenario 2: The AWS environment under Terraform',
           lead:
-            'Four `t4g.small` instances across two availability zones, and the application answering through the ALB. Everything here is created and destroyed inside **one workflow run**.',
+            '**Terraform** builds four `t4g.small` instances across two availability zones. The application answers through the ALB, and the whole environment is removed once testing ends.',
           before: {
             src: '/projects/project1-self-build/demo-03-ec2-instances.png',
             state: 'Four instances run across two availability zones',
@@ -5356,7 +7580,7 @@ project3-hailcast-manifests/
           tab: 'Backend down',
           label: 'Scenario 4: HAProxy backend failover',
           lead:
-            'rocky1 stops answering and HAProxy marks it **DOWN** on the next L4 check. The backend stays up on rocky2, so the site keeps serving while one of the two web servers is gone.',
+            'Stopping rocky1 turns its HAProxy row **DOWN** on the next L4 check. Traffic shifts to rocky2, and the site keeps serving on one web server.',
           before: {
             src: '/projects/project1-self-build/demo-06-haproxy-both-up.png',
             state: 'HAProxy has both app servers up and serving',
@@ -5373,7 +7597,7 @@ project3-hailcast-manifests/
           tab: 'CPU overload',
           label: 'Scenario 5: CPU threshold alerting to Slack',
           lead:
-            '`chaos/inject.sh cpu1` pins rocky1 at **100%**. HighCPU waits out its one minute window, fires, and reaches Slack. Nothing restarts, because a busy CPU is a warning rather than something the webhook should act on.',
+            '`chaos/inject.sh cpu1` drives rocky1 to **100%** CPU. HighCPU fires after its one-minute window and posts to Slack. The webhook leaves it alone because a busy CPU is a warning, and only critical alerts trigger a restart.',
           clip: {
             src: '/projects/project1-self-build/clip-01-cpu-alert.mp4',
             width: 1440,
@@ -5423,27 +7647,27 @@ project3-hailcast-manifests/
           tab: 'Recovery on AWS',
           label: 'Scenario 7: Automated recovery on AWS',
           lead:
-            'The AWS run posts the whole sequence into one channel: the critical alert, the recovery starting, **one attempt that failed** and asked for a person, then the retry that finished. HighCPU fires and resolves underneath it.',
+            'FastAPIDown on aws-rocky1 triggers an automatic restart, and each step arrives in Slack as a notification. A **HighCPU** alert fires and resolves below it.',
           before: {
             src: '/projects/project1-self-build/demo-12-aws-slack-thread.png',
             state:
-              'The AWS thread runs from alert to failed attempt to recovery',
+              'The AWS thread runs from the first alert to recovery',
             alt: 'The Slack channel all-mindmug holding the AWS recovery sequence in order: several [AWS][CRITICAL] FastAPIDown alerts naming aws-rocky1 in ap-northeast-2, a line saying automatic recovery has started against 100.83.68.94, a line reporting the recovery failed and needs manual intervention, a second recovery start, a line reporting recovery complete, and below them an [AWS][FIRING] HighCPU at 100 percent followed by its [AWS][RESOLVED] at 67.6 percent',
           },
           after: {
             src: '/projects/project1-self-build/demo-13-aws-selfheal-board.png',
-            state: 'The self-healing board shows the same event on AWS',
+            state: 'The self-healing board marks FastAPI Down events on both AWS web servers',
             alt: 'The self-healing demo dashboard pointed at the AWS environment, its CPU chart flat near zero across all four hosts, its mean response time dropping from about two minutes to zero, and its threshold event timeline marking the FastAPI Down rows for aws-rocky1 and aws-rocky2 as events against an otherwise normal band, while the four CPU rows stay normal throughout',
           },
         },
       ],
     },
     folderStructure: `
-teamproject01-hybrid-cloud-infra/
+project1-on-premise-self-build/
 ├── terraform/
 │   ├── main.tf                  # VPC, subnets, 4 instances, ALB
 │   ├── variables.tf
-│   ├── outputs.tf               # generates the Ansible inventory
+│   ├── outputs.tf               # prints an Ansible inventory
 │   ├── locals.tf
 │   ├── cloudwatch.tf            # 6 alarms, SNS, dashboard
 │   ├── tailscale.tf
@@ -5456,15 +7680,18 @@ teamproject01-hybrid-cloud-infra/
 │   ├── db.yml
 │   ├── mgmt.yml
 │   ├── docker_web.yml
+│   ├── web.yml                  # the systemd version, no longer imported
 │   ├── nginx_selfheal.yml
 │   ├── monitoring.yml
+│   ├── monitoring-docker.yml    # the AWS monitoring stack
 │   ├── prometheus_bot.yml
 │   ├── prometheus_connect.yml   # promtool check, then restart
+│   ├── prometheus_connect_docker.yml
 │   ├── recovery_service.yml
 │   ├── cloudflared.yml
 │   ├── certbot.yml
 │   └── notify.yml
-├── roles/                       # 15 roles, tasks and handlers each
+├── roles/                       # 15 roles
 │   ├── docker/
 │   ├── docker_fastapi/          # image build, container, app/
 │   ├── nginx/
@@ -5485,8 +7712,10 @@ teamproject01-hybrid-cloud-infra/
 │   └── hosts_aws_ts.ini         # AWS, rewritten by the workflow
 ├── monitoring/
 │   ├── prometheus.yml
+│   ├── prometheus-docker.yml
 │   ├── prometheus_aws.yml.j2
 │   ├── alert.rules.yml          # 4 rules
+│   ├── test_alert.yml
 │   ├── alertmanager.yml         # 3 receivers
 │   ├── docker-compose.yml
 │   └── grafana/dashboards/
@@ -5500,69 +7729,76 @@ teamproject01-hybrid-cloud-infra/
 ├── .github/workflows/
 │   └── deploy.yml               # checks, image, on-prem, AWS, destroy
 ├── ansible.cfg
-├── deploy_aws.sh                # the same flow, run by hand
+├── deploy_aws.sh                # an earlier manual deploy through mgmt
 └── README.md
 `,
+    // Checked against the public repo. The compilers on the systemd version
+    // were for the Python packages (gcc-c++ for greenlet), not psycopg2, which
+    // is installed as psycopg2-binary. Kept plain and practice-sized on purpose.
     decisions: [
       {
-        keyword: 'Destroy every run',
-        title: 'The AWS half of the pipeline tears itself down at the end of every run.',
+        keyword: 'Delete AWS each run',
+        title: 'The AWS servers are deleted at the end of every pipeline run.',
         glyph: 'pipeline',
-        chose: 'A `terraform destroy` step marked `if: always()`',
-        over: 'leaving the environment running between runs',
-        why: 'This is a study environment, and an idle NAT gateway bills by the hour whether anything routes through it or not. Making destroy unconditional means a **failed run costs the same as a successful one**. The trade is that nothing survives a run, so every debugging session starts from an empty account.',
+        chose: 'A `terraform destroy` step on every run',
+        over: 'leaving the AWS servers up between runs',
+        why: 'Automatic teardown was my safeguard for this practice environment because an idle NAT gateway still bills by the hour. Destroy runs after every run, including failed ones, and no resources remain to accrue cost between tests.',
       },
       {
-        keyword: 'Tailscale, no jump host',
-        title: 'The CI runner reaches private instances over a Tailscale mesh instead of hopping through mgmt.',
+        keyword: 'Tailscale over ProxyJump',
+        title: 'The pipeline reaches the private AWS servers over Tailscale.',
         glyph: 'route',
-        chose: 'A **Tailscale mesh** joined from `user_data`, with the runner joining by OAuth',
-        over: '`ProxyJump` through the mgmt node on every Ansible task',
-        why: 'The first version used ProxyJump, so every task paid for a second SSH hop. That made a full playbook run slow and made one failed hop look like a broken host. Once mgmt advertises the VPC CIDR and the runner accepts routes, the runner talks to a private instance directly. The workflow keeps the ProxyJump path only for reading each Tailscale address on first boot.',
+        chose: 'The servers and runner on **Tailscale**',
+        over: '`ProxyJump` through mgmt for every task',
+        why: 'The first version routed every Ansible task through mgmt with `ProxyJump`. Replacing it with **Tailscale** gave me hands-on practice with subnet routing. The mgmt server shares the VPC routes, and the runner reaches each private server directly.',
       },
       {
-        keyword: 'Graviton everywhere',
-        title: 'All four instances are arm64, which changed how several roles install their binaries.',
+        keyword: 'Arm instances',
+        title: 'All four AWS servers run on Arm processors.',
         glyph: 'depth',
-        chose: '`t4g.small` on **Graviton** for all four instances',
-        over: 'x86 instances, where every prebuilt binary already works',
-        why: 'The instance is cheaper, and the cost of that showed up immediately. Node Exporter and Prometheus needed their download URLs switched on `ansible_architecture`, and `prometheus_bot` had **no arm64 image at all**, so its role installs Go and compiles the binary from source. That is the most useful thing this project taught me about reading somebody else’s install instructions.',
+        chose: '**Arm** `t4g.small` for all four servers',
+        over: 'x86 instances with ready-made downloads',
+        why: 'I chose Arm instances for their lower hourly price, and the choice showed me how much depends on the platforms a tool supports. Several downloads needed Arm builds, and the Telegram bot was published only as an x86 image. I compiled the bot from source with **Go** to run it on Arm.',
       },
       {
-        keyword: 'systemd before webhooks',
-        title: 'Nginx recovers through a systemd drop-in rather than through the alert pipeline.',
+        keyword: 'systemd for Nginx',
+        title: 'Nginx restarts through systemd and stays out of the alert pipeline.',
         glyph: 'process',
-        chose: 'A `Restart=always` drop-in with `RestartSec=5s`',
-        over: 'routing an Nginx alert through Alertmanager to the recovery webhook',
-        why: 'systemd already knows the process died and can act in about **five seconds**. Sending that through Prometheus, Alertmanager and an SSH call would add a minute and three more things that can fail. The webhook is kept for failures systemd cannot see on its own, which is why it handles `FastAPIDown` and `NodeDown` and nothing else.',
+        chose: 'A systemd `Restart=always` drop-in',
+        over: 'an Nginx alert routed to the webhook',
+        why: 'This decision taught me to rely on the operating system before adding automation. The systemd drop-in restarts Nginx on its own in about **five seconds**. Routing it through Prometheus, Alertmanager, and the webhook would add delay and more points of failure. The webhook covers `FastAPIDown` and `NodeDown`.',
       },
       {
-        keyword: 'Container the app only',
-        title: 'FastAPI runs in a container while Nginx and PostgreSQL stay on the host.',
+        keyword: 'Only the app in Docker',
+        title: 'Only FastAPI runs in a container, and Nginx and PostgreSQL stay on the host.',
         glyph: 'branch',
-        chose: 'FastAPI in an image built once in CI, **Nginx and PostgreSQL on the host**',
-        over: 'containerising the whole stack',
-        why: 'The systemd version needed gcc, python3-devel and postgresql-devel on both web servers just to build `psycopg2`, which left room for the two hosts to drift apart. Building the image once in CI removed that. Nginx and PostgreSQL stayed on the host because containerising them would have added volumes, networks and a compose file for no gain at four servers.',
+        chose: '**FastAPI** in one image built in CI',
+        over: 'containers for the whole stack',
+        why: 'The first version installed FastAPI directly on each web server, and every server needed compilers to install the Python packages. Containerizing it with **Docker** removed that requirement and gave me practice building one image in CI and running it on every web server. Nginx and PostgreSQL stayed on the host to keep the setup simple.',
       },
       {
         keyword: 'One chaos script',
-        title: 'A single failure-injection script covers both environments through one flag.',
+        title: 'One script breaks and restores services in both environments.',
         glyph: 'inject',
-        chose: '`chaos/inject.sh --aws`, reading whichever inventory matches',
-        over: 'a separate injection script per environment',
-        why: 'The script discovers host addresses from the same inventory Ansible uses, so the two can never drift apart. `--aws` swaps the inventory file and adds the SSH key and ProxyJump options. `./inject.sh all` restores every service and `./inject.sh status` prints the state of all ten, which is what made rehearsing a failure cheap enough to do repeatedly.',
+        chose: 'One `chaos/inject.sh` for both sides',
+        over: 'a separate script for each environment',
+        why: 'Injecting failures on purpose was the most direct way to test the recovery path. One script stops services like FastAPI, Nginx, or PostgreSQL, and `all` restores them. An `--aws` flag extends the same tests to the cloud environment.',
       },
     ],
     links: {
-      github: null, // TODO: repository URL
-      terraform: null, // TODO: <repo>/tree/main/terraform
+      github: 'https://github.com/ShinJunhan/project1-on-premise-self-build',
+      terraform: 'https://github.com/ShinJunhan/project1-on-premise-self-build/tree/main/terraform',
       presentation: null,
     },
     reflection: {
-      learned:
-        'Building the same architecture a second time on my own showed me exactly which parts I had understood and which parts I had only reviewed. The **architecture** I could redraw from memory. The **install details** I could not: switching every binary download on `ansible_architecture`, compiling `prometheus_bot` from source because the published image is x86 only, and finding out that `httpd_can_network_connect` is why Nginx returns 502 when it proxies to a container under SELinux. The other lesson was about ordering. `site.yml` imports twelve playbooks and that order is load bearing, because Docker has to exist before the container role runs and Prometheus has to exist before its rules can be validated.',
-      differently:
-        'Terraform state is local, so a second machine cannot pick up where the first left off. An **S3 backend with a lock table** is the first thing I would add. I would also stop writing Tailscale addresses into an inventory file mid-run and use a **dynamic inventory** instead, since the current workflow spends several minutes polling each instance for its address. The recovery webhook covers two alert names and restarts a service once with no retry and no cooldown, which is enough to show the loop closes and short of something I would trust unattended.',
+      learned: [
+        'Project1-Self-Build started as a self-study of EchoChallengers. EchoChallengers was my first team project, and I understood only my own part of its hybrid cloud. Rebuilding the whole system alone seemed like a quick and stress-free way to learn the rest.',
+        'Working alone quickly proved more difficult. Every failed deployment stopped my progress, and no one was there to help me find the cause. Many pipeline runs failed before the first one succeeded. Those failures made me question how I approached learning.',
+        'My habits in class were part of the problem. I relied on my professor whenever code needed debugging. Error logs felt too daunting to read, and his experience seemed like the only way to solve them. This passive attitude limited my understanding of how the system worked. The rebuild gave me steady practice in the **discipline** and **diligence** to **actually read error logs**.',
+        '**Security was another lesson I learned the hard way**. Hard-coding the Slack webhook URL into the Ansible variables was an early mistake. Correcting it taught me how GitHub Secrets pass values into a workflow and why an incoming webhook URL must stay private. When teammates later faced the same error, I was able to **explain the fix**.',
+        'Documentation also became part of my routine. The **Terraform AWS provider documentation became the first place to troubleshoot** any resource that behaved unexpectedly. Each argument there explained a line I once copied without thinking.',
+        'Looking back, the project was an honest test of what I retained from class. Despite keeping up with every lecture, I barely understood the system. Debugging every layer alone taught me how to find solutions on my own. Today, whenever I meet an unfamiliar tool, **my first step is to read its documentation and its logs**. That habit is what I want to bring to my next team.',
+      ],
     },
   },
 

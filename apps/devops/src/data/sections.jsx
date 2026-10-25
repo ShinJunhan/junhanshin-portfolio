@@ -155,7 +155,7 @@ export const SECTIONS = [
     // architecture and almost nothing to one who does not.
     id: 'cost',
     label: 'Cost Analysis',
-    has: (project) => project.cost?.items?.length > 0,
+    has: (project) => project.cost?.items?.length > 0 || project.cost?.layout === 'report',
     Body: CostSection,
   },
   {

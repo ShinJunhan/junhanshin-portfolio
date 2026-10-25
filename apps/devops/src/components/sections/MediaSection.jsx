@@ -163,7 +163,13 @@ function Shot({ shot, state }) {
   )
 }
 
+// `shots` is for a scenario that needs more than a before-and-after pair: a
+// clip's key frames followed by the deck capture they lead up to. Each shot
+// names its own `state`. A scenario without it keeps the before/after pair.
 function Shots({ scenario }) {
+  if (scenario.shots?.length) {
+    return scenario.shots.map((shot) => <Shot key={shot.src} shot={shot} state={shot.state} />)
+  }
   return (
     <>
       <Shot shot={scenario.before} state={scenario.before?.state ?? 'Before'} />
@@ -204,7 +210,7 @@ function Register({ title, badge, note, children }) {
 // project renders as, unchanged from before clips existed.
 function Scenario({ scenario, notes = {}, labelled = false }) {
   const hasClip = Boolean(scenario.clip?.src)
-  const hasShots = Boolean(scenario.before?.src || scenario.after?.src)
+  const hasShots = Boolean(scenario.shots?.length || scenario.before?.src || scenario.after?.src)
 
   return (
     <div className="scenario">

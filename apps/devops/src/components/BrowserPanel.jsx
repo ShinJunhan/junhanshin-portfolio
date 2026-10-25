@@ -169,6 +169,9 @@ export default function BrowserPanel({ tabs = [], label, mark, onTabChange, chil
                 title={sub.address ?? sub.label}
               >
                 {breakable(sub.label)}
+                {/* An optional second line naming what the tab holds, for a
+                    strip whose labels alone repeat (four `main.tf` files). */}
+                {sub.note && <span className="code__subtab-note">{sub.note}</span>}
               </button>
             ))}
           </div>

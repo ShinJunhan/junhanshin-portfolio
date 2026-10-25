@@ -1,0 +1,609 @@
+{
+  "deck": "hailcast",
+  "address": "hailcast presentations, Aug 4 & Aug 27",
+  "totalSlides": 76,
+  "imageFormat": "webp",
+  "imageDimensions": {
+    "width": 1800,
+    "height": 1013
+  },
+  "sourceRenderer": "PowerPoint-exported PDF, rasterised with PDFKit, encoded with libwebp",
+  "imageBase": "/projects/hailcast/slides/",
+  "coverSlides": [
+    1,
+    2
+  ],
+  "parts": [
+    {
+      "title": "First presentation",
+      "date": "Aug 4",
+      "slideStart": 1,
+      "slideEnd": 59
+    },
+    {
+      "title": "Refinement presentation",
+      "date": "Aug 27",
+      "slideStart": 60,
+      "slideEnd": 76
+    }
+  ],
+  "sections": [
+    {
+      "id": "preview",
+      "num": "01",
+      "title": "Preview",
+      "slideStart": 3,
+      "slideEnd": 12
+    },
+    {
+      "id": "team",
+      "num": "02",
+      "title": "About the Team",
+      "slideStart": 13,
+      "slideEnd": 15
+    },
+    {
+      "id": "methods",
+      "num": "03",
+      "title": "Methods",
+      "slideStart": 16,
+      "slideEnd": 26
+    },
+    {
+      "id": "workflow",
+      "num": "04",
+      "title": "Workflow",
+      "slideStart": 27,
+      "slideEnd": 34
+    },
+    {
+      "id": "progress",
+      "num": "05",
+      "title": "Progress",
+      "slideStart": 35,
+      "slideEnd": 46
+    },
+    {
+      "id": "collaboration",
+      "num": "06",
+      "title": "Collaboration",
+      "slideStart": 47,
+      "slideEnd": 50
+    },
+    {
+      "id": "reflection",
+      "num": "07",
+      "title": "Reflection",
+      "slideStart": 51,
+      "slideEnd": 59
+    },
+    {
+      "id": "refinement",
+      "num": "08",
+      "title": "Refinement",
+      "slideStart": 60,
+      "slideEnd": 76
+    }
+  ],
+  "slides": [
+    {
+      "number": 1,
+      "file": "slide-01.webp",
+      "section": "cover",
+      "hasNotes": true,
+      "notes": "Good afternoon. My name is Junhan Shin, and I am the team lead for Team 2, “ThisPod-ThatPod.”\nThe project we're presenting today is an AI demand-prediction autoscaling and FinOps cloud infrastructure.\nThe service we built is called “hailcast.” The name combines “hail,” as in hailing a taxi, with “cast,” from the word “forecast.”\nIn one sentence, our project is a predictive, self-operating infrastructure. It forecasts taxi call demands from weather and time patterns, scales pods out before traffic arrives, and reclaims them once demand drops.\nWith that, let me begin our team presentation."
+    },
+    {
+      "number": 2,
+      "file": "slide-02.webp",
+      "section": "cover",
+      "hasNotes": true,
+      "notes": "Here is our agenda for today.\nWe will begin with the project overview, and then, we will move to the architecture design. After that, we will walk through how the system actually works and watch the demo video.\nWe will close with our collaboration approach and our reflection."
+    },
+    {
+      "number": 3,
+      "file": "slide-03.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Let me start with the project overview."
+    },
+    {
+      "number": 4,
+      "file": "slide-04.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Before I go into details, I want to make one honest disclaimer. This project was not implemented as a live production service.\nTherefore, all financial numbers in this presentation are not from an actual AWS bill. Each number is an expected effect calculated from our design, our implementation, and our simulation.\nLet me open with a question. What happens when a server never goes down? Behind such infrastructure design, how much would it cost?\nWhen we use taxi apps in our daily life, we almost never run into a server outage from the app. That makes us wonder whether the infrastructure is simply staying provisioned for peak traffic at all times.\nIn other words, does the platform keep high availability and fault tolerance even during quiet hours to lower the risk of a server outage?\nIf that is the case, then the billed costs must be the same as during hours when almost nobody is using it.\nMost infrastructure today is built to react to user volume. That is why we asked whether an infrastructure that responds proactively, using AI, could be optimized further. The theme of our project revolved around this idea."
+    },
+    {
+      "number": 5,
+      "file": "slide-05.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "We chose to solve this infrastructure optimization problem through demand forecasting.\nFor training data, we used public datasets. We combined hourly New York City taxi call data with weather data and trained a model on it.\nFor example, the model learns patterns such as a sharp spike in calls on a rainy Friday evening. It then uses those patterns to calculate the forecast for the next period of demand."
+    },
+    {
+      "number": 6,
+      "file": "slide-06.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Once the AI model produces a prediction, we increase the pod count before the traffic actually arrives. If there is not enough room to place those pods, we also provision EC2 instances (nodes) ahead of time."
+    },
+    {
+      "number": 7,
+      "file": "slide-07.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "The reverse is also true. When traffic demand falls, we reclaim the resources we added right away. The goal was to build an infrastructure that only charges for what is actually used and optimize cost that way."
+    },
+    {
+      "number": 8,
+      "file": "slide-08.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Our original goal was to prevent latency during traffic spikes.\nDuring our research phase when we analyzed how taxi calls actually work, we found that the bottleneck was not server latency caused by a surge in users.\nThe real bottleneck was the number of available drivers.\nFrom this discovery, our team redefined the core problem.\nInstead of preventing system latency, we focused on eliminating the fixed infrastructure cost that runs at peak sizing even during quiet hours."
+    },
+    {
+      "number": 9,
+      "file": "slide-09.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Our app, hailcast, learns taxi call volume by weather and by time of day. It scales out before the surge and reclaims capacity when things quiet down.\nThe goal is to pay only for what is used, which removes the unnecessary fixed cost.\nA prediction based on historical data can always be wrong. If an unexpected load arrives while we are scaled down, KEDA detects the SQS queue length and reacts immediately as a safety net.\nIn short, we designed a two-layer safety structure.\nThe forecast supports the lower bound of demand, and the KEDA queue trigger supports the upper bound."
+    },
+    {
+      "number": 10,
+      "file": "slide-10.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Our system is a single closed control loop.\nIn the Observation stage, we collect the current incoming demands.\nIn the Forecast stage, we calculate the upcoming demand.\nIn the Execution stage, we raise the pod floor, so that the capacity is ready before traffic arrives.\nIn the Verification stage, we check how accurate the forecast was.\nThe verification result then becomes the input for the next forecast, which is what makes this a closed control loop."
+    },
+    {
+      "number": 11,
+      "file": "slide-11.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "Our tech stack for this project consisted of four main pillars: AWS infrastructure, IaC and GitOps automation, Kubernetes observability and scaling, and the AI model and application services.\nEach resource will be explained in more detail later in the presentation. I will keep this brief and simply walk through the screen.\n----\nThe full tech stack breaks down into four main areas.\nFirst, AWS resources. We built the base infrastructure using the AWS resources listed here.\nSecond, IaC and GitOps. We defined the infrastructure as code with Terraform, and we automated deployment with Helm charts, GitHub Actions, and ArgoCD.\nThird, for Kubernetes resources, we handled observability and scaling with KEDA, Karpenter, Prometheus, Grafana, and OpenCost for cost visibility.\nFourth, we built the AI model with the LightGBM framework, and we implemented the application services using FastAPI, Python, and React."
+    },
+    {
+      "number": 12,
+      "file": "slide-12.webp",
+      "section": "preview",
+      "hasNotes": true,
+      "notes": "We believe the demand-prediction infrastructure model in this project applies well beyond taxi services.\nIt can be applied the same way to delivery platforms, ticketing systems, traffic-heavy APIs, and any service with large hourly demand swings.\nIn other words, we expect it to enable optimized infrastructure operations driven by demand forecasting.\nIt curbs over-provisioning by scaling out ahead of traffic, and it cuts cost by reclaiming capacity when demand is low.\nOur next task is to complete a FinOps system based on a live service.\nFor this project, we used estimates derived from the AWS price list.\nIf we integrate with CUR, which is the actual AWS billing data, we can validate with measured figures instead of estimates.\nThat is the direction we decided to take toward a real service."
+    },
+    {
+      "number": 13,
+      "file": "slide-13.webp",
+      "section": "team",
+      "hasNotes": true,
+      "notes": "Next, let me walk through our team structure and our repository layout."
+    },
+    {
+      "number": 14,
+      "file": "slide-14.webp",
+      "section": "team",
+      "hasNotes": true,
+      "notes": "Our team consisted of 6 members, and we split our roles into three parts: infrastructure, app, and deployment.\nAs team lead, I handled unified operations across the 4 repos, building the account guard, and controlling teardown order."
+    },
+    {
+      "number": 15,
+      "file": "slide-15.webp",
+      "section": "team",
+      "hasNotes": true,
+      "notes": "We organized our work as a multi-repository setup, split across four GitHub repositories.\nThe infra repository creates the AWS foundation through terraform apply.\nThe app repository covers the application services. Images are built with Docker and pushed to ECR. It holds the six pod images and the LightGBM training code.\nThe manifests repository handles deployment and observability. We made sure ArgoCD is not triggered by a push. Instead, ArgoCD continuously pulls from Git and deploys, which is the GitOps model.\nWe also placed the Kubernetes observability tooling in this repository.\nThe last one, the ops repository, is a collection of operations-only tooling. The account guard, the contract validator, and the teardown process are all delegated to make commands."
+    },
+    {
+      "number": 16,
+      "file": "slide-16.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "Next, let me walk through the architecture and the detailed design stage."
+    },
+    {
+      "number": 17,
+      "file": "slide-17.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "Before starting this project, each team member reflected on their previous team projects that they worked on from this course.\nWe used the lessons we learned from our previous team projects as the basis of our planning for this project.\nFirst, we set a clear goal. Our goal was to validate through forecast-driven autoscaling using simulation-based expected effects.\nSecond, we split the six team members in our team across four repositories. We put significant effort into controlling the points where repositories meet.\nWe used a naming convention document as the single reference point to prevent confusion during implementation.\nThird, we adopted a FinOps principle. If a resource was not necessary, we decided that we would not create it at all."
+    },
+    {
+      "number": 18,
+      "file": "slide-18.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "Next, let me introduce the overall architecture of our project.\nI will explain it briefly across four layers: entry, compute, data, and security.\nThe entry layer is the normal path from CloudFront to the ALB.\nBelow that is the compute layer, EKS.\nWe placed two node groups in private subnets.\nThe System node group acts as the control layer, and the Karpenter node group holds the application nodes that do the actual work.\nWe deliberately separated the two.\nThe Karpenter application nodes run on Spot and come up only when needed. At zero traffic, they do not come up at all.\nThe data layer manages data using SQS, RDS, S3, and DynamoDB.\nIn the security layer, we did not place a bastion server.\nAdministrative access goes through SSM, the AWS Systems Manager, and IRSA grants each pod its own separate permissions.\nI will cover each layer in more detail shortly."
+    },
+    {
+      "number": 19,
+      "file": "slide-19.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "This zooms into the cluster portion of the diagram from the previous slide, down to the pod level.\nRequests pass through Route 53, CloudFront, and the ALB. The frontend pod serves the dashboard.\nActual call requests are received by the call-api pod.\nIt does not process them directly.\nIt places a message on SQS and returns a response immediately.\nThe real processing happens further back.\nThe worker pod pulls the message from SQS and writes it to RDS.\nThe worker pod is where the bottleneck appears, and it is the primary target of KEDA scaling, which adjusts pod count against the threshold we configured.\nThe predict pod at the lower left is the decision maker.\nIt pulls model prediction results from S3, forecasts demand, and adjusts the pod floor that KEDA scales against.\nThe weather-cron pod collects weather data and stores it in S3.\nThe simulator pod generates synthetic traffic for testing."
+    },
+    {
+      "number": 20,
+      "file": "slide-20.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "I explained the architecture across four layers, and this is a design meant to stop risks from happening.\nFirst, we left no direct access paths to the backend compute or the data layer.\nThere is only a single entry point, and the normal path goes through CloudFront and the ALB.\nSecond, the only inbound traffic is what passes through the ALB. Nodes and pods sit in private subnets. We isolated them with no inbound rules and allowed outbound only through NAT.\nThird, we split the data across SQS, RDS, and S3. State is separated from compute, and therefore, data is not lost when a pod restarts or a Spot node is reclaimed.\nFourth, we did not run a separate bastion server. We closed SSH port 22 entirely and made node access possible only through SSM Session Manager.\nThis allowed us to have zero-inbound administrative access."
+    },
+    {
+      "number": 21,
+      "file": "slide-21.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "On the network side, we sized the VPC at a /16 and the subnets at /20.\nA /24 subnet gives roughly 250 usable IP addresses while a /20 gives us about 4,090.\nThe reason is that in EKS, each pod consumes one subnet IP.\nIf a subnet has too few addresses, autoscaling can exhaust them and leave pods stuck in Pending.\nWe sized the subnets large enough to prevent this possible issue.\nFor NAT, placing one in each availability zone would double the charge, and therefore, we placed a single NAT in zone 2a.\nFor S3 and DynamoDB, we used Gateway Endpoints, which were free. This allowed us to bypass NAT at no additional cost."
+    },
+    {
+      "number": 22,
+      "file": "slide-22.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "This is a table summarizing the trade-offs behind our engineering decisions.\nLet me walk through the balance between availability and cost.\nThe figures here are not actual bills. They are estimates calculated from the Seoul region price list.\nOne NAT per availability zone would mean two in total at roughly $86 a month.\nWe used only one, which brought the cost down to about $43.\nThe trade-off is that if zone 2a goes down, all outbound traffic could be cut off.\nFor RDS, we placed a single instance in zone 2a to save the standby cost.\nIn exchange, we gave up the automatic failover if zone 2a has a problem or the database fails.\nThe application nodes run on Spot, which is inexpensive but can be reclaimed.\nWe receive the two-minute reclaim warning through an SQS queue, and Karpenter drains the node and brings up a replacement.\nWe ran only a development environment.\nWith no staging or production, there is no duplicate infrastructure, and therefore no duplicate cost.\nIf we were in need of building production as well, we would have placed a NAT in each zone and deployed RDS across multiple availability zones.\nWith these trade-offs made deliberately, we built the infrastructure that fit this project."
+    },
+    {
+      "number": 23,
+      "file": "slide-23.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "We separated the nodes into two layers: system nodes and application nodes.\nThe System node group at the top is a managed, fixed node group with two nodes.\nControllers such as CoreDNS, Karpenter, KEDA, and ArgoCD live there.\nWe made this node group fixed because if a controller sits on Spot and gets reclaimed, the component that directs scaling disappears entirely.\nThe application nodes below run as a Karpenter NodePool on Spot, expanding from zero to whatever traffic requires.\nThese application nodes carry two security groups: the node security group and the EKS cluster security group.\nBoth need the discovery tag or else Karpenter cannot find them."
+    },
+    {
+      "number": 24,
+      "file": "slide-24.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "There is an execution order dependency between our GitHub repositories.\nThe infra repository runs first and creates the entire foundation: EKS, OIDC, the ten IRSA roles, S3, SQS, RDS, and ECR.\nThe app repository then builds images, pushes them to ECR, and places the model in S3.\nAfter that, the manifests repository references the IRSA roles and tags that infrastructure prepared, and it deploys the ServiceAccounts and the applications.\nThe biggest early bottleneck was defining the ten IRSA roles. Deployment work could not begin until those permissions were complete."
+    },
+    {
+      "number": 25,
+      "file": "slide-25.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "Permissions for accessing infrastructure resources fall into two areas: outside the cluster and inside it.\nOn the left, IRSA governs access to AWS cloud resources.\nIt applies to resources outside the cluster.\nFor example, when a pod inside the cluster needs to reach S3 or SQS outside it, IRSA is what grants that access.\nWe defined ten IRSA roles and mapped each one to a ServiceAccount, one to one.\nS3 needed particular care. If write access is open, a modified model file could lead to code execution.\nWe split permissions by path and made the model storage folder read-only.\nOn the right, RBAC governs access to the Kubernetes API inside the cluster.\nFor example, when the predict pod needs to modify a KEDA ScaledObject, that is a Kubernetes-native permission, and it must be granted separately through RBAC.\nFor both IRSA and RBAC, a ServiceAccount name that is off by even one character fails silently and leaves only a failure log.\nWe had to be especially careful during implementation and strict management of the naming convention was essential."
+    },
+    {
+      "number": 26,
+      "file": "slide-26.webp",
+      "section": "methods",
+      "hasNotes": true,
+      "notes": "For deployment, we adopted GitOps as our principle.\nWe treated the state of the Git repository as the absolute reference for the cluster.\nWe used ArgoCD's app-of-apps pattern to manage the state of sixteen applications in total.\nThe selfHeal option was enabled. By doing so, if someone were to change a setting directly inside the cluster, it would automatically revert to match Git.\nThe autoscaling policy was also fully declared in Git.\nKEDA on the worker pod uses a queue length of 500 as its base unit, running from a minimum of 1 to a maximum of 20 pods with a 300-second cooldown.\nKarpenter brings up Spot instances flexibly within a 100 vCPU limit.\nOn the security side, we kept credentials out of Git.\nWe used external-secrets to pull the database password securely from AWS Secrets Manager and keep it synchronized."
+    },
+    {
+      "number": 27,
+      "file": "slide-27.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "Now that we have covered the design, let us look at how the system actually operates."
+    },
+    {
+      "number": 28,
+      "file": "slide-28.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "Six always-on pods run in the cluster.\nThe call-api pod receives calls and enqueues them to SQS.\nThe worker pod consumes SQS and writes to RDS.\nThe predict pod handles forecasting and scaling control.\nThe weather-cron pod collects weather data.\nThe simulator pod generates load.\nThe frontend pod serves the dashboard.\nAll six run on the worker nodes.\nOn the right is the predict pod, which contains four schedulers that are on different intervals.\nForecastScheduler runs the model forecast every four hours and saves it to RDS.\nScalingScheduler queries RDS every sixty seconds and updates the KEDA floor.\nTrafficScheduler aggregates dashboard traffic every two seconds.\nBackupScheduler records pod state every hour."
+    },
+    {
+      "number": 29,
+      "file": "slide-29.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "Next, let us look at how a single call is handled from request to acceptance.\nThe passenger's request passes through the entry layer and the load balancer, and it reaches the API pod.\nThe API pod places the call on SQS and immediately responds to the passenger that the request was accepted.\nThe actual database write is handled asynchronously by the worker pod behind it, which pulls from SQS.\nBecause of this structure, acceptance is never delayed even if the database is slow, and calls remain safely in SQS even if a worker dies.\nThat SQS queue length also becomes the real-time signal for scaling, which I will cover next."
+    },
+    {
+      "number": 30,
+      "file": "slide-30.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "Now let us look at the core logic of this project: forecast-based preemptive scaling.\nFirst, weather-cron pulls the forecast from Open-Meteo every four hours and stores it in S3 as a CSV file.\nSecond, the ForecastScheduler in the predict pod loads the model from S3 every four hours.\nIt runs a LightGBM forecast against the weather CSV and writes the result to RDS.\nThird, the ScalingScheduler queries the forecast data in RDS every sixty seconds, calculates the required pod count, and it directly modifies the minReplicaCount value in KEDA.\nKEDA then raises the pod scaling floor immediately.\nIn other words, pods are created before the traffic actually arrives.\nIf there is not enough room to place the pods, Karpenter allocates additional EC2 nodes right away.\nIn the preemptive scaling logic, weather forecast data determines the pod count, and the pod count drives node provisioning."
+    },
+    {
+      "number": 31,
+      "file": "slide-31.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "Next, let me briefly explain the weather data collection pipeline.\nThe pod that handles weather collection is named weather-cron, but it is not a Kubernetes CronJob resource. It is implemented as a scheduling process inside the pod itself.\nWhen the collection interval comes around, the built-in scheduler has the weather pod call the external Open-Meteo API through the NAT Gateway.\nThe forecast data it retrieves overwrites the target file in S3.\nThis way, the predict pod can always reference the most recent weather data file."
+    },
+    {
+      "number": 32,
+      "file": "slide-32.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "From the AI model perspective, let me explain how we calculate the pod count from the forecast.\nThe inputs are hour of day, day of week, weekend, humidity, temperature, and precipitation.\nThe model is a LightGBM algorithm trained by matching New York taxi rider data with weather information.\nThe output is the expected demand for each hour over the next four hours.\nWe then convert that forecast into a pod count.\nOur measurements showed that a single worker pod handles roughly 500 calls.\nWe divided the expected demand by 500 and added one for headroom.\nThat result became the scaling floor, which is the minReplicaCount value in KEDA.\nThis base capacity of 500 happens to share a number with the KEDA queue threshold of 500, but they are separate values.\nThis one represents the processing capacity of a single pod."
+    },
+    {
+      "number": 33,
+      "file": "slide-33.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "This diagram shows what I just described, visualized as two execution tracks.\nFirst, the forecast track at the top runs every four hours, six times a day.\nIt reads the latest model from S3, combines weather and traffic variables, calculates upcoming demand, and writes the result to RDS.\nThe call collection track at the bottom runs as a real-time loop.\nThe simulator generates traffic, the API pod enqueues it to SQS, and the worker pod consumes the queue and saves to RDS.\nMeanwhile, the ScalingScheduler queries the forecast in RDS every sixty seconds and updates the KEDA policy in real time.\nThe collected actuals then feed back into the next forecast, which completes an integrated feedback loop."
+    },
+    {
+      "number": 34,
+      "file": "slide-34.webp",
+      "section": "workflow",
+      "hasNotes": true,
+      "notes": "This is the branching flow of the full control logic.\nFirst, when the forecast scheduler detects rising demand, it scales pods out preemptively.\nIf there are not enough nodes, Karpenter allocates new ones immediately.\nOnce actual traffic arrives, it is handled in one of two cases.\nCase A is a surge beyond the forecast.\nThe SQS queue builds up quickly, the KEDA queue trigger fires, and additional scale-out happens immediately to expand the pods.\nCase B, on the other hand, is when traffic stays within the forecast or begins to fall.\nIn that case, once the configured cooldown passes, KEDA reclaims resources automatically and safely scales the pods down to the minimum.\nCase A secures system stability, and Case B optimizes cost, and we automated the entire process."
+    },
+    {
+      "number": 35,
+      "file": "slide-35.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We have covered how the system works. Now I will report on our implementation progress and our verification results."
+    },
+    {
+      "number": 36,
+      "file": "slide-36.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We ran development in three broad stages: building the foundation, establishing safeguards, and controlling resource cleanup.\nIn the foundation stage, we switched the Terraform backend locking method to S3 native locking.\nWe also integrated IRSA into the EKS module, which resolved the OIDC dependency ordering issue.\nIn the safeguards stage, we introduced a naming convention validator.\nRather than a simple string comparison, it validates against the final IAM policy evaluation.\nFinally, in the resource cleanup stage, we designed the destroy process to run in a controlled order: manifests, infrastructure, and app.\nThis helped give the teardown process a clear structure."
+    },
+    {
+      "number": 37,
+      "file": "slide-37.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Our CI/CD pipeline excludes the ops repository, which is a local toolkit, and it operates across three repositories in total.\nWhen code changes, we open a PR from a feature branch.\nIt can only be merged into the dev branch after approval from one teammate.\nOnce the merge is complete, the infrastructure repository first confirms the safety of the terraform plan output at the PR stage. Then, it runs apply.\nAt the same time, the app repository detects the change, builds a Docker image, tags it with the unique commit SHA, and it uploads it to ECR.\nFinally, in the manifests repository, ArgoCD continuously watches for tag changes.\nThe moment a tag changes, it applies the new version to the cluster automatically."
+    },
+    {
+      "number": 38,
+      "file": "slide-38.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Let me explain how the app repository and the manifests repository connect automatically through the automatic image update mechanism.\nWhen a PR in the app repository is merged, only the services that actually changed are selected and built.\nThe resulting Docker image is pushed securely to ECR using OIDC credentials with no separate access key.\nOnce the push completes, an automation bot updates the image tag in the manifests repository to the new commit SHA and commits the change.\nArgoCD, which watches continuously, then syncs automatically and deploys the new image to the cluster.\nAs a result, a developer needs only a single PR approval. Everything from build to actual deployment completes with no human intervention."
+    },
+    {
+      "number": 39,
+      "file": "slide-39.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "This is the demonstration video of the system in action.\nThere are four things to watch for.\nPlease focus on the four points listed on the right.\nFirst, whether pods increase before traffic arrives.\nSecond, whether additional scale-out happens immediately when the queue exceeds 500.\nThird, whether scale-in happens smoothly once the traffic ends.\nAnd fourth, whether the system holds an optimal state without over-provisioning.\nLet me start the video."
+    },
+    {
+      "number": 40,
+      "file": "slide-40.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Let us now look, in order, at how the behavior we just covered appears on the operations dashboard.\nFirst is the forecast-based scaling view.\nIt shows the forecast result being applied as the actual scaling reference value.\nThis screen confirms that the predict pod is working properly, and its output is feeding the target worker count."
+    },
+    {
+      "number": 41,
+      "file": "slide-41.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Second is the queue-based KEDA reactive scaling view.\nWe scale on the number of messages remaining in the SQS queue rather than on CPU.\nWe laid out the queue, the HPA target replicas, and worker status on a single screen.\nThis allowed us to continuously monitor how queue-based reactive scaling is behaving."
+    },
+    {
+      "number": 42,
+      "file": "slide-42.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "This is the worker operational status view.\nIt brings together the number of running workers, pending pods, restart activity, CPU, and memory usage.\nIt allowed us to continuously track worker health and resource consumption."
+    },
+    {
+      "number": 43,
+      "file": "slide-43.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Our observability system consisted of three pillars: metrics monitoring, alerting, and cost management.\nFirst, Grafana lets us monitor the state of the control loop in real time.\nWe run four dashboards covering forecasting, scaling, queue, and workers.\nIn particular, we placed the pending pod and ready node metrics on a single screen.\nThis helped detect and resolve Karpenter node supply delays quickly.\nSecond, Prometheus collected forecast metrics every thirty seconds.\nWhen any of the eight configured alert conditions is met, it sends an immediate alert to the responsible person through Telegram.\nFinally, for cost management, we used OpenCost to track worker-only cost separately from total infrastructure cost.\nThese figures are calculated from the official AWS list price."
+    },
+    {
+      "number": 44,
+      "file": "slide-44.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "We built cost control as a multi-layered defense.\nFirst, AWS Budgets.\nWe set it to alert immediately when spending reaches 80% to 100% of budget.\nWe also blocked Budgets permissions entirely from the automated deployment role. This removed the risk of a script error modifying the budget policy.\nSecond, tag-based cost allocation.\nEvery resource carried standard tags to track cost.\nNodes and ALBs created by Karpenter are generated dynamically at runtime, and we specified the same tags in the deployment manifests to keep our accounting accurate with no gaps.\nThird, preparation for measured data integration.\nWe set up the connection between OpenCost and the AWS CUR bucket in advance.\nWe also designated the three fixed costs that accrue regardless of traffic (the EKS control plane, the NAT Gateway, and RDS) as focus areas for cost efficiency monitoring."
+    },
+    {
+      "number": 45,
+      "file": "slide-45.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Next is overnight power saving.\nBecause this project was not built as a live service, we introduced an overnight shutdown to save infrastructure cost within the budget given to our team.\nSpecifically, from 2 a.m. to 10 a.m., we scaled the system node group down to zero and stopped RDS.\nAt 10 a.m., RDS starts first because it needs boot time, then the nodes are restored.\nWe did this without building a separate Lambda.\nWe used EventBridge Scheduler's direct AWS API call method, which greatly reduced infrastructure complexity.\nOne thing we learned while introducing this is that even when terraform apply succeeds, a shortage of execution permissions in the early morning causes the scheduler to error, retry, and then discard the job silently.\nIn other words, a scheduler fails at execution time, not at creation time.\nOnce we understood that, we added a procedure to cross-check node and RDS state directly each morning."
+    },
+    {
+      "number": 46,
+      "file": "slide-46.webp",
+      "section": "progress",
+      "hasNotes": true,
+      "notes": "Now I will share the most important cost figure in this presentation.\nOur project’s result is a simulation-based estimate, and it is not a figure taken from an actual invoice.\nWe applied the same traffic scenario to two different environments and compared them.\nOne is the fixed approach, which keeps infrastructure running at peak sizing at all times.\nThe other is our approach, which combines a forecast-based floor with KEDA reactive scale-out.\nOur evaluation metric is worker pod running time.\nThe area under the graph represents pod count multiplied by running duration, and the cost is proportional to that area.\nOur analysis estimates roughly a 26.5 percent reduction in resource usage when our forecast-based infrastructure is applied.\nLowering the floor preemptively during quiet periods and securing resources in advance during surges to avoid overshoot turned out to be the key drivers of the savings.\nOur final task would be to convert this into measured cost through AWS CUR integration."
+    },
+    {
+      "number": 47,
+      "file": "slide-47.webp",
+      "section": "collaboration",
+      "hasNotes": false
+    },
+    {
+      "number": 48,
+      "file": "slide-48.webp",
+      "section": "collaboration",
+      "hasNotes": true,
+      "notes": "We adopted a multi-repository approach.\nTo prevent the confusion that comes with distributed control, we created an ops repository that manages our operations tooling and command entry points in one place.\nFrom this ops repository, a single make command controls all four repositories through one interface.\nBuilding this structure also let us put safeguards in place, including protection against acting on the wrong AWS account and control over the teardown order when destroying infrastructure."
+    },
+    {
+      "number": 49,
+      "file": "slide-49.webp",
+      "section": "collaboration",
+      "hasNotes": true,
+      "notes": "We used the naming convention document as our reference point, and we enforced it strictly to make sure service names in each team's code matched the convention.\nHaving a clear standard during code review and debugging removed confusion between team members and saved us a great deal of time that would otherwise have gone into debugging."
+    },
+    {
+      "number": 50,
+      "file": "slide-50.webp",
+      "section": "collaboration",
+      "hasNotes": true,
+      "notes": "This connects back to the naming convention I just described.\nAs code files kept being added, we could not visually check each one against the convention, and there were limits to judging it accurately by eye.\nWe built an automated validation script that checks compliance with the name contract, and we ran it through the make check-contract command."
+    },
+    {
+      "number": 51,
+      "file": "slide-51.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 52,
+      "file": "slide-52.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 53,
+      "file": "slide-53.webp",
+      "section": "reflection",
+      "hasNotes": true,
+      "notes": "Some failures were more complex, and the issues were caught between the trade-offs of security and lightweight images.\nRather than weakening security, we injected the values directly into the Helm configuration and resolved the ALB Controller permission issue.\nThrough the deployment team's hands-on image review, we found the missing pgrep command in the lightweight image and resolved the application team's endless restart failure through cross-team verification."
+    },
+    {
+      "number": 54,
+      "file": "slide-54.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 55,
+      "file": "slide-55.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 56,
+      "file": "slide-56.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 57,
+      "file": "slide-57.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 58,
+      "file": "slide-58.webp",
+      "section": "reflection",
+      "hasNotes": true,
+      "notes": "Hailcast demonstrates two-layer scaling where the forecast sets the floor and the KEDA queue supports the ceiling.\nWe scale out before traffic arrives, reclaim capacity when things quiet down, and stay safe through the queue even when the forecast misses.\nWe also implemented GitOps, granted each pod the least privilege it needs, and made cost visible through measurable FinOps.\nThat concludes the project presentation from Team ThisPod-ThatPod."
+    },
+    {
+      "number": 59,
+      "file": "slide-59.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 60,
+      "file": "slide-60.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Good afternoon. My name is Junhan Shin, and I am the team lead for ThisPod-ThatPod.\nOur original project theme was to forecast taxi call volume from weather and time and to build an infrastructure that scales out before traffic arrives.\nIn today’s presentation, I will walk through what we improved on over the past two weeks, following the agenda on the next slide."
+    },
+    {
+      "number": 61,
+      "file": "slide-61.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "This is the list of improvement tasks based on the reflection we shared in the previous presentation covering infrastructure, application, and deployment.\nWe completed all of them during the refinement period except for the service screen UX work such as the service tab and map integration.\nAmong these, I will show cost management and automated retraining in the demonstration video today."
+    },
+    {
+      "number": 62,
+      "file": "slide-62.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "The first improvement task was adjusting the CPU limit settings.\nAmong the six pods in the application service we built, predict and worker had no resource policy, and their settings were inconsistent.\nThis time, we decided to specify requests.cpu only and remove limits.cpu, which unified the CPU limit settings across all six pods.\nWe removed the CPU limit because when the CPU allocated to a node was all used, health check responses slowed down.\nThis caused the pod to restart, and the traffic settings held in memory were lost with it.\nWe discovered this problem as we were building hailcast.\nA CPU limit added throttling on top of that, which made the problem worse by producing misleading symptoms with no error.\nTo solve this issue, we decided to remove the CPU limit."
+    },
+    {
+      "number": 63,
+      "file": "slide-63.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Before this improvement period, our final output was based on estimated cost.\nWith this implementation, our team was able to produce output based on actual cost."
+    },
+    {
+      "number": 64,
+      "file": "slide-64.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "The next improvement task was creating the rebuild runbook.\nThe goal was to refine it to a level where a third party could replicate the infrastructure immediately.\nInstead of a third-party check, we measured it by having a deployment team member who was not involved in writing the runbook perform the rebuild using only the runbook document.\nEverything from the infrastructure apply through the ArgoCD install succeeded, but three blocking points were found.\nWe absorbed them into a single shell script, which also substituted the six values that changed on every rebuild automatically.\nThat resolved the blocking points.\nAs for timing, destroy took 21 minutes and 40 seconds, and apply took 10 minutes and 16 seconds.\nDestroy took longer than apply because it had to clear traffic state files that kept accumulating.\nEven though we could not run a third-party rebuild check, we did confirm through actual measurement that a rebuild from the runbook works."
+    },
+    {
+      "number": 65,
+      "file": "slide-65.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Next, we improved our observability and alerting system. During the improvement period, we fully rebuilt the four existing dashboards around operational purpose and added a FinOps dashboard.\nThis expanded our observability scope to cover prediction status, scaling, workers, Kubernetes, and cost together.\nWe reinforced the alerting system as well.\nWe improved the detection coverage and the message content of our existing Prometheus alerts, and we added Grafana alerts that use API responses to detect prediction and weather status.\nAnomalies detected in these different ways are routed through a common Alertmanager and Telegram path.\nWith this, we were able to check the status day to day through the operations summary and the per-area dashboards.\nWe no longer needed to watch the dashboards continuously."
+    },
+    {
+      "number": 66,
+      "file": "slide-66.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "We improved five areas on the observability dashboards.\nThe first is the forecast-based scaling dashboard.\nIt shows expected demand changes, the number of workers required as a result, and the number of workers actually ready, side by side.\nThis allowed us to see visually how forecast results are being reflected in actual scaling.\nWe also added the operational status of the Prediction service and its schedulers."
+    },
+    {
+      "number": 67,
+      "file": "slide-67.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Second is the processing queue and KEDA dashboard.\nIt shows how much is actually building up in the queue as service requests come in.\nIt also shows how many workers KEDA and the HPA are requesting in response and whether that number of workers is actually becoming ready.\nThis confirms that reactive scaling is working correctly against real-time request volume."
+    },
+    {
+      "number": 68,
+      "file": "slide-68.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Third is the worker and Kubernetes dashboard.\nIt confirms whether the workers requested by scaling are actually becoming ready.\nIf they are not, we can review pending pods, restart activity, CPU, memory usage, and node status together.\nThis shows where in the Kubernetes environment to look first when something goes wrong."
+    },
+    {
+      "number": 69,
+      "file": "slide-69.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Fourth is the FinOps dashboard. We separated the cost area out of the operations summary.\nThis design distinguishes the cost actually billed by AWS from the cost calculated on Kubernetes resource usage.\nWe can see how cost changes over time, and we can also see which services, nodes, and namespaces it comes from.\nIt gave us the basis to identify what is driving an increase in cost, and knowing the cost would help in deciding where resource adjustments or cost optimization are needed."
+    },
+    {
+      "number": 70,
+      "file": "slide-70.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "Fifth is the dashboard that summarizes overall operational status.\nWe moved the cost area into a separate FinOps dashboard, and we brought the key operating metrics to a single screen.\nThe earlier dashboards show each area in detail. This screen lets us check overall operational status quickly first, and if something looks wrong, we would move into that area's detailed dashboard."
+    },
+    {
+      "number": 71,
+      "file": "slide-71.webp",
+      "section": "refinement",
+      "hasNotes": true,
+      "notes": "On the alerting side, we reinforced the alert system alongside dashboard observability to make operations easier.\nWhen an anomaly is detected, an alert arrives through Telegram right away.\nWe restructured the message so the affected target, its state, and recovery time are clear."
+    },
+    {
+      "number": 72,
+      "file": "slide-72.webp",
+      "section": "refinement",
+      "hasNotes": false
+    },
+    {
+      "number": 73,
+      "file": "slide-73.webp",
+      "section": "refinement",
+      "hasNotes": false
+    },
+    {
+      "number": 74,
+      "file": "slide-74.webp",
+      "section": "refinement",
+      "hasNotes": false
+    },
+    {
+      "number": 75,
+      "file": "slide-75.webp",
+      "section": "refinement",
+      "hasNotes": false
+    },
+    {
+      "number": 76,
+      "file": "slide-76.webp",
+      "section": "refinement",
+      "hasNotes": false
+    }
+  ]
+}

@@ -38,6 +38,23 @@ function keepLastWordsTogether(text) {
   return text
 }
 
+// Swaps the hyphen inside a word ("Multi-AZ", "add-on") for a non-breaking
+// hyphen, so a justified line never splits the word after the hyphen. Code
+// spans are left alone: they already render unbroken, and a reader may copy
+// them.
+function keepHyphenatedWordsWhole(text) {
+  if (!text) return text
+  return text
+    .split('`')
+    .map((part, i) => (i % 2 === 1 ? part : part.replace(/(\w)-(\w)/g, '$1\u2011$2')))
+    .join('`')
+}
+
+// Both of the above, for any text block in this section.
+function unbroken(text) {
+  return keepLastWordsTogether(keepHyphenatedWordsWhole(text))
+}
+
 // The card being read, and the one on its way off the stage. The leaving card
 // is decoration: it is aria-hidden, inert, and removed on a timer rather than
 // on an animation event, so a frame that never composites cannot leave two
@@ -260,7 +277,10 @@ export default function DecisionsSection({ project }) {
   const decision = decisions[at]
 
   return (
-    <div className="decisions">
+    // `decisionsJustify` opts a project's card values into justified text.
+    // Off by default: on a narrow card, a value with a long code word or few
+    // words per line opens wide gaps when it is justified.
+    <div className={project.decisionsJustify ? 'decisions decisions--justify' : 'decisions'}>
       {/* The stepper, in a gutter of its own. It is the only control that says
           the bubbles are a sequence rather than a set of unrelated switches. */}
       <div className="dstep">
@@ -321,7 +341,7 @@ export default function DecisionsSection({ project }) {
                 <div className="bub__body">
                   <div className="bub__inner">
                     <p className="bub__say" id={`decision-say-${index}`}>
-                      <RichText>{item.title}</RichText>
+                      <RichText>{unbroken(item.title)}</RichText>
                     </p>
                   </div>
                 </div>
@@ -379,7 +399,7 @@ export default function DecisionsSection({ project }) {
             Why
           </p>
           <p className="dwhy__text" key={at}>
-            <RichText>{decision.why}</RichText>
+            <RichText>{unbroken(decision.why)}</RichText>
           </p>
         </div>
       </div>
@@ -454,13 +474,13 @@ function Face({ index, total, decision, variant = 'live' }) {
       <dl className="dcard__stat">
         <dt className="dcard__stat-key">Chose</dt>
         <dd className="dcard__stat-val">
-          <RichText>{keepLastWordsTogether(decision.chose)}</RichText>
+          <RichText>{unbroken(decision.chose)}</RichText>
         </dd>
         {decision.over && (
           <>
             <dt className="dcard__stat-key">Over</dt>
             <dd className="dcard__stat-val dcard__stat-val--over">
-              <RichText>{keepLastWordsTogether(decision.over)}</RichText>
+              <RichText>{unbroken(decision.over)}</RichText>
             </dd>
           </>
         )}

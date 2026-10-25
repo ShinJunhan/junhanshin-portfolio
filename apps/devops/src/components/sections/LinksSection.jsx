@@ -1,7 +1,10 @@
 import { Fragment, useId, useState } from 'react'
 import RichText from '../../lib/richText.jsx'
 import { CheckIcon, GithubIcon, NotionIcon, SlidesIcon } from '../icons.jsx'
+import Overview, { OverviewLinks } from './Overview.jsx'
+import WorkspaceApps from './WorkspaceApps.jsx'
 import WorkspaceCards from './WorkspaceCards.jsx'
+import WorkspaceFaces from './WorkspaceFaces.jsx'
 import WorkspaceTiles from './WorkspaceTiles.jsx'
 
 // Every link a project can carry, in the order each group shows them.
@@ -156,9 +159,11 @@ function Flow({ flow }) {
 }
 
 // Each figure leads with its number, set large, and names it underneath.
-function Figures({ figures }) {
+// `oneLine` holds every label to a single line while the row sits beside the
+// workspace column.
+function Figures({ figures, oneLine }) {
   return (
-    <ul className="glance-figures">
+    <ul className={'glance-figures' + (oneLine ? ' glance-figures--one-line' : '')}>
       {figures.map((figure) => (
         <li className="glance-figures__item" key={figure.label}>
           <span className="glance-figures__value">{figure.value}</span>
@@ -344,8 +349,156 @@ function ResultPair({ lock, ring }) {
   )
 }
 
+// An illustrative day above a control loop. The chart draws taxi calls as an
+// area and the forecast floor as a step line, with one queue spike hatched
+// where the reactive layer takes over; the strip under it is the loop the
+// floor comes from. Values are fractions of the chart height, one per hour.
+// The drawing is 464 units wide, close to the card column's own width, so the
+// 13.5-unit labels render at 12px or more on a laptop.
+const LOOP_W = 420
+const LOOP_H = 150
+
+function LoopChart({ loop }) {
+  const patternId = useId()
+  const x = (h) => 20 + (h * (LOOP_W - 30)) / 24
+  const y = (v) => LOOP_H - 18 - v * (LOOP_H - 52)
+  const area =
+    `M${x(0)},${y(0)} ` +
+    loop.calls.map((v, h) => `L${x(h)},${y(v)}`).join(' ') +
+    ` L${x(24)},${y(0)} Z`
+  const step =
+    `M${x(0)},${y(loop.floor[0])} ` +
+    loop.floor.map((v, h) => `H${x(h)} V${y(v)}`).join(' ') +
+    ` H${x(24)}`
+  const spike = `M${x(17.6)},${y(0.8)} L${x(18)},${y(0.95)} L${x(18.6)},${y(0.86)} L${x(19)},${y(0.8)} Z`
+  const ticks = []
+  for (let h = 0; h < 24; h += loop.forecastEvery) ticks.push(h)
+
+  return (
+    <div className="loop-wrap">
+      <div className="loop">
+        <svg className="loop__chart" viewBox={`-22 0 ${LOOP_W + 44} ${LOOP_H}`} aria-hidden="true">
+          <defs>
+            <pattern id={patternId} width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="5" className="loop__hatch" />
+            </pattern>
+          </defs>
+          <line x1={x(0)} x2={x(24)} y1={y(0)} y2={y(0)} className="loop__axis" />
+          <path d={area} className="loop__calls" />
+          <path d={step} className="loop__floor" />
+          <path d={spike} className="loop__spike" fill={`url(#${patternId})`} />
+          {ticks.map((h) => (
+            <line key={h} x1={x(h)} x2={x(h)} y1="4" y2="11" className="loop__tick" />
+          ))}
+          <text className="loop__mono" x={x(0.3)} y="24">
+            {loop.labels.forecast}
+          </text>
+          <line x1={x(6)} y1={y(0.45) - 4} x2={x(4.2)} y2={y(0.62)} className="loop__leader" />
+          <text className="loop__label" x={x(1.2)} y={y(0.66)}>
+            {loop.labels.floor}
+          </text>
+          <line x1={x(18.6)} y1={y(0.92)} x2={x(20.3)} y2={y(1)} className="loop__leader" />
+          <text className="loop__label" x={x(20.4)} y={y(1) + 4}>
+            {loop.labels.spike}
+          </text>
+          <line x1={x(22.5)} y1={y(0.38)} x2={x(22.5)} y2={y(0.58)} className="loop__leader" />
+          <text className="loop__label" x={x(24)} y={y(0.62)} textAnchor="end">
+            {loop.labels.scaleIn}
+          </text>
+          {[0, 6, 12, 18, 24].map((h) => (
+            <text key={h} className="loop__axis-label" x={x(h)} y={LOOP_H - 2} textAnchor="middle">
+              {String(h).padStart(2, '0')}:00
+            </text>
+          ))}
+        </svg>
+        <ul className="loop__legend" aria-hidden="true">
+          <li>
+            <i className="loop__swatch loop__swatch--calls" />
+            taxi calls
+          </li>
+          <li>
+            <i className="loop__swatch loop__swatch--floor" />
+            forecast floor
+          </li>
+          <li>
+            <i className="loop__swatch loop__swatch--spike" />
+            queue safety net
+          </li>
+        </ul>
+        <ol className="loop__stages">
+          {loop.stages.map((stage, i) => (
+            <Fragment key={stage.key}>
+              {i > 0 && (
+                <li className="loop__arrow" aria-hidden="true">
+                  →
+                </li>
+              )}
+              <li className="loop__stage">
+                <span>{stage.key}</span>
+                <b>{stage.tool}</b>
+              </li>
+            </Fragment>
+          ))}
+        </ol>
+        <p className="loop__back">
+          <span aria-hidden="true">↺ </span>
+          {loop.back}
+        </p>
+        <p className="loop__note">{loop.note}</p>
+      </div>
+    </div>
+  )
+}
+
+// One block per pod at peak. Blocks up to the forecast are filled, the one it
+// ends inside is filled to its fraction, and the rest are hatched as saved.
+// The bracket and the forecast label both start where the fill ends, worked
+// out from the same fraction so they stay aligned at every width.
+const POD_GAP = 3
+
+function PodResult({ pods, measured }) {
+  const blocks = Array.from({ length: pods.peak }, (_, i) => Math.min(1, Math.max(0, pods.forecast - i)))
+  const fillEnd = `calc((100% - ${(pods.peak - 1) * POD_GAP}px) / ${pods.peak} * ${pods.forecast} + ${Math.floor(pods.forecast) * POD_GAP}px)`
+  return (
+    <div className="pods-wrap">
+      <div className="pods">
+        <span className="pods__label pods__label--sim">Simulated</span>
+        <span className="pods__label pods__label--meas">Measured</span>
+        <span className="pods__rule" aria-hidden="true" />
+        <div className="pods__bar">
+          <span className="pods__bracket" style={{ left: fillEnd }}>
+            <span>{pods.saving}</span>
+          </span>
+          <div
+            className="pods__blocks"
+            style={{ gap: `${POD_GAP}px`, gridTemplateColumns: `repeat(${pods.peak}, minmax(0, 1fr))` }}
+            aria-hidden="true"
+          >
+            {blocks.map((used, i) => (
+              <i
+                key={i}
+                className={'pods__block' + (used === 1 ? '' : used === 0 ? ' pods__block--saved' : ' pods__block--part')}
+                style={used > 0 && used < 1 ? { '--used': `${Math.round(used * 100)}%` } : undefined}
+              />
+            ))}
+          </div>
+          <div className="pods__ticks">
+            <span style={{ left: fillEnd }}>{pods.forecastLabel}</span>
+            <span>{pods.peakLabel}</span>
+          </div>
+        </div>
+        <strong className="pods__value">{measured.value}</strong>
+        <p className="pods__text pods__text--caption">{pods.caption}</p>
+        <p className="pods__text pods__text--meas">{measured.text}</p>
+      </div>
+    </div>
+  )
+}
+
 // A line's shape picks its renderer. See `glance` in src/data/projects.js.
 function GlanceBody({ value, open, onToggle }) {
+  if (value.loop) return <LoopChart loop={value.loop} />
+  if (value.pods && value.measured) return <PodResult pods={value.pods} measured={value.measured} />
   if (value.rail) return <HowRail rail={value.rail} open={open} onToggle={onToggle} />
   if (value.lock && value.ring) return <ResultPair lock={value.lock} ring={value.ring} />
   if (Array.isArray(value)) {
@@ -360,7 +513,7 @@ function GlanceBody({ value, open, onToggle }) {
     )
   }
   if (value.flow) return <Flow flow={value.flow} />
-  if (value.figures) return <Figures figures={value.figures} />
+  if (value.figures) return <Figures figures={value.figures} oneLine={value.oneLine} />
   return <RichText>{value}</RichText>
 }
 
@@ -434,7 +587,54 @@ function Glance({ glance }) {
 // column rather than above both.
 export default function LinksSection({ project, label, headingId }) {
   const kinds = visibleLinkKinds(project, 'workspace')
+
+  // A project with `overview` keeps one section heading, "<Team> Workspace",
+  // with a row of links to where the work lives right under it, then the
+  // overview captioned At a Glance. The overview takes At a Glance's job and
+  // the link row takes the workspace cards', so neither renders here.
+  if (project.overview) {
+    return (
+      <>
+        <h2 className="section__title" id={headingId}>
+          {label}
+        </h2>
+        {project.overview.links && <OverviewLinks links={project.overview.links} />}
+        <p className="ov-heading">At a Glance</p>
+        <Overview overview={project.overview} />
+      </>
+    )
+  }
+
   const glance = project.glance
+
+  // A project with `workspaceApps` gets At a Glance on the left and the four
+  // places the team worked on the right, as cards that open in place. The
+  // column is held to At a Glance's height whatever is open.
+  if (project.workspaceApps) {
+    return (
+      <div className="workspace-row workspace-row--cards">
+        <h2 className="section__title workspace-row__title" id={headingId}>
+          {label}
+        </h2>
+        {glance && <Glance glance={glance} />}
+        <WorkspaceApps workspace={project.workspaceApps} />
+      </div>
+    )
+  }
+
+  // A project with `workspaceFaces` gets At a Glance on the left and four
+  // figure tiles in a 2×2 grid on the right, stretched to At a Glance's height.
+  if (project.workspaceFaces) {
+    return (
+      <div className="workspace-row workspace-row--cards">
+        <h2 className="section__title workspace-row__title" id={headingId}>
+          {label}
+        </h2>
+        {glance && <Glance glance={glance} />}
+        <WorkspaceFaces faces={project.workspaceFaces} />
+      </div>
+    )
+  }
 
   // A project with `workspaceCards` gets At a Glance on the left and four
   // static cards on the right, each ending in a link. Used where At a Glance

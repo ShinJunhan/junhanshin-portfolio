@@ -1,4 +1,5 @@
 import RichText from '../../lib/richText.jsx'
+import ReflectionStory from './ReflectionStory.jsx'
 
 // Two named parts rather than one block of prose — the second is the harder
 // one to write, and burying it inside a paragraph is how it gets skipped.
@@ -8,6 +9,7 @@ const PARTS = [
 ]
 
 export default function ReflectionSection({ project }) {
+  if (project.reflection?.layout === 'story') return <ReflectionStory reflection={project.reflection} />
   return (
     <div className="reflection">
       {PARTS.map((part) => {

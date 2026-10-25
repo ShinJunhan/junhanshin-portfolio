@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import { SlidesIcon } from '../icons.jsx'
 
 // The presentation deck, as a tab in the Resources panel rather than as a
@@ -49,6 +49,27 @@ function Slide({ slide, dimensions, registerItem }) {
       </p>
     </li>
   )
+}
+
+// Where one talk ends and the next begins, for a deck that holds more than
+// one. hailcast's file is the first presentation and the refinement
+// presentation three weeks later, kept as one column so the second reads as
+// the continuation it was. It is not a `.deck__slide`, so the notes sync and
+// the tail fitting below never count it.
+function PartDivider({ part }) {
+  return (
+    <li className="deck__part">
+      {part.title} · {part.date} · slides {part.slideStart} to {part.slideEnd}
+    </li>
+  )
+}
+
+function SectionOptions({ sections }) {
+  return sections.map((section) => (
+    <option key={section.id} value={section.id}>
+      {section.num} · {section.title}
+    </option>
+  ))
 }
 
 function Notes({ slide }) {
@@ -147,7 +168,11 @@ export function useSlideDeck(deck) {
       // run out of, and growing a list that is not overflowing would resize
       // the scroller and set the observer below off against itself.
       const overflows = scroller.scrollHeight > scroller.clientHeight
-      const tail = overflows ? Math.max(scroller.clientHeight - belowLastTop - JUMP_INSET, 0) : 0
+      // One pixel over, because every measure here is rounded to a whole
+      // pixel and the slides above are not whole pixels tall. hailcast's part
+      // divider tipped the sum one short, and its last slide stopped a pixel
+      // under the line with the panel stuck on the slide before.
+      const tail = overflows ? Math.max(scroller.clientHeight - belowLastTop - JUMP_INSET + 1, 0) : 0
       list.style.setProperty('--deck-tail', `${tail}px`)
     }
 
@@ -223,11 +248,20 @@ export function useSlideDeck(deck) {
           <option value="" disabled>
             Jump to section
           </option>
-          {deck.sections.map((section) => (
-            <option key={section.id} value={section.id}>
-              {section.num} · {section.title}
-            </option>
-          ))}
+          {deck.parts ? (
+            deck.parts.map((part) => (
+              <optgroup key={part.title} label={`${part.title} · ${part.date}`}>
+                <SectionOptions
+                  sections={deck.sections.filter(
+                    (section) =>
+                      section.slideStart >= part.slideStart && section.slideStart <= part.slideEnd
+                  )}
+                />
+              </optgroup>
+            ))
+          ) : (
+            <SectionOptions sections={deck.sections} />
+          )}
         </select>
       </span>
       <button
@@ -250,14 +284,21 @@ export function useSlideDeck(deck) {
       <div className="deck__stage">
         <div className="deck__scroll" ref={setScroller}>
           <ol className="deck__list">
-            {deck.slides.map((slide) => (
-              <Slide
-                key={slide.number}
-                slide={slide}
-                dimensions={deck.imageDimensions}
-                registerItem={registerItem}
-              />
-            ))}
+            {deck.slides.map((slide) => {
+              const part = deck.parts?.find(
+                (entry, index) => index > 0 && entry.slideStart === slide.number
+              )
+              return (
+                <Fragment key={slide.number}>
+                  {part && <PartDivider part={part} />}
+                  <Slide
+                    slide={slide}
+                    dimensions={deck.imageDimensions}
+                    registerItem={registerItem}
+                  />
+                </Fragment>
+              )
+            })}
           </ol>
         </div>
         {notesOpen && <Notes slide={active} />}
@@ -266,6 +307,8 @@ export function useSlideDeck(deck) {
   )
 
   // The deck's own name, not a path: nothing on this tab is a file the reader
-  // can open, and an address bar pointing at one would say otherwise.
-  return { address: `${deck.deck} · ${deck.totalSlides} slides`, aside, body }
+  // can open, and an address bar pointing at one would say otherwise. A
+  // manifest can supply its own line, as hailcast's does to say its slides
+  // span two talks.
+  return { address: deck.address ?? `${deck.deck} · ${deck.totalSlides} slides`, aside, body }
 }

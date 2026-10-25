@@ -1,4 +1,5 @@
 import RichText from '../../lib/richText.jsx'
+import RoleVisual from './RoleVisual.jsx'
 import { OWNER } from '../../data/owner.js'
 import useSectionReached from '../../lib/useSectionReached.js'
 
@@ -46,11 +47,15 @@ const SIZES = { lead: 'lead', medium: 'medium', small: 'small' }
 //   columns  lead 3x2 at the left with two mediums stacked beside it
 //   mosaic   lead 4x3, with the small tiles in a narrow strip down its right
 //   mirror   `columns` reflected — the lead sits at the right instead
+//   areas    the project draws its own grid: `role.areas` is one string per
+//            row of a twelve-column grid, and each tile names its `area`.
+//            hailcast uses it, because its tiles carry visuals of different
+//            heights and no fixed span pattern sat them without holes.
 //
 // Every arrangement has to tile its project's tile counts exactly; the counts
 // differ (six tiles on two projects, eight on the third) and a mismatch shows
 // as a hole rather than as a smaller grid. See global.css for the cell maths.
-const LAYOUTS = { columns: 'columns', mosaic: 'mosaic', mirror: 'mirror' }
+const LAYOUTS = { columns: 'columns', mosaic: 'mosaic', mirror: 'mirror', areas: 'areas' }
 
 // Same rule as the Members row: two letters at most, and an explicit override
 // wins, because Korean given names romanize as two syllables and deriving from
@@ -63,6 +68,13 @@ function initialsOf(name, override) {
     .slice(0, 2)
     .map((part) => part[0].toUpperCase())
     .join('')
+}
+
+// Ties the last two words of a sentence together, so no tile ends on a line
+// holding a single word. Only on the `areas` layout, whose tiles were checked
+// line by line with it; the other pages were approved without it.
+function glueLastWord(text) {
+  return String(text ?? '').replace(/ (?=\S+$)/, '\u00A0')
 }
 
 function tilesOf(role) {
@@ -86,14 +98,86 @@ function Who({ project, lit }) {
   // The full role, stated once. It used to be split — a short form here and a
   // "PR Owner" heading down in a tile — which made one job read as two.
   const title = project.role?.title ?? owner?.title ?? owner?.role ?? OWNER.name
+  // A second role, when the project gives one, sits under the title in a pill
+  // rather than being joined to it with "and": two short lines read faster
+  // than one long one, and the title keeps the larger size to itself.
+  const subtitle = project.role?.subtitle
 
   return (
     <div className="role__who">
       <span className={`role-mark${lit ? ' role-mark--lit' : ''}`} aria-hidden="true">
         {initialsOf(OWNER.name, owner?.initials)}
       </span>
-      <p className="role__title">{title}</p>
+      {subtitle ? (
+        <div className="role__titles">
+          <p className="role__title">{title}</p>
+          <p className="role__subtitle">{subtitle}</p>
+        </div>
+      ) : (
+        <p className="role__title">{title}</p>
+      )}
     </div>
+  )
+}
+
+// The `stats` layout (Midam): a hero tile counting the files written, with a
+// bar per folder, and six figure tiles around it on the project's own areas
+// grid. Each tile leads with one figure, its unit on the same line, and a
+// sentence under it. There are no eyebrows: a grey label over every figure
+// read as generated. `size: 'large'` sets a figure a step up where its tile
+// would otherwise end in empty space, and `prose` sets that tile's sentence at
+// the reading size for the same reason.
+function StatsBento({ role }) {
+  const { hero, tiles = [], areas = [] } = role
+  const max = Math.max(...hero.bars.map((bar) => bar.count))
+
+  return (
+    <ul className="rs" style={{ '--role-areas': areas.map((row) => `"${row}"`).join(' ') }}>
+      <li className="rs__tile rs__tile--hero" style={{ gridArea: 'A' }}>
+        <p className="rs__title">{hero.title}</p>
+        <p className="rs__figure rs__figure--hero">
+          {hero.value}
+          <span className="rs__unit">{hero.unit}</span>
+        </p>
+        <ul className="rs__bars">
+          {hero.bars.map((bar) => (
+            <li key={bar.name}>
+              <span className="rs__bar-name">{bar.name}</span>
+              <span
+                className={'rs__bar' + (bar.strong ? ' rs__bar--strong' : '')}
+                style={{ width: `${(bar.count / max) * 100}%` }}
+              />
+              <span className="rs__bar-count">{bar.count}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="rs__prose">
+          <RichText>{glueLastWord(hero.text)}</RichText>
+        </p>
+      </li>
+
+      {tiles.map((tile) => (
+        <li className="rs__tile" style={{ gridArea: tile.area }} key={tile.area}>
+          <p className={'rs__figure' + (tile.size === 'large' ? ' rs__figure--large' : '')}>
+            {tile.value}
+            <span className="rs__unit">{tile.unit}</span>
+          </p>
+          {tile.timeline && (
+            <ol className="rs__timeline">
+              {tile.timeline.map((step) => (
+                <li key={step.date}>
+                  <b>{step.date}</b>
+                  <span>{step.text}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          <p className={'rs__prose' + (tile.prose ? ' rs__prose--reading' : '')}>
+            <RichText>{glueLastWord(tile.text)}</RichText>
+          </p>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -108,6 +192,17 @@ export default function RoleSection({ project }) {
   // eight tiles, so a new project renders correctly before anyone has chosen
   // a shape for it.
   const layout = LAYOUTS[project.role?.layout] ?? 'columns'
+  const areas = layout === 'areas' ? project.role?.areas ?? [] : []
+  const proseOf = (text) => (layout === 'areas' ? glueLastWord(text) : text)
+
+  if (project.role?.layout === 'stats') {
+    return (
+      <div className="role role--stats">
+        <Who project={project} lit={lit} />
+        <StatsBento role={project.role} />
+      </div>
+    )
+  }
 
   if (!tiles?.length) {
     return (
@@ -131,7 +226,9 @@ export default function RoleSection({ project }) {
             A project with a single figure keeps it on the lead tile, where it
             is part of that tile's claim rather than a section-wide headline. */}
         {figures.length > 0 && (
-          <div className="role-band">
+          // `figuresInline` sets each label beside its figure on one line,
+          // centred in the cell, for a band whose labels are short.
+          <div className={'role-band' + (project.role?.figuresInline ? ' role-band--inline' : '')}>
             {figures.map((figure) => (
               <p className="role-band__cell" key={figure.unit}>
                 <span className="bento__value">{figure.value}</span>
@@ -141,9 +238,16 @@ export default function RoleSection({ project }) {
           </div>
         )}
 
-        <ul className={`bento bento--role bento--role-${layout}`}>
+        <ul
+          className={`bento bento--role bento--role-${layout}`}
+          style={areas.length ? { '--role-areas': areas.map((row) => `"${row}"`).join(' ') } : undefined}
+        >
         {tiles.map((tile) => (
-          <li className={`bento__tile bento__tile--${SIZES[tile.size] ?? 'small'}`} key={tile.label}>
+          <li
+            className={`bento__tile bento__tile--${SIZES[tile.size] ?? 'small'}${tile.tone === 'accent' ? ' bento__tile--accent' : ''}`}
+            style={tile.area ? { '--role-area': tile.area } : undefined}
+            key={tile.label}
+          >
             {/* The label, rendered on the lead tile only.
 
                 It has been in the data all along and was deliberately not
@@ -165,9 +269,16 @@ export default function RoleSection({ project }) {
               </p>
             )}
 
+            {tile.visual && <RoleVisual visual={tile.visual} />}
+
             <p className="bento__prose">
-              <RichText>{tile.text}</RichText>
+              <RichText>{proseOf(tile.text)}</RichText>
             </p>
+
+            {/* A second visual under the sentence. Only the lead has the
+                height for one, and only when its figure is a measure of the
+                sentence above it rather than a headline of its own. */}
+            {tile.footer && <RoleVisual visual={tile.footer} />}
           </li>
         ))}
         </ul>

@@ -1,5 +1,18 @@
 import RichText from '../../lib/richText.jsx'
 import EmptySlot from './EmptySlot.jsx'
+import CostReport from './CostReport.jsx'
+
+// Keeps a hyphenated word ("pod-hours", "kube-system") whole and ties the last
+// two words together, so justified text never splits a word after its hyphen
+// and never ends on one word. Code spans are left as written.
+function unbroken(text) {
+  if (!text) return text
+  return text
+    .split('`')
+    .map((part, i) => (i % 2 === 1 ? part : part.replace(/(\w)-(\w)/g, '$1\u2011$2')))
+    .join('`')
+    .replace(/ (?=[^ ]+$)/, '\u00a0')
+}
 
 // What the architecture costs, against what the same architecture would have
 // cost built the obvious way. Two series, two colours and no more: the
@@ -53,6 +66,11 @@ function money(value, unit) {
 export default function CostSection({ project }) {
   const cost = project.cost
 
+  // The detailed report, for a project whose cost story is the point.
+  if (cost?.layout === 'report') {
+    return <CostReport cost={cost} />
+  }
+
   if (!cost?.items?.length) {
     return <EmptySlot>No cost analysis added yet.</EmptySlot>
   }
@@ -82,7 +100,7 @@ export default function CostSection({ project }) {
             <div className="cost__row" key={item.label}>
               <dt className="cost__row-label">
                 {item.label}
-                {item.note && <span className="cost__row-note">{item.note}</span>}
+                {item.note && <span className="cost__row-note">{unbroken(item.note)}</span>}
               </dt>
               <dd className="cost__row-bars">
                 {series.map((s, i) => {
@@ -149,7 +167,7 @@ export default function CostSection({ project }) {
         <ul className="cost__notes">
           {(cost.notes ?? []).map((note) => (
             <li key={note}>
-              <RichText>{note}</RichText>
+              <RichText>{unbroken(note)}</RichText>
             </li>
           ))}
         </ul>
@@ -158,7 +176,7 @@ export default function CostSection({ project }) {
       <div className="cost__foot cost__foot--read">
         {cost.caveat && (
           <p className="cost__caveat">
-            <RichText>{cost.caveat}</RichText>
+            <RichText>{unbroken(cost.caveat)}</RichText>
           </p>
         )}
       </div>
@@ -180,7 +198,7 @@ function Measured({ measured }) {
       <h3 className="cost__measured-title">{measured.label}</h3>
       {measured.lede && (
         <p className="cost__measured-lede">
-          <RichText>{measured.lede}</RichText>
+          <RichText>{unbroken(measured.lede)}</RichText>
         </p>
       )}
       <ul className="cost__figures">
@@ -188,13 +206,13 @@ function Measured({ measured }) {
           <li className="cost__figure" key={figure.label}>
             <span className="cost__figure-value">{figure.value}</span>
             <span className="cost__figure-label">{figure.label}</span>
-            {figure.note && <span className="cost__figure-note">{figure.note}</span>}
+            {figure.note && <span className="cost__figure-note">{unbroken(figure.note)}</span>}
           </li>
         ))}
       </ul>
       {measured.source && (
         <p className="cost__measured-source">
-          <RichText>{measured.source}</RichText>
+          <RichText>{unbroken(measured.source)}</RichText>
         </p>
       )}
     </section>

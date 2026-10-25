@@ -45,6 +45,71 @@ function initialsOf(member) {
     .join('')
 }
 
+// One circle, shared by the flat row and the grouped one.
+function Circle({ member, tint, lit, label }) {
+  const owner = isOwner(member)
+  return (
+    <li
+      className={'avatars__item' + (owner ? ' avatars__item--owner' : '')}
+      style={{ '--avatar-tint': tint }}
+    >
+      {/* `title` gives the pointer a name, the `sr-only` span gives
+          assistive tech one. With the printed name gone the initials are
+          the only visible label, and two letters are not a name — so the
+          full one has to be reachable both ways rather than either. */}
+      <span
+        className={'avatars__circle' + (owner && lit ? ' avatars__circle--lit' : '')}
+        title={label ?? member.name}
+      >
+        <span aria-hidden="true">{initialsOf(member)}</span>
+        <span className="sr-only">{label ?? member.name}</span>
+      </span>
+    </li>
+  )
+}
+
+// A team whose members carry a `track` ({ code, name }) renders as groups:
+// each track's circles side by side, its short code underneath. Used where the
+// team is a whole integrated project rather than one track (the fellowship
+// page lists twenty people across eight tracks). Every circle in a group shares
+// one tint, rotated per group from the same no-blue list, and Junhan's circle
+// keeps --name-pop wherever he sits.
+function GroupedAvatars({ team, lit }) {
+  const groups = []
+  for (const member of team) {
+    const code = member.track?.code ?? ''
+    const last = groups[groups.length - 1]
+    if (last && last.code === code) last.members.push(member)
+    else groups.push({ code, name: member.track?.name ?? code, members: [member] })
+  }
+
+  return (
+    <ul className="avatars avatars--grouped" aria-label="Team members by track">
+      {groups.map((group, i) => {
+        const tint = AVATAR_TINTS[i % AVATAR_TINTS.length]
+        return (
+          <li className="avatars__group" key={group.code + i}>
+            <ul className="avatars__group-row" aria-label={group.name}>
+              {group.members.map((member) => (
+                <Circle
+                  key={member.name}
+                  member={member}
+                  tint={isOwner(member) ? 'var(--name-pop)' : tint}
+                  lit={lit}
+                  label={`${member.name}, ${group.name}`}
+                />
+              ))}
+            </ul>
+            <span className="avatars__track" aria-hidden="true" title={group.name}>
+              {group.code}
+            </span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export default function Avatars({ team }) {
   // Junhan's circle lights up as My Role arrives on screen, tying the row of
   // five to the section that explains which of them he was. Once per visit —
@@ -52,6 +117,8 @@ export default function Avatars({ team }) {
   const lit = useSectionReached('role')
 
   if (!team?.length) return null
+
+  if (team.some((member) => member.track)) return <GroupedAvatars team={team} lit={lit} />
 
   // Tints are handed out before render so the owner can be skipped in the
   // rotation: his position on a team must not shift which colour anyone else
@@ -65,25 +132,7 @@ export default function Avatars({ team }) {
   return (
     <ul className="avatars" aria-label="Team members">
       {tinted.map(({ member, tint }) => (
-        <li
-          key={member.name}
-          className={'avatars__item' + (isOwner(member) ? ' avatars__item--owner' : '')}
-          style={{ '--avatar-tint': tint }}
-        >
-          {/* `title` gives the pointer a name, the `sr-only` span gives
-              assistive tech one. With the printed name gone the initials are
-              the only visible label, and two letters are not a name — so the
-              full one has to be reachable both ways rather than either. */}
-          <span
-            className={
-              'avatars__circle' + (isOwner(member) && lit ? ' avatars__circle--lit' : '')
-            }
-            title={member.name}
-          >
-            <span aria-hidden="true">{initialsOf(member)}</span>
-            <span className="sr-only">{member.name}</span>
-          </span>
-        </li>
+        <Circle key={member.name} member={member} tint={tint} lit={lit} />
       ))}
     </ul>
   )

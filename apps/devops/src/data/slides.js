@@ -18,7 +18,8 @@ function slugOf(key) {
 
 // The cover slides carry a section id that is deliberately absent from
 // `sections` — they belong to no numbered part of the talk. They still need a
-// caption, so they get this one.
+// caption, so they get this one, unless the slide names its own `label` (a
+// contents page that sits with the covers, for example).
 const COVER_TITLE = 'Cover'
 
 // Every slide comes out of here already carrying the two things the tab reads
@@ -32,7 +33,7 @@ function normalise(manifest) {
     slides: manifest.slides.map((slide) => ({
       ...slide,
       src: `${manifest.imageBase}${slide.file}`,
-      label: titles.get(slide.section) ?? COVER_TITLE,
+      label: slide.label ?? titles.get(slide.section) ?? COVER_TITLE,
     })),
   }
 }

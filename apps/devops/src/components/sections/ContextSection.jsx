@@ -1,4 +1,5 @@
 import RichText from '../../lib/richText.jsx'
+import ContextVisual from './ContextVisuals.jsx'
 
 // Problem and context as an idea board rather than a paragraph: the four
 // things worth knowing before reading anything else are four separate
@@ -46,22 +47,178 @@ const TILTS = [-1.9, 1.4, -1.1, 2.1, -1.6, 1.2]
 // instead and stays clear of it in both themes.
 const TINTS = ['var(--accent)', 'var(--c-indigo)']
 
+// The collage board (`layout: 'collage'`). Steeper tilts than the even grid,
+// because the uneven placement already says "pinned by hand" and the notes can
+// lean further without reading as a broken grid. The tint follows each note's
+// `tone` instead of its position, so the colour tells the reader what kind of
+// note it is: why the project exists, what it built on, or where it stops.
+const COLLAGE_TILTS = [-1.6, 2.4, -2.2, 1.8, -2.6, 1.4]
+const TONE_TINTS = {
+  why: 'var(--accent)',
+  what: 'var(--c-indigo)',
+  limit: 'var(--ink)',
+}
+
+// Keeps the last two words of a note together, so a justified paragraph never
+// ends on a single word where `text-wrap: pretty` is not supported.
+function glueLastWord(text) {
+  return String(text ?? '').replace(/ (?=\S+$)/, ' ')
+}
+
+// The `pinned` board (Midam): fewer, longer notes on the project's own grid,
+// each one a short list of complete sentences beside a small picture. Gentle
+// tilts, since these notes are large and a steep angle on a wide card reads as
+// a broken layout. The first three are the problem (accent tint); the last two
+// are the team's constraints, in steel.
+const PINNED_TILTS = [-0.6, 0.8, -0.9, 0.4, -0.5]
+const PINNED_TINTS = { team: 'var(--c-steel)' }
+// The notes that run the full width, which give their picture more room.
+const WIDE_AREAS = new Set(['f', 'e', 'b'])
+
+function Bullets({ items }) {
+  return (
+    <ul className="pin-note__list">
+      {items.map((item) => (
+        <li key={item}>
+          <span>
+            <RichText>{glueLastWord(item)}</RichText>
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function PinnedBoard({ notes }) {
+  return (
+    <ul className="pin-board">
+      {notes.map((note, i) => (
+        <li
+          key={note.title}
+          className={'board__note pin-note' + (WIDE_AREAS.has(note.area) ? ' pin-note--wide' : '')}
+          style={{
+            gridArea: note.area,
+            '--tilt': `${PINNED_TILTS[i % PINNED_TILTS.length]}deg`,
+            '--note-tint': PINNED_TINTS[note.tone] ?? 'var(--accent)',
+          }}
+        >
+          <span className="board__pin" aria-hidden="true" />
+          <div className="pin-note__visual">
+            <ContextVisual name={note.visual} />
+          </div>
+          <div className="pin-note__body">
+            <h3 className="pin-note__title">{glueLastWord(note.title)}</h3>
+            <Bullets items={note.items} />
+            {note.needs && (
+              <>
+                <p className="pin-note__intro">{note.needs.intro}</p>
+                <ul className="pin-note__tiles">
+                  {note.needs.tiles.map((tile) => (
+                    <li key={tile.label}>
+                      <span className="pin-note__tile-label">{tile.label}</span>
+                      <span className="pin-note__tile-text">
+                        <RichText>{tile.text}</RichText>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            {note.after && <Bullets items={note.after} />}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// The `track` board (Project1-Self-Build): one wide note for why the project
+// exists, then a progress track whose four stages each sit above one note. The
+// track's dots and labels deepen from the border colour to the accent as the
+// stages advance. Where the four notes cannot sit in one row, the track hides
+// and each note shows its own stage name instead.
+const TRACK_TILTS = [-1.2, 1.6, -1.4, 1.9, -1.7]
+
+function TrackBoard({ notes }) {
+  const [hero, ...steps] = notes
+  const fillOf = (i) => `${Math.round(((i + 1) / steps.length) * 100)}%`
+
+  return (
+    <ul className="board board--track">
+      <li
+        className="board__note board__note--lead board__note--wide"
+        style={{ '--tilt': `${TRACK_TILTS[0]}deg`, '--note-tint': TINTS[0] }}
+      >
+        <span className="board__pin" aria-hidden="true" />
+        <h3 className="board__label">{hero.label}</h3>
+        <p className="board__text">
+          <RichText>{glueLastWord(hero.text)}</RichText>
+        </p>
+      </li>
+      <li className="board__track" aria-hidden="true">
+        {steps.map((step, i) => (
+          <span key={step.stage} style={{ '--fill': fillOf(i) }}>
+            {step.stage}
+          </span>
+        ))}
+      </li>
+      {steps.map((step, i) => (
+        <li
+          key={step.label}
+          className="board__note board__note--support"
+          style={{
+            '--tilt': `${TRACK_TILTS[(i + 1) % TRACK_TILTS.length]}deg`,
+            '--note-tint': TINTS[(i + 1) % TINTS.length],
+          }}
+        >
+          <span className="board__pin" aria-hidden="true" />
+          <span className="board__stage" style={{ '--fill': fillOf(i) }}>
+            {step.stage}
+          </span>
+          <h3 className="board__label">{step.label}</h3>
+          <p className="board__text">
+            <span className="board__lede">
+              <RichText>{glueLastWord(step.lede)}</RichText>
+            </span>
+            <RichText>{glueLastWord(step.text)}</RichText>
+          </p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function ContextSection({ project }) {
   const notes = notesOf(project.context)
+  const collage = project.context?.layout === 'collage'
+
+  if (project.context?.layout === 'pinned' && notes?.length) {
+    return <PinnedBoard notes={notes} />
+  }
+
+  if (project.context?.layout === 'track' && notes?.length) {
+    return <TrackBoard notes={notes} />
+  }
 
   if (notes?.length) {
     return (
-      <ul className="board">
+      <ul className={collage ? 'board board--collage' : 'board'}>
         {notes.map((note, i) => (
           <li
             // `size` is editorial and comes from the data: which of these a
             // reader has to take and which are context around them is a fact
             // about the project, not about the layout.
-            className={`board__note board__note--${note.size === 'lead' ? 'lead' : 'support'}`}
+            className={
+              collage
+                ? `board__note${note.hero ? ' board__note--hero' : ''}`
+                : `board__note board__note--${note.size === 'lead' ? 'lead' : 'support'}`
+            }
             key={note.label ?? i}
             style={{
-              '--tilt': `${TILTS[i % TILTS.length]}deg`,
-              '--note-tint': TINTS[i % TINTS.length],
+              '--tilt': `${(collage ? COLLAGE_TILTS : TILTS)[i % TILTS.length]}deg`,
+              '--note-tint': collage
+                ? TONE_TINTS[note.tone] ?? TONE_TINTS.why
+                : TINTS[i % TINTS.length],
             }}
           >
             {/* The pin. Drawn rather than a glyph, and decorative — the note
@@ -78,7 +235,7 @@ export default function ContextSection({ project }) {
                   <RichText>{note.lede}</RichText>
                 </span>
               )}
-              <RichText>{note.text}</RichText>
+              <RichText>{collage ? glueLastWord(note.text) : note.text}</RichText>
             </p>
           </li>
         ))}

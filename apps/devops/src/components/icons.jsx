@@ -50,6 +50,14 @@ export const CheckIcon = () => (
   </svg>
 )
 
+// A shield with a tick — security code.
+export const ShieldIcon = () => (
+  <svg {...base}>
+    <path d="M12 3 5 6v5.5c0 4.3 3 7.8 7 9.5 4-1.7 7-5.2 7-9.5V6l-7-3z" />
+    <path d="m9 12 2 2 4-4" />
+  </svg>
+)
+
 // Projector screen — the slide deck.
 export const SlidesIcon = () => (
   <svg {...base}>
@@ -96,6 +104,23 @@ export const HybridIcon = () => (
     <rect x="2" y="5" width="7" height="14" rx="1.5" />
     <rect x="15" y="5" width="7" height="14" rx="1.5" />
     <path d="M9 12h6" strokeDasharray="2 2" />
+  </svg>
+)
+
+// A run button: one workflow started by a push. The GitHub Actions tile.
+export const WorkflowIcon = () => (
+  <svg {...base}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor" />
+  </svg>
+)
+
+// Two stacked hosts. The VMware lab tile.
+export const ServerIcon = () => (
+  <svg {...base}>
+    <rect x="3" y="4" width="18" height="7" rx="1.5" />
+    <rect x="3" y="13" width="18" height="7" rx="1.5" />
+    <path d="M7 7.5h.01M7 16.5h.01" />
   </svg>
 )
 

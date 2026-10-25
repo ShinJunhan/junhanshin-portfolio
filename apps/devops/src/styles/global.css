@@ -47,6 +47,14 @@
      nearest accent to --c-emerald, which is tolerable only because those two
      are five rows apart and never adjacent. */
   --c-teal: #2C7A88;
+  /* The newest project accent, added for the fellowship page (Midam), which had
+     been wearing --c-steel. It fills the empty arc between plum and burgundy
+     (about 339 degrees in OKLCH) and sits far from both of its neighbours in
+     the rail: orange in Team Projects above it, about 80 degrees off, and
+     forest in Individual Projects below it, nearly opposite. Its nearest hue
+     is --c-burgundy, about 29 degrees away, three groups apart in the rail.
+     Dark enough to carry white button text (5.6:1). */
+  --c-berry: #A3438A;
   /* A seventh hue, so a six-person team never repeats and the tech wheel has
      one colour per category. Deliberately not a blue. Distinct from --c-plum
      above and much duller on purpose: this one sits behind avatar initials
@@ -216,6 +224,10 @@
      the forest sitting under it in the rail once both are lightened, and the
      gap between them has to survive that lift. */
   --c-teal: #6FC2D0;
+  /* Lifted like the rest at the same hue. It keeps the same distance from the
+     lifted burgundy as the light pair does (about 27 degrees), and reads at
+     6.8:1 on the dark card background. */
+  --c-berry: #E28CC8;
   --c-violet: #A997BC;
   /* Lifted like the rest, and kept dusty: the chroma stays low so it does not
      drift toward either --name-pop or --c-indigo on a dark ground. */
@@ -866,6 +878,49 @@ button:focus-visible {
   display: flex;
 }
 
+/* The grouped row: one cluster of circles per track, its short code under
+   it. Used when a page lists a whole integrated team (see GroupedAvatars in
+   components/Avatars.jsx). The clusters wrap as units, and the gap between
+   clusters is three times the gap inside one, which is what makes the tracks
+   read as tracks. */
+.avatars--grouped {
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+
+.avatars__group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.avatars__group-row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 0.2rem;
+}
+
+.avatars__track {
+  font-family: var(--font-label);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--text-secondary);
+}
+
+/* "Team of 20:" lines up with the circles rather than with the middle of
+   circles and codes together. */
+.project__team:has(.avatars--grouped) {
+  align-items: flex-start;
+}
+
+.project__team:has(.avatars--grouped) > .project__period {
+  line-height: 28px;
+}
+
 /* 28px. At 40 it still read as a component; at header scale it is a caption in
    circles, and the names it would need room for are in the tooltip and the
    screen-reader text rather than on the page. */
@@ -1489,6 +1544,19 @@ button:focus-visible {
   color: var(--text-secondary);
 }
 
+/* `metricsLarge`: the square tiles' numbers a step up, so a short number fills
+   its tile instead of floating in white space, and the detail lines justified
+   like the rest of the page's body text. */
+.bento--large .bento__tile--square .bento__value {
+  font-size: clamp(2.2rem, 1.6rem + 2vw, 3.2rem);
+}
+
+.bento--large .bento__detail,
+.bento--even .bento__detail {
+  text-align: justify;
+  hyphens: none;
+}
+
 /* Two columns once the sidebar is a drawer: the big tile still reads as the
    largest thing in the section, and a wide tile still spans the row. */
 /* Three across through the tablet range, two once the sidebar is a drawer. */
@@ -1557,6 +1625,762 @@ button:focus-visible {
 
 .bento--hero .bento__tile--big .bento__detail {
   opacity: 0.85;
+}
+
+/* `metricsEven`: the small tiles start at the top so their numbers, labels,
+   and sentences sit on the same lines across a row, and the labels drop to
+   12.5px so the longest ("Isolated DB Restore") fits on one line. The big tile
+   keeps the hero treatment above. */
+.bento--even .bento__tile:not(.bento__tile--big) {
+  justify-content: flex-start;
+}
+
+.bento--even .bento__tile:not(.bento__tile--big) .bento__label {
+  font-size: 0.78125rem;
+  letter-spacing: 0.03em;
+}
+
+/* `metricsStyle: 'tiles'`: a separate grid from the bento above, for a page
+   that should not read like the team pages. Three columns, the headline tile
+   tall and filled with the accent down the left, white tiles beside it, and a
+   strip along the bottom. Numbers are in the heading face rather than the
+   bento's mono, every tile carries a drawn mark, and the detail lines are
+   justified by spacing only. The side padding is 18px so the longer detail
+   lines still sit on one line in a square tile. */
+.mtiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-areas:
+    'tf roles pb'
+    'tf chaos alerts'
+    'env env env';
+  grid-template-rows: minmax(11rem, auto) minmax(11rem, auto) auto;
+  gap: clamp(0.7rem, 1.3vw, 1rem);
+}
+
+.mtiles__tile {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  padding: clamp(1.15rem, 2vw, 1.5rem) 18px;
+  border-radius: 2px;
+  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+  box-shadow:
+    0 1px 2px rgba(20, 30, 40, 0.04),
+    0 18px 34px -26px rgba(20, 30, 40, 0.35);
+}
+
+.mtiles__value {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(3rem, 2.1rem + 2vw, 4rem);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.mtiles__label {
+  font-family: var(--font-label);
+  font-weight: 700;
+  font-size: var(--t-small);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.mtiles__detail {
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: justify;
+  text-align-last: left;
+  hyphens: none;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.mtiles__art {
+  position: absolute;
+  top: 1.15rem;
+  right: 1.15rem;
+  width: 3.4rem;
+  height: 3.4rem;
+  color: color-mix(in srgb, var(--accent) 55%, var(--card-bg));
+  opacity: 0.9;
+}
+
+/* The headline: filled with the accent, its number at display size. Its ink
+   is the card colour, the same as the hero bento's big tile, so it reads as
+   white on the dark green in light mode and dark on the mint in dark mode. */
+.mtiles__tile--accent {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 26px 48px -30px color-mix(in srgb, var(--accent) 85%, transparent);
+}
+
+.mtiles__tile--accent .mtiles__value {
+  font-size: clamp(7rem, 4.6rem + 6vw, 9.5rem);
+  color: var(--card-bg);
+}
+
+.mtiles__tile--accent .mtiles__label {
+  font-size: var(--t-lead);
+  color: var(--card-bg);
+}
+
+.mtiles__tile--accent .mtiles__detail {
+  font-size: var(--t-base);
+  color: color-mix(in srgb, var(--card-bg) 86%, transparent);
+}
+
+.mtiles__tile--accent .mtiles__art {
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 5.2rem;
+  height: 5.2rem;
+  color: color-mix(in srgb, var(--card-bg) 50%, transparent);
+}
+
+/* The bottom strip reads left to right on one line, its mark at the far end. */
+.mtiles__tile--strip {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.4rem;
+  padding-block: 1.1rem;
+}
+
+.mtiles__tile--strip .mtiles__art {
+  position: static;
+  order: 3;
+  margin-left: auto;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* One column on a phone: two narrow columns left single words alone on a
+   line once the detail lines were justified. */
+@media (max-width: 700px) {
+  .mtiles {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'tf' 'roles' 'pb' 'chaos' 'alerts' 'env';
+    grid-template-rows: none;
+  }
+  .mtiles__tile {
+    min-height: 0;
+  }
+  .mtiles__tile--accent .mtiles__value {
+    font-size: 6rem;
+  }
+  .mtiles__tile--strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+  .mtiles__tile--strip .mtiles__art {
+    display: none;
+  }
+}
+
+/* The split bar under a wide tile's sentence. */
+.bento__split {
+  display: block;
+  margin-top: 0.55rem;
+}
+
+.bento__split-bar {
+  display: flex;
+  gap: 3px;
+  height: 0.65rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bento__split-part {
+  background: color-mix(in srgb, var(--ink) 22%, var(--card-bg));
+}
+
+.bento__split-part--strong {
+  background: var(--accent);
+}
+
+.bento__split-keys {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Other repositories behind the same product, as chips under the README. */
+.readme__related {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+.readme__related-label {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.readme__related-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-bg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.readme__related-chip:hover,
+.readme__related-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: var(--accent);
+}
+
+.readme__related-chip svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---------- Cost report (`cost.layout: 'report'`, Midam) ---------- */
+
+.cr {
+  display: grid;
+  gap: 1rem;
+}
+
+.cr__card {
+  margin: 0;
+  padding: 1.25rem 1.35rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.cr__card--fill {
+  display: flex;
+  flex-direction: column;
+}
+
+.cr__card--mine {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+}
+
+.cr__title {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.cr__sub {
+  margin: 0 0 0.9rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.cr__text {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.6;
+  color: var(--text-primary);
+  text-align: justify;
+  hyphens: none;
+}
+
+/* Tones shared by every bar in the report. */
+.cr__tone--accent { background: var(--accent); }
+.cr__tone--soft { background: color-mix(in srgb, var(--accent) 55%, var(--card-bg)); }
+.cr__tone--track { background: color-mix(in srgb, var(--accent) 14%, var(--card-bg)); }
+.cr__tone--muted { background: color-mix(in srgb, var(--ink) 25%, var(--card-bg)); }
+.cr__tone--ink-1 { background: color-mix(in srgb, var(--ink) 14%, var(--card-bg)); }
+.cr__tone--ink-2 { background: color-mix(in srgb, var(--ink) 25%, var(--card-bg)); }
+.cr__tone--ink-3 { background: color-mix(in srgb, var(--ink) 38%, var(--card-bg)); }
+.cr__tone--ink-4 { background: color-mix(in srgb, var(--ink) 55%, var(--card-bg)); }
+
+/* Headline tiles: the bar sits at the foot so all four end on one line. */
+.cr__tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 1rem;
+}
+
+.cr__tile {
+  display: flex;
+  flex-direction: column;
+}
+
+.cr__value {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.cr__value small {
+  margin-left: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.cr__label {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.cr__note {
+  margin: 0.3rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  text-align: justify;
+  hyphens: none;
+}
+
+.cr__split {
+  margin-top: auto;
+  padding-top: 0.7rem;
+}
+
+.cr__split-bar {
+  display: flex;
+  gap: 2px;
+  height: 0.8rem;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cr__split-keys {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  flex-wrap: wrap;
+  color: var(--text-secondary);
+}
+
+.cr__split-keys span {
+  white-space: nowrap;
+}
+
+.cr__split-keys .mark {
+  color: var(--accent);
+}
+
+/* Daily cost columns. */
+.cr__days {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.45rem;
+  height: 170px;
+  padding: 1.2rem 0 1.6rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.cr__day {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.cr__day-value {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  margin-bottom: 0.2rem;
+}
+
+.cr__day-gpu {
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
+
+.cr__day-rest {
+  background: color-mix(in srgb, var(--ink) 28%, var(--card-bg));
+}
+
+.cr__day-rest--top {
+  border-radius: 3px 3px 0 0;
+}
+
+.cr__day-label {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.cr__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.9rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.cr__legend i {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin-right: 0.35rem;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+
+/* Estimates against the budget. */
+.cr__cols {
+  position: relative;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 200px;
+  margin-top: 2.2rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cr__col {
+  width: 22%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.cr__col-value {
+  margin-bottom: 0.3rem;
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cr__col-value small {
+  margin-left: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.cr__col-bar {
+  width: 100%;
+  border-radius: 6px 6px 0 0;
+}
+
+.cr__limit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  border-top: 2px dashed var(--accent);
+}
+
+.cr__limit span {
+  position: absolute;
+  right: 0;
+  top: -1.4rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.cr__col-keys {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 0.6rem;
+  padding: 0 1rem;
+}
+
+.cr__col-keys div {
+  width: 22%;
+  text-align: center;
+}
+
+.cr__col-keys b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.cr__col-keys span {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+/* Cost by service and by node type, side by side. */
+.cr__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+.cr__rows {
+  flex: 1;
+  margin: 0;
+  display: grid;
+  align-content: space-evenly;
+  row-gap: 0.35rem;
+}
+
+.cr__row {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr 4.2rem;
+  gap: 0.7rem;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.cr__row dd {
+  margin: 0;
+}
+
+.cr__row-bar {
+  display: block;
+  height: 0.7rem;
+  border-radius: 999px;
+}
+
+.cr__row-value {
+  text-align: right;
+  color: var(--ink);
+}
+
+/* Savings options. */
+.cr__levers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cr__lever {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9.5rem;
+  gap: 0.3rem 1rem;
+  align-items: center;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.cr__lever--head {
+  padding: 0.1rem 0 0.4rem;
+  border-top: 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.cr__lever--head span:last-child,
+.cr__lever-result {
+  text-align: right;
+}
+
+.cr__lever-action {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.cr__lever-why {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--font-body);
+  font-size: var(--t-micro);
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.cr__lever-amount {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+}
+
+.cr__lever-status {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cr__lever--saved .cr__lever-amount { color: var(--accent); }
+.cr__lever--saved .cr__lever-status {
+  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
+  color: var(--accent);
+}
+
+.cr__lever--unsaved .cr__lever-amount {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+.cr__lever--unsaved .cr__lever-status {
+  background: color-mix(in srgb, var(--ink) 10%, var(--card-bg));
+  color: var(--text-secondary);
+}
+
+/* Mistakes and fixes. */
+.cr__misses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.cr__misses li {
+  display: grid;
+  grid-template-columns: 4.6rem 1fr;
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.cr__misses .cr__text {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Each miss opens with a bold lead in ink, so the accent stays for savings. */
+.cr__misses .mark {
+  color: var(--ink);
+}
+
+.cr__miss-amount {
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+  color: color-mix(in srgb, #c2410c 75%, var(--ink));
+}
+
+/* Production estimate. */
+.cr__stack {
+  display: flex;
+  gap: 2px;
+  height: 1.6rem;
+  margin: 0.6rem 0 0.4rem;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cr__stack span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--card-bg);
+}
+
+.cr__ticks {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 620px) {
+  .cr__tiles { grid-template-columns: minmax(0, 1fr); }
+  .cr__row { grid-template-columns: 6.5rem 1fr 3.8rem; }
+  .cr__lever { grid-template-columns: 1fr 6.5rem; }
+  .cr__cols, .cr__col-keys { padding: 0; }
+  .cr__col, .cr__col-keys div { width: 30%; }
+  .cr__text, .cr__note { text-align: left; }
+  .cr__ticks span:nth-child(2) { display: none; }
 }
 
 /* ---------- Tech stack ---------- */
@@ -2435,6 +3259,22 @@ button:focus-visible {
    only. */
 .code__subtab-part {
   white-space: nowrap;
+}
+
+/* The optional line under a sub-tab's filename: what that file does. Set in
+   the body face at a smaller size, and muted, so the filename stays the
+   label and the note reads as its caption. */
+.code__subtab-note {
+  font-family: var(--font-label);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.25;
+  text-align: center;
+  color: color-mix(in srgb, var(--ink) 58%, var(--card-bg));
+}
+
+.code__subtab--on .code__subtab-note {
+  color: color-mix(in srgb, var(--ink) 72%, var(--card-bg));
 }
 
 .code__subtab::before {
@@ -3674,6 +4514,13 @@ button:focus-visible {
      instead (`keepLastWordsTogether`), which behaves the same in every
      browser. */
   text-wrap: wrap;
+  hyphens: none;
+}
+
+/* Justified like the Why text under the card, for a project that opts in with
+   `decisionsJustify`. A single-line value is unaffected. */
+.decisions--justify .dcard__stat-val {
+  text-align: justify;
 }
 
 /* A highlighted phrase stays on one line rather than splitting across two. */
@@ -4651,6 +5498,700 @@ button:focus-visible {
   margin-right: 0.3rem;
   font-weight: 600;
   color: var(--ink);
+}
+
+/* ---------- Loop chart (At a Glance) ---------- */
+
+/* An illustrative day drawn as a chart, then the control loop as a strip of
+   four stages with a dashed return under it. The chart's labels are SVG text
+   at 13.5 viewBox units in a 464-unit drawing, which renders at 12px or more
+   from a 412px-wide column; narrower than that, the units grow. */
+.loop-wrap {
+  container-type: inline-size;
+}
+
+.loop {
+  display: grid;
+  font-family: var(--font-label);
+  text-align: left;
+}
+
+.loop__chart {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.loop__axis {
+  stroke: var(--border);
+}
+
+.loop__calls {
+  fill: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.loop__floor {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.loop__spike {
+  stroke: var(--accent);
+  stroke-dasharray: 3 2;
+}
+
+.loop__hatch {
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.loop__tick {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+
+.loop__leader {
+  stroke: var(--text-secondary);
+}
+
+.loop__mono {
+  font: 600 13.5px var(--font-mono);
+  fill: var(--accent);
+}
+
+.loop__label {
+  font: 500 13.5px var(--font-label);
+  fill: var(--ink);
+}
+
+.loop__axis-label {
+  font: 500 13.5px var(--font-mono);
+  fill: var(--text-secondary);
+}
+
+.loop__legend {
+  list-style: none;
+  margin: 0.35rem 0 0.6rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.loop__legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.loop__swatch {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.loop__swatch--calls {
+  background: color-mix(in srgb, var(--text-secondary) 22%, transparent);
+}
+
+.loop__swatch--floor {
+  height: 2px;
+  background: var(--accent);
+}
+
+.loop__swatch--spike {
+  border: 1px dashed var(--accent);
+}
+
+/* Each stage sizes to its tool name, so "KEDA + Karpenter" stays on one
+   line. */
+.loop__stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0.3rem;
+}
+
+.loop__stage {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  background: color-mix(in srgb, var(--accent) 4%, var(--card-bg));
+}
+
+.loop__stage span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.loop__stage b {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.loop__arrow {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* The return from Verify to Observe: a dashed bracket under the strip. */
+.loop__back {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  text-align: center;
+  text-wrap: balance;
+  color: var(--text-secondary);
+}
+
+.loop__back::before {
+  content: "";
+  display: block;
+  height: 0.5rem;
+  margin: 0 12.5% 0.2rem;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 50%, transparent);
+  border-top: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.loop__note {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+/* Too narrow for the four stages in one row: two rows of two, read left to
+   right, and the arrows drop out. */
+@container (max-width: 470px) {
+  .loop__stages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .loop__arrow {
+    display: none;
+  }
+}
+
+/* A phone column: the three notes inside the chart drop out (the legend still
+   names the queue), and larger units keep the remaining labels at 12px. */
+@container (max-width: 400px) {
+  .loop__label,
+  .loop__leader {
+    display: none;
+  }
+
+  .loop__mono,
+  .loop__axis-label {
+    font-size: 20.5px;
+  }
+}
+
+/* ---------- Pod result (At a Glance) ---------- */
+
+/* Simulated and measured as two columns sharing two rows: the pod bar beside
+   the measured figure, then the caption beside its sentence, with a hairline
+   between the columns. */
+.pods-wrap {
+  container-type: inline-size;
+}
+
+.pods {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 9.5rem);
+  grid-template-rows: auto auto auto;
+  column-gap: 0.9rem;
+  text-align: left;
+}
+
+.pods__label {
+  grid-row: 1;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.pods__label--sim {
+  grid-column: 1;
+}
+
+.pods__label--meas {
+  grid-column: 3;
+}
+
+.pods__rule {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  background: var(--border);
+}
+
+.pods__bar {
+  grid-column: 1;
+  grid-row: 2;
+  position: relative;
+  padding-top: 1.4rem;
+}
+
+/* A grid, so a dashed border never makes one block wider than another. */
+.pods__blocks {
+  display: grid;
+}
+
+.pods__block {
+  height: 1.1rem;
+  border-radius: 2px;
+  background: var(--accent);
+}
+
+.pods__block--saved,
+.pods__block--part {
+  border: 1px dashed var(--accent);
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--accent) 30%, transparent) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* Used up to its fraction, hatched as saved after it. */
+.pods__block--part {
+  background:
+    linear-gradient(90deg, var(--accent) var(--used), transparent var(--used)),
+    repeating-linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--accent) 30%, transparent) 0 2px,
+      transparent 2px 5px
+    );
+}
+
+.pods__bracket {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 0.9rem;
+  display: flex;
+  justify-content: center;
+  border: 1.5px solid var(--accent);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+}
+
+.pods__bracket span {
+  position: relative;
+  top: -0.55rem;
+  padding: 0 0.3rem;
+  background: var(--card-bg);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.pods__ticks {
+  position: relative;
+  height: 1.1rem;
+  margin-top: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+}
+
+.pods__ticks span {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+}
+
+.pods__ticks span:first-child {
+  transform: translateX(-100%);
+}
+
+.pods__ticks span:last-child {
+  right: 0;
+}
+
+/* The DESIGN.md metric callout: Chivo Mono 700, tight tracking. */
+.pods__value {
+  grid-column: 3;
+  grid-row: 2;
+  align-self: end;
+  padding-bottom: 1.15rem;
+  font-family: var(--font-mono);
+  font-size: calc(var(--t-lead) * 2);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.pods__text {
+  grid-row: 3;
+  margin: 0.7rem 0 0;
+  font-family: var(--font-body);
+  font-size: var(--t-tiny);
+  line-height: 1.5;
+  text-wrap: pretty;
+  hyphens: none;
+  color: var(--text-secondary);
+}
+
+.pods__text--caption {
+  grid-column: 1;
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.pods__text--meas {
+  grid-column: 3;
+  text-align: left;
+}
+
+/* A narrower card: the measured column gives up some width, so the two
+   labels under the bar keep their room. */
+@container (max-width: 460px) {
+  .pods {
+    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 7.5rem);
+    column-gap: 0.7rem;
+  }
+
+  .pods__value {
+    font-size: calc(var(--t-lead) * 1.6);
+  }
+}
+
+/* A phone: the measured column moves under the simulated one. */
+@media (max-width: 560px) {
+  .pods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .pods__rule {
+    display: none;
+  }
+
+  .pods__label--meas,
+  .pods__value,
+  .pods__text--meas {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .pods__label--meas {
+    margin-top: 1rem;
+  }
+
+  .pods__value {
+    padding-bottom: 0;
+  }
+
+  .pods__text--meas {
+    margin-top: 0.4rem;
+  }
+}
+
+/* ---------- Workspace apps (hailcast) ----------
+   Four cards beside At a Glance, held to its height. See WorkspaceApps.jsx
+   for the three states. The inner layer is absolutely placed so the column
+   contributes no height of its own to the row. */
+.wa { position: relative; min-width: 0; align-self: stretch; text-align: left; }
+.wa__in { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.wa__bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.wa__bar .wa-lab { margin: 0; }
+.wa__all, .wa__end button { all: unset; cursor: pointer; }
+.wa__all { padding: 0.3rem 0.75rem; border: 1px solid var(--border); border-radius: 999px; font-family: var(--font-label); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); transition: color 0.2s, border-color 0.2s; }
+.wa__all:hover, .wa__all:focus-visible { color: var(--ink); border-color: var(--ink); }
+.wa__stack { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.wa--all .wa__stack, .wa--one .wa-app.is-open .wa-app__bd { --ft: 0rem; --fb: 0rem; overflow-y: auto; scrollbar-width: none; mask-image: linear-gradient(transparent 0, #000 var(--ft), #000 calc(100% - var(--fb)), transparent 100%); }
+.wa--all .wa__stack::-webkit-scrollbar, .wa--one .wa-app__bd::-webkit-scrollbar { display: none; }
+.wa--all .wa__stack { padding-bottom: 0.5rem; }
+.wa--all .wa__stack.is-more { --fb: 2.5rem; }
+.wa--all .wa__stack.is-less { --ft: 1.25rem; }
+.wa--one .wa-app__bd.is-more { --fb: 2.25rem; }
+.wa--one .wa-app__bd.is-less { --ft: 1rem; }
+.wa__end { margin: 0; padding: 0.35rem 0 0.1rem; text-align: center; font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); }
+.wa__end button { color: var(--accent); }
+
+.wa-app { flex: none; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--card-bg); box-shadow: 0 1px 2px rgba(20, 30, 50, 0.04); transition: box-shadow 0.25s, transform 0.25s cubic-bezier(.2,.8,.2,1), border-color 0.25s, background-color 0.38s; }
+.wa-app:not(.is-open) { cursor: pointer; }
+.wa-app:not(.is-open):hover { transform: translateY(-2px); box-shadow: var(--shadow-card); border-color: color-mix(in srgb, var(--ink) 25%, var(--border)); }
+.wa-app--mine:not(.is-open) { background: color-mix(in srgb, var(--accent) 5%, var(--card-bg)); border-color: color-mix(in srgb, var(--accent) 30%, var(--border)); }
+.wa-app { position: relative; }
+.wa-app.is-open { box-shadow: var(--shadow-card); }
+/* While cards move, hold still: no hover lift under a passing cursor and no
+   edge masks repainting every frame. */
+.wa.is-moving .wa-app { transform: none; transition: none; pointer-events: none; }
+.wa.is-moving .wa__stack, .wa.is-moving .wa-app__bd { mask-image: none; }
+/* The copy of content a card is losing, faded out by WorkspaceApps.jsx. */
+.wa-ghost { position: absolute; left: 0; right: 0; z-index: 1; overflow: hidden; pointer-events: none; }
+.wa--none .wa-app { flex: 1; }
+.wa--one .wa-app.is-open { flex: 1; min-height: 0; }
+
+.wa-app__hd { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 0.7rem; align-items: center; padding: 0.85rem 1.15rem; }
+.wa-app.is-open .wa-app__hd { cursor: pointer; }
+.wa-logo { width: 2rem; height: 2rem; border-radius: 8px; display: grid; place-items: center; font-family: var(--font-label); font-weight: 800; font-size: var(--t-micro); color: #fff; }
+.wa-logo--notion { background: var(--card-bg); color: var(--ink); border: 1.5px solid var(--ink); font-size: var(--t-small); }
+.wa-logo--docs { background: #4285F4; font-size: var(--t-small); }
+.wa-logo--github { background: var(--ink); color: var(--card-bg); }
+.wa-logo--notes { background: var(--accent); }
+.wa-app__name { min-width: 0; }
+.wa-app__name h3 { margin: 0; font-family: var(--font-label); font-weight: 700; font-size: var(--t-base); line-height: 1.2; color: var(--ink); }
+.wa-app--mine .wa-app__name h3 { color: var(--accent); }
+.wa-app__name span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--font-label); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); }
+/* "Open" (or the tab count) and "Expand" share one slot and crossfade. */
+.wa-app__meta, .wa-app__hint { grid-row: 1; grid-column: 3; justify-self: end; }
+.wa-app__meta { font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); white-space: nowrap; text-decoration: none; transition: opacity 0.3s ease, visibility 0.3s; }
+.wa-app__meta--link { color: var(--accent); }
+.wa-app:not(.is-open) .wa-app__meta { opacity: 0; visibility: hidden; }
+.wa-app__hint { font-family: var(--font-label); font-weight: 700; font-size: var(--t-micro); color: var(--text-secondary); opacity: 0.85; transition: color 0.25s, opacity 0.3s ease, visibility 0.3s; }
+.wa-app:not(.is-open):hover .wa-app__hint { color: var(--ink); opacity: 1; }
+.wa-app--mine:not(.is-open):hover .wa-app__hint { color: var(--accent); }
+.wa-app.is-open .wa-app__hint { opacity: 0; visibility: hidden; }
+.wa-app__tog { all: unset; grid-column: 4; cursor: pointer; width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid var(--border); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 600; font-size: var(--t-mini); color: var(--text-secondary); background: var(--card-bg); transition: transform 0.35s cubic-bezier(.2,.8,.2,1), background-color 0.25s, color 0.25s, border-color 0.25s; }
+.wa-app__tog:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wa-app:not(.is-open):hover .wa-app__tog { transform: rotate(90deg); background: var(--ink); border-color: var(--ink); color: var(--card-bg); }
+.wa-app--mine:not(.is-open):hover .wa-app__tog { background: var(--accent); border-color: var(--accent); color: #fff; }
+.wa-app.is-open .wa-app__tog { transform: rotate(180deg); background: var(--ink); border-color: var(--ink); color: var(--card-bg); }
+
+/* Closed: one figure, a hairline, the sentence and a quiet foot line. */
+.wa-app__pv { flex: 1; display: flex; align-items: center; gap: 1.1rem; padding: 0.1rem 1.15rem 1.1rem; }
+.wa-app__fig { min-width: 4.5rem; display: flex; flex-direction: column; }
+.wa-app__fig b { font-family: var(--font-mono); font-weight: 600; font-size: calc(var(--t-lead) * 1.6); line-height: 1; color: var(--ink); }
+.wa-app--mine .wa-app__fig b { color: var(--accent); }
+.wa-app__fig span { margin-top: 0.3rem; font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary); }
+.wa-app__txt { flex: 1; padding-left: 1.1rem; border-left: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); }
+.wa-app__txt p { margin: 0; font-family: var(--font-body); font-weight: 500; font-size: var(--t-small); line-height: 1.55; color: var(--text-primary); text-wrap: pretty; }
+.wa-app__txt .wa-app__foot { display: flex; flex-wrap: wrap; gap: 0.9rem; margin-top: 0; font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); }
+.wa-app__txt p + .wa-app__foot { margin-top: 0.5rem; }
+.wa-person { font-family: var(--font-heading); font-weight: 700; font-size: var(--t-tiny); color: var(--ink); }
+
+/* Open */
+.wa-app__bd { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0.15rem 1.15rem 1rem; }
+.wa--one .wa-app__bd { padding-bottom: 1.1rem; }
+.wa-blocks { display: flex; flex-direction: column; justify-content: space-between; flex: 1 0 auto; }
+.wa--all .wa-blocks { justify-content: flex-start; gap: 0.8rem; }
+.wa-lab { margin: 0 0 0.15rem; font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
+.wa-kv { margin: 0 0 0.5rem; display: flex; align-items: center; gap: 0.5rem; font-size: var(--t-tiny); }
+.wa-kv .wa-lab { margin: 0; }
+.wa-kv .wa-person { font-size: var(--t-small); }
+.wa-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.wa-list li { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; gap: 0.6rem; align-items: center; padding: 0.34rem 0.25rem; }
+.wa-app--notion .wa-list li { padding: 0.3rem 0.25rem; }
+.wa-list--two { grid-template-columns: 1fr 1fr; column-gap: 0.6rem; }
+.wa-list__icon { width: 1.75rem; display: grid; place-items: center; font-size: var(--t-lead); line-height: 1; }
+.wa-list b { display: block; font-family: var(--font-label); font-weight: 600; font-size: var(--t-micro); line-height: 1.3; color: var(--ink); }
+.wa-list em { font-family: var(--font-mono); font-weight: 600; font-size: var(--t-micro); font-style: normal; color: var(--text-secondary); white-space: nowrap; }
+.wa-pills { display: flex; gap: 0.35rem; margin-bottom: 0.5rem; }
+.wa-pills button { all: unset; cursor: pointer; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); font-family: var(--font-label); font-weight: 600; font-size: var(--t-micro); color: var(--text-secondary); }
+.wa-pills button.is-on { background: var(--ink); border-color: var(--ink); color: var(--card-bg); }
+.wa-pane { flex: 1 0 auto; display: flex; flex-direction: column; gap: 0.9rem; }
+.wa-pane--tools { justify-content: space-evenly; gap: 0; }
+.wa-pane--tools .wa-list li { padding: 0.42rem 0.25rem; }
+.wa-term { margin: 0; padding: 0.8rem 0.9rem; border-radius: 8px; background: var(--terminal-bg); font-family: var(--font-mono); font-weight: 500; font-size: var(--t-micro); line-height: 2.15; color: var(--terminal-ink); white-space: pre; overflow-x: auto; }
+.wa-term__p { color: #F0A860; }
+.wa-term__c { color: #7F8FA8; }
+
+/* One card open: share its height between blocks by row count and spread
+   the rows inside each block, so a short card has no single empty gap. */
+.wa--one .wa-blocks { justify-content: flex-start; gap: 0.9rem; }
+.wa--one .wa-blocks > div, .wa--one .wa-pane > div { flex: var(--rows, 1) 1 0; display: flex; flex-direction: column; }
+.wa--one .wa-blocks > p { flex: none; }
+.wa--one .wa-list { flex: 1; align-content: space-evenly; }
+.wa--one .wa-pane { justify-content: flex-start; gap: 0.9rem; }
+.wa--one .wa-pane .wa-term { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; }
+
+/* Stacked under At a Glance: release the height lock. */
+@container page (max-width: 940px) {
+  .wa { position: static; }
+  .wa__in { position: static; }
+  .wa__stack { flex: none; }
+  .wa--none .wa-app, .wa--one .wa-app.is-open { flex: none; }
+  .wa--all .wa__stack, .wa--one .wa-app.is-open .wa-app__bd { overflow: visible; mask-image: none; }
+}
+
+/* ---------- Workspace faces (Project1-Self-Build) ---------- */
+
+/* Four figure tiles in a 2×2 grid beside At a Glance. The grid stretches to
+   At a Glance's height, so both columns end on one line; the GitHub bars grow
+   into the extra room and the other tiles push their chips or link down. */
+.wf {
+  align-self: stretch;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: 1fr 1fr;
+  gap: 0.65rem;
+  font-family: var(--font-label);
+  color: var(--text-primary);
+}
+
+.wf-tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 1.05rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.wf-tile__head h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: 700 var(--t-base) / 1.2 var(--font-label);
+  color: var(--ink);
+}
+
+.wf-tile__head svg {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--accent);
+}
+
+.wf-tile__head p {
+  margin: 0.15rem 0 0;
+  font: 600 var(--t-micro) / 1.3 var(--font-label);
+  color: var(--text-secondary);
+}
+
+.wf-tile__figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wf-tile__figure strong {
+  font: 700 calc(var(--t-lead) * 2.5) / 0.95 var(--font-mono);
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.wf-tile__figure span {
+  margin-top: 0.2rem;
+  font: 400 var(--t-micro) / 1.2 var(--font-mono);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.wf-bars {
+  flex: 1;
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.wf-bars__plot {
+  flex: 1;
+  min-height: 3rem;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: 0.3rem;
+}
+
+.wf-bars__bar {
+  display: block;
+  background: var(--accent-wash-strong);
+  border-radius: 2px 2px 0 0;
+}
+
+.wf-bars__bar--hot {
+  background: var(--accent);
+}
+
+.wf-bars__ends {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font: 400 var(--t-micro) / 1.2 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.wf-tile__chips {
+  list-style: none;
+  margin: auto 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.wf-tile__chips li {
+  padding: 0.28rem 0.5rem;
+  font: 400 var(--t-micro) / 1 var(--font-mono);
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.wf-tile__chips li.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wf-tile__link {
+  margin-top: auto;
+  font: 600 var(--t-micro) / 1.3 var(--font-label);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wf-tile__link:hover {
+  text-decoration: underline;
+}
+
+/* A phone: one tile per row, each at its own height. */
+@media (max-width: 560px) {
+  .wf {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .wf-bars__plot {
+    height: 4.5rem;
+    flex: none;
+  }
+}
+
+/* Each Result label on one line while the row holds both columns. Stacked or
+   on a phone, the labels wrap as usual. */
+@container page (min-width: 941px) {
+  .glance-figures--one-line .glance-figures__label {
+    white-space: nowrap;
+  }
 }
 
 /* ---------- Workspace cards ---------- */
@@ -6116,6 +7657,20 @@ a.link-tile:hover .link-tile__mark {
   gap: 0.5rem;
 }
 
+/* The seam between two talks in one deck. Dashed and quiet, so it reads as a
+   marker in the column rather than as a slide that failed to load. */
+.deck__part {
+  padding: 0.7rem 0.9rem;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
 /* Held at 16:9 whether or not the image has arrived, which is what lets the
    whole column keep its height while seventy images load a screen at a time.
    `contain` rather than `cover`: a slide is a page, and cropping one to fill a
@@ -6366,6 +7921,832 @@ a.link-tile:hover .link-tile__mark {
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--accent);
+}
+
+/* The `story` Reflection (Midam): four numbered chapters. The first two run
+   down a timeline as text, the last two pair each paragraph with its own
+   diagram. Diagram styles are `.rfv-*`, one block per diagram. */
+.rstory {
+  --rfv-alert: #c0392b;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.rstory-chapter {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 1.6rem 0 1.2rem;
+  font: 500 var(--t-micro) var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.rstory-block:first-child .rstory-chapter {
+  margin-top: 0;
+}
+
+.rstory-chapter::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.rstory-chapter b,
+.rstory-pill b {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rstory-text {
+  margin: 0;
+  font: 400 var(--t-small) / 1.6 var(--font-body);
+  color: var(--text-primary);
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: none;
+  overflow-wrap: normal;
+}
+
+/* Timeline */
+.rstory-timeline {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 3.5rem 1fr;
+  row-gap: 1.2rem;
+}
+
+.rstory-timeline::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  transform: translateX(-1px);
+  background: var(--border);
+}
+
+.rstory-card {
+  grid-column: 1;
+  align-self: start;
+  display: grid;
+  gap: 0.7rem;
+  padding: 1.1rem 1.25rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 5px);
+}
+
+.rstory-card--right {
+  grid-column: 3;
+  margin-top: 5rem;
+}
+
+.rstory-card__title,
+.rstory-pair__title {
+  margin: 0;
+  font: 700 var(--t-base) / 1.35 var(--font-heading);
+  color: var(--ink);
+}
+
+.rstory-dot {
+  grid-column: 2;
+  justify-self: center;
+  align-self: start;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  margin-top: 0.9rem;
+  border-radius: 50%;
+  background: var(--card-bg);
+  border: 2px solid var(--accent);
+  font: 600 var(--t-micro) var(--font-mono);
+  color: var(--accent);
+}
+
+.rstory-dot--right {
+  margin-top: 5.9rem;
+}
+
+.rstory-dot img {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.rstory-pill {
+  grid-column: 1 / -1;
+  justify-self: center;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg, var(--card-bg));
+  font: 500 var(--t-micro) var(--font-mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Paired rows: text beside its diagram, switching sides each row. */
+.rstory-pair {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 2.4rem;
+  align-items: center;
+  padding: 2rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.rstory-pair--flip .rstory-pair__visual {
+  order: -1;
+}
+
+.rstory-pair__text {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.rstory-pair__title {
+  font-size: var(--t-lead);
+  line-height: 1.3;
+}
+
+.rstory-eyebrow,
+.rstory-half__label,
+.rfv-label,
+.rfv-figure__label,
+.rfv-charts figcaption {
+  display: block;
+  font: 500 var(--t-micro) var(--font-mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.rstory-eyebrow {
+  letter-spacing: 0.06em;
+}
+
+.rstory-half__label {
+  margin-bottom: 0.3rem;
+}
+
+.rstory-half--next .rstory-half__label,
+.rfv-label--on,
+.rfv-charts .rfv-on {
+  color: var(--accent);
+}
+
+/* Diagrams: shared parts */
+.rfv {
+  display: grid;
+  gap: 0.8rem;
+  font: 500 var(--t-tiny) / 1.35 var(--font-label);
+  color: var(--text-primary);
+}
+
+.rfv-label {
+  margin-bottom: -0.3rem;
+}
+
+.rfv-glyph {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.rfv-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.rfv-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.rfv-figure {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.rfv-figure__value {
+  font: 700 var(--t-lead) / 1 var(--font-mono);
+  color: var(--accent);
+}
+
+.rfv-pod {
+  padding: 0.2rem 0.35rem;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  font: 600 var(--t-micro) var(--font-label);
+}
+
+.rfv-pod--alert {
+  background: color-mix(in srgb, var(--rfv-alert) 13%, transparent);
+  color: var(--rfv-alert);
+}
+
+.rfv-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.rfv-key i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  background: var(--accent);
+}
+
+.rfv-key i.rfv-key--muted {
+  background: var(--text-secondary);
+}
+
+.rfv-key i.rfv-key--hatch {
+  height: 8px;
+  background: repeating-linear-gradient(45deg, var(--rfv-alert) 0 2px, transparent 2px 4px);
+}
+
+.rfv-meter {
+  display: grid;
+  grid-template-columns: 3.4rem 1fr;
+  gap: 0.25rem 0.5rem;
+  align-items: center;
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rfv-meter i {
+  display: block;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+/* Back-end: late requests landing on the plan */
+.rfv-be__drops {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rfv-be__drop {
+  flex: 1;
+  display: flex;
+  gap: 0.45rem;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  border: 1.5px dashed var(--accent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  color: var(--accent);
+}
+
+.rfv-be__plan {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 2.3rem;
+  padding: 0 0.8rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  font: 500 var(--t-micro) var(--font-mono);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.rfv-be__plan::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -0.75rem;
+  border: 6px solid transparent;
+  border-top-color: var(--accent);
+  transform: translateX(-50%);
+}
+
+.rfv-be__plan + .rfv-label {
+  margin-top: 0.4rem;
+}
+
+.rfv-be__after {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 1rem;
+  align-items: end;
+}
+
+.rfv-be__nodes {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.rfv-be__node {
+  flex: 1;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--card-bg);
+}
+
+.rfv-be__node b,
+.rfv-az__zone b {
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* AI: the move onto our cluster */
+.rfv-ai__path {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.rfv-ai__out {
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed var(--text-secondary);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+}
+
+.rfv-ai__line {
+  position: relative;
+  height: 2px;
+  background: var(--accent);
+}
+
+.rfv-ai__line::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: -5px;
+  border: 6px solid transparent;
+  border-left-color: var(--accent);
+  border-right: 0;
+}
+
+.rfv-ai__eks,
+.rfv-fe__bucket {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.rfv-ai__title,
+.rfv-fe__title {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rfv-ai__groups {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.rfv-ai__groups span {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 5px;
+  text-align: center;
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.rfv-ai__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.3rem;
+  align-items: center;
+}
+
+.rfv-ai__facts .rfv-figure {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rfv-ai__facts .rfv-figure__label {
+  white-space: nowrap;
+}
+
+.rfv-ai__models {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rfv-ai__dots {
+  display: grid;
+  grid-template-columns: repeat(9, 10px);
+  gap: 4px;
+}
+
+.rfv-ai__dots i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.75;
+}
+
+/* Front-end: the upload path */
+.rfv-fe__flow {
+  display: grid;
+  grid-template-columns: auto 1.2rem auto 1.2rem 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--accent);
+}
+
+.rfv-fe__step {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  color: var(--text-primary);
+}
+
+.rfv-fe__sizes {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.rfv-fe__sizes i {
+  display: block;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.rfv-fe__bucket {
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-radius: 8px 8px 14px 14px;
+  color: var(--text-primary);
+}
+
+.rfv-fe__rule {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.rfv-fe__rule .rfv-glyph {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+}
+
+.rfv-fe__fork {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.rfv-fe__fork .rfv-label {
+  margin: 0;
+}
+
+.rfv-fe__target {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.rfv-fe__target .rfv-logo {
+  width: 16px;
+  height: 16px;
+}
+
+/* Security: evidence to verdict */
+.rfv-sc__row {
+  display: grid;
+  grid-template-columns: auto 1rem 1fr 1rem auto;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--accent);
+}
+
+.rfv-sc__finding {
+  padding: 0.6rem 0.7rem;
+  border-radius: 6px;
+  background: var(--rfv-alert);
+  color: #fff;
+  font-weight: 600;
+  text-align: center;
+}
+
+.rfv-sc__evidence {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rfv-sc__evidence span {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.35rem 0.55rem;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rfv-sc__evidence b {
+  font: 600 var(--t-micro) var(--font-mono);
+  color: var(--accent);
+}
+
+.rfv-sc__stamp {
+  padding: 0.5rem 0.7rem;
+  border: 2px solid var(--accent);
+  border-radius: 6px;
+  transform: rotate(-4deg);
+  font: 700 var(--t-micro) var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--accent);
+}
+
+.rfv-sc__split {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.rfv-sc__split i:first-child {
+  background: var(--accent);
+}
+
+.rfv-sc__split i:last-child {
+  background: var(--border);
+}
+
+/* Terraform pipeline: today's lanes, then the next-time chain */
+.rfv-ci__lane {
+  display: grid;
+  grid-template-columns: 5.6rem 1fr;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.rfv-ci__tool {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  font: 600 var(--t-micro) var(--font-label);
+  color: var(--text-secondary);
+}
+
+.rfv-ci__tool .rfv-logo {
+  width: 16px;
+  height: 16px;
+}
+
+.rfv-ci__chain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0;
+}
+
+.rfv-ci__link {
+  display: flex;
+  align-items: center;
+}
+
+.rfv-ci__joint {
+  width: 0.7rem;
+  height: 1.5px;
+  margin: 0 0.25rem;
+  background: var(--border);
+}
+
+.rfv-ci__stage {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  font: 500 var(--t-micro) var(--font-mono);
+}
+
+.rfv-ci__stage--ok {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--accent);
+}
+
+.rfv-ci__stage--hand {
+  border-style: dashed;
+  color: var(--text-secondary);
+}
+
+.rfv-ci__stage--scan {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.rfv-ci__rule {
+  border-top: 1px dashed var(--border);
+}
+
+/* Charts: autoscaler and cost alerts */
+.rfv-defs {
+  position: absolute;
+}
+
+.rfv-hatch {
+  fill: var(--rfv-alert);
+  opacity: 0.55;
+}
+
+.rfv-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rfv-charts figure {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rfv-chart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.rfv-chart--cost {
+  max-width: 460px;
+}
+
+.rfv-chart__text {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  fill: var(--text-secondary);
+}
+
+.rfv-chart__text--on {
+  fill: var(--accent);
+}
+
+.rfv-bar {
+  fill: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.rfv-bar--on {
+  fill: var(--accent);
+}
+
+/* Zone failure: before and after across two zones */
+.rfv-az {
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rfv-az figure {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.rfv-az figure .rfv-label {
+  margin: 0;
+}
+
+.rfv-az__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+}
+
+.rfv-az__zone {
+  display: grid;
+  gap: 0.3rem;
+  align-content: start;
+  min-height: 6.5rem;
+  padding: 0.45rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 6px;
+}
+
+.rfv-az__zone--on {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.rfv-az__db,
+.rfv-az__app {
+  padding: 0.2rem 0.35rem;
+  border-radius: 3px;
+  font: 600 var(--t-micro) var(--font-label);
+}
+
+.rfv-az__db {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.rfv-az__app {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+
+.rfv-az__cost {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+[data-theme='dark'] .rstory {
+  --rfv-alert: #e57368;
+}
+
+@media (max-width: 760px) {
+  .rstory-timeline {
+    grid-template-columns: 2.6rem 1fr;
+    column-gap: 0.8rem;
+  }
+  .rstory-timeline::before {
+    left: 1.3rem;
+  }
+  .rstory-dot,
+  .rstory-dot--right {
+    grid-column: 1;
+    margin-top: 0.9rem;
+  }
+  .rstory-card,
+  .rstory-card--right {
+    grid-column: 2;
+    margin-top: 0;
+  }
+  .rstory-pill {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .rstory-text {
+    text-align: left;
+  }
+  .rstory-pair {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+  .rstory-pair--flip .rstory-pair__visual {
+    order: 0;
+  }
+  .rfv-be__after,
+  .rfv-charts,
+  .rfv-az {
+    grid-template-columns: 1fr;
+  }
+  .rfv-be__drops {
+    flex-wrap: wrap;
+  }
 }
 
 /* Tablet and small laptop: the sidebar keeps its own column, but a 272px
@@ -6623,6 +9004,154 @@ a.link-tile:hover .link-tile__mark {
   text-align: left;
 }
 
+/* The track board (`layout: 'track'`, Project1-Self-Build): a wide note, a
+   four-stage progress track, then one note under each stage. Here the ledes
+   are justified too: their wording was tuned so every line fills with small,
+   even gaps, and the last line sits flush left. */
+.board--track .board__note--wide {
+  grid-column: 1 / -1;
+}
+
+.board--track .board__note--wide .board__text {
+  font-size: var(--t-prose);
+  line-height: 1.75;
+}
+
+.board--track .board__note--support .board__text {
+  text-wrap: wrap;
+  hyphens: none;
+}
+
+.board--track .board__note--support .board__lede {
+  text-align: justify;
+  text-align-last: left;
+  hyphens: none;
+}
+
+.board__track {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0.3rem 0 -0.2rem;
+}
+
+.board__track span {
+  position: relative;
+  padding-top: 1.55rem;
+  text-align: center;
+  font: 700 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) var(--fill), var(--text-secondary));
+}
+
+/* The line runs from the first dot to the last, darkening stage by stage. */
+.board__track span::before {
+  content: '';
+  position: absolute;
+  top: 0.5rem;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: color-mix(in srgb, var(--accent) var(--fill), var(--border));
+}
+
+.board__track span:first-child::before {
+  left: 50%;
+}
+
+.board__track span:last-child::before {
+  right: 50%;
+}
+
+.board__track span::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-left: -0.52rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) var(--fill), var(--card-bg));
+  border: 2px solid color-mix(in srgb, var(--accent) var(--fill), var(--border));
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+/* A note's own stage name, shown only once the track is hidden. */
+.board__stage {
+  display: none;
+  margin-bottom: 0.35rem;
+  font: 700 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) var(--fill), var(--text-secondary));
+}
+
+@media (max-width: 1100px) {
+  .board--track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .board--track .board__track {
+    display: none;
+  }
+
+  .board--track .board__stage {
+    display: block;
+  }
+}
+
+@media (max-width: 640px) {
+  .board--track {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The collage board (`layout: 'collage'`, six notes). A 24-column grid, so
+   the side notes can be a little wider than a quarter: at 3 of 12 columns their
+   justified text opened gaps of over 20px between words. The hero sits in the
+   middle of the top row with a "why" note on each side, and three notes run
+   below. The small top margins stagger the notes, as if pinned by hand. Each
+   placement is by position, which is why the layout expects exactly six. */
+.board--collage {
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 1.4rem 1.2rem;
+  padding: 1rem 0 1.5rem;
+}
+
+.board--collage > :nth-child(1) { grid-column: 8 / span 10; grid-row: 1; }
+.board--collage > :nth-child(2) { grid-column: 1 / span 7; grid-row: 1; margin-top: 1.4rem; }
+.board--collage > :nth-child(3) { grid-column: 18 / span 7; grid-row: 1; margin-top: 0.6rem; }
+.board--collage > :nth-child(4) { grid-column: 1 / span 8; margin-top: 0.4rem; }
+.board--collage > :nth-child(5) { grid-column: 9 / span 8; margin-top: 1.4rem; }
+.board--collage > :nth-child(6) { grid-column: 17 / span 8; margin-top: 0.2rem; }
+
+/* Labels here are whole questions, and balancing them keeps a two-line
+   question from leaving one word on its second line. */
+.board--collage .board__label {
+  text-wrap: balance;
+}
+
+/* Justified like the body. On this board the ledes are short answers, and
+   the wider side notes keep the gaps between words small enough to justify. */
+.board--collage .board__lede {
+  text-align: justify;
+  text-wrap: pretty;
+}
+
+.board__note--hero {
+  padding: 2rem 1.6rem 1.5rem;
+}
+
+.board__note--hero .board__lede {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .board__note,
   .board__note:hover {
@@ -6653,6 +9182,291 @@ a.link-tile:hover .link-tile__mark {
   }
   .board__note--lead {
     grid-column: span 1;
+  }
+}
+
+/* The collage in the tablet range: the hero across both columns, then the
+   other five in pairs, with the last one across both so no row is half
+   empty. On a phone every note takes the one column. The stagger margins go,
+   because they only read as "pinned by hand" beside a neighbour. */
+@container page (max-width: 940px) {
+  .board--collage {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .board--collage > :nth-child(n) {
+    grid-column: span 1;
+    grid-row: auto;
+    margin-top: 0;
+  }
+  .board--collage > :nth-child(1),
+  .board--collage > :nth-child(6) {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .board--collage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .board--collage > :nth-child(n) {
+    grid-column: 1 / -1;
+  }
+  /* At 1.65rem a phone line holds three or four words, and justifying them
+     opened 32px gaps between words. 1.2rem brings the widest gap to about
+     12px on a 375px screen. */
+  .board__note--hero .board__lede {
+    font-size: 1.2rem;
+  }
+}
+
+/* The pinned board (`layout: 'pinned'`, Midam). Five long notes on the
+   project's own grid: the fellowship across the top, artisans and shoppers
+   side by side, then the two team notes across the width. Each note is a row,
+   a small picture on the left and the sentences on the right. The tilt is
+   gentle, because a steep angle on a note this wide reads as a broken layout. */
+.pin-board {
+  list-style: none;
+  margin: 0;
+  padding: 0.6rem 0 0.8rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: 'f f' 'a s' 'e e' 'b b';
+  gap: 1.1rem;
+}
+
+.pin-note {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem 1.35rem 1.25rem;
+}
+
+.pin-note__visual {
+  flex: 0 0 150px;
+  display: flex;
+  justify-content: center;
+}
+
+.pin-note--wide .pin-note__visual {
+  flex-basis: 220px;
+}
+
+.pin-note__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-note__title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.pin-note__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.pin-note__list li {
+  display: grid;
+  grid-template-columns: 0.9rem 1fr;
+  gap: 0.35rem;
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.55;
+  color: var(--text-primary);
+  text-align: justify;
+  hyphens: none;
+}
+
+.pin-note__list li::before {
+  content: '•';
+  font: 700 1rem/1.4 var(--font-mono);
+  color: var(--note-tint, var(--accent));
+}
+
+.pin-note__intro {
+  margin: 0.75rem 0 0.5rem;
+  font-family: var(--font-heading);
+  font-size: var(--t-small);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.pin-note__tiles {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.pin-note__tiles li {
+  padding: 0.6rem 0.75rem;
+  background: var(--card-bg);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  border-radius: 10px;
+}
+
+.pin-note__tile-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pin-note__tile-text {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: var(--font-body);
+  font-size: var(--t-small);
+  line-height: 1.45;
+  color: var(--text-primary);
+  text-align: justify;
+  hyphens: none;
+}
+
+/* The pictures. Drawn from theme tokens, so they follow dark mode. */
+.cv-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.cv-svg__value {
+  font: 700 13px var(--font-heading);
+  fill: var(--ink);
+}
+
+.cv-svg__label {
+  font: 500 11px var(--font-mono);
+  fill: var(--text-secondary);
+}
+
+.cv-svg__node {
+  font: 700 9px var(--font-mono);
+  fill: var(--ink);
+}
+
+.cv-svg__hub {
+  font: 700 11px var(--font-heading);
+  fill: var(--card-bg);
+}
+
+.cv-disc {
+  display: grid;
+  grid-template-columns: repeat(4, 2.6rem);
+  gap: 0.55rem;
+}
+
+.cv-disc__dot {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  font: 700 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+.cv-disc__dot--on {
+  color: var(--card-bg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.cv-proof {
+  display: grid;
+  gap: 0.45rem;
+  justify-items: center;
+}
+
+.cv-proof span {
+  padding: 0.3rem 0.7rem;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+  border-radius: 999px;
+  font: 600 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+  background: var(--card-bg);
+}
+
+.cv-budget {
+  width: 100%;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.cv-budget__row {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cv-budget__value {
+  font: 700 var(--t-base) var(--font-heading);
+  color: var(--ink);
+}
+
+.cv-budget__bar {
+  display: block;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--note-tint, var(--accent)) 35%, var(--card-bg));
+}
+
+.cv-budget__bar--strong {
+  background: var(--accent);
+}
+
+.cv-budget__label {
+  display: block;
+  margin-top: 0.2rem;
+  font: 500 var(--t-micro) var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* Tablet: the artisan and shopper notes stack, and every picture sits above
+   its sentences. Phone: one column, text left-aligned, since a phone line is
+   too short to justify without wide gaps. */
+@container page (max-width: 940px) {
+  .pin-board {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'f' 'a' 's' 'e' 'b';
+  }
+}
+
+@media (max-width: 620px) {
+  .pin-note {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+  .pin-note__visual,
+  .pin-note--wide .pin-note__visual {
+    flex-basis: auto;
+    width: 100%;
+    max-width: 200px;
+    align-self: center;
+  }
+  .pin-note__list li,
+  .pin-note__tile-text {
+    text-align: left;
+  }
+  .pin-note__tiles {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -7096,6 +9910,595 @@ a.link-tile:hover .link-tile__mark {
     grid-column: span 1;
     grid-row: span 1;
   }
+}
+
+/* ── role title + subtitle (hailcast) ──────────────────────────────────
+   Two roles, two lines. The title keeps the heading face at the larger size;
+   the second role sits under it in a pill of the page's alternate ground, in
+   ink at body size and the same weight, so it reads as a second title rather
+   than as a caption. A short coloured rule between them was tried and read as
+   a template ornament; a pill is a shape the page already uses for its chips. */
+.role__titles {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 16rem;
+}
+
+.role__titles .role__title {
+  font-size: var(--t-brand);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.role__subtitle {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-radius: 999px;
+  background: var(--bg-alt);
+  font-family: var(--font-heading);
+  font-size: var(--t-base);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* ── areas — hailcast ──────────────────────────────────────────────────
+   The project draws its own grid. `role.areas` arrives as --role-areas on the
+   list and each tile's `area` as --role-area, on a twelve-column track so the
+   bottom row can split into thirds while the top splits in half.
+     L L L L L L T T T T T T
+     L L L L L L G G G G G G
+     E E E E R R R R P P P P
+   Written after the 940px container rules above on purpose: those set spans
+   on `.bento--role .bento__tile--*`, and these tie them on specificity and win
+   on order, so the drawn grid is not overridden by a span meant for another
+   arrangement. */
+.bento--role-areas {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas: var(--role-areas);
+}
+
+.bento--role-areas .bento__tile {
+  grid-area: var(--role-area);
+  min-width: 0;
+  gap: 0.6rem;
+}
+
+/* The lead stacks from the top: hub, sentence, then the review count under
+   its hairline. The two beside it spread their visual and sentence to the
+   tile's edges, and the three small tiles pin the sentence to the bottom, so
+   the sentences in the last row finish on one line across all three. */
+.bento--role-areas .bento__tile--lead {
+  justify-content: flex-start;
+  gap: 0.9rem;
+}
+
+.bento--role-areas .bento__tile--medium {
+  justify-content: space-between;
+}
+
+.bento--role-areas .bento__tile--small {
+  justify-content: flex-start;
+}
+
+.bento--role-areas .bento__tile--small .bento__prose {
+  margin-top: auto;
+}
+
+/* The one result the section leads with, on the same accent tint the page
+   gives its other highlighted cards. Kept on hover: a lift to --bg would
+   strip the only tile that is meant to stand apart. */
+.bento--role .bento__tile--accent,
+.bento--role .bento__tile--accent:hover {
+  background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* A phone, and the tablet range below it: one tile per row. The twelve
+   columns would put the bottom row's sentences on a three-word measure. */
+@media (max-width: 860px) {
+  .bento--role-areas {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: none;
+  }
+  .bento--role-areas .bento__tile {
+    grid-area: auto;
+  }
+}
+
+/* ── role visuals ──────────────────────────────────────────────────────
+   Every label inside a visual is Chivo Mono at the micro size: these are
+   data, and the sentence under each one stays the thing that is read. */
+.rv-hub {
+  display: grid;
+  grid-template-columns: auto 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rv-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.rv-node b {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rv-node span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rv-node--from {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+}
+
+.rv-node--from b {
+  color: var(--accent);
+}
+
+.rv-hub__to {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rv-hub__arrows {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.rv-hub__arrows i {
+  position: relative;
+  display: block;
+  height: 1px;
+  background: var(--accent);
+}
+
+.rv-hub__arrows i::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -1px;
+  border: 3.5px solid transparent;
+  border-left: 5px solid var(--accent);
+}
+
+.rv-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+.rv-reviews__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.rv-reviews__head b {
+  font-family: var(--font-mono);
+  font-size: var(--t-lead);
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rv-reviews__head span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.rv-bars {
+  display: grid;
+  gap: 0.3rem;
+  max-width: 22rem;
+}
+
+.rv-bars__row {
+  display: grid;
+  grid-template-columns: 4.6rem minmax(0, 1fr) 1.8rem;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rv-bars__row span,
+.rv-bars__row em {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-style: normal;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rv-bars__row em {
+  text-align: right;
+  color: var(--ink);
+}
+
+.rv-bars__row i {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent) var(--w), var(--bg-alt) var(--w));
+}
+
+.rv-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.rv-result p {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.rv-result b {
+  font-family: var(--font-mono);
+  font-size: calc(var(--t-lead) * 2.2);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.rv-result span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Before and after. The failing row keeps a warning tone of its own rather
+   than borrowing the accent, because the accent on this page means the work
+   that was done, and this row is the bug it replaced. */
+.rv-ba {
+  --rv-fail: #C2410C;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.rv-ba__row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.1rem 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.rv-ba__row code {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rv-ba__row span {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 500;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+.rv-ba__row strong {
+  grid-column: 1 / 3;
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 700;
+}
+
+.rv-ba__row--fail {
+  border-color: color-mix(in srgb, var(--rv-fail) 30%, var(--border));
+  background: color-mix(in srgb, var(--rv-fail) 6%, var(--card-bg));
+}
+
+.rv-ba__row--fail strong {
+  color: var(--rv-fail);
+  text-decoration: line-through;
+}
+
+.rv-ba__row--ok strong {
+  color: var(--accent);
+}
+
+.rv-ba__row--ok strong::before {
+  content: "✓ ";
+}
+
+.rv-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.rv-chips span {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: var(--bg-alt);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rv-chips .rv-chips__hot {
+  color: var(--accent);
+}
+
+.rv-routes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rv-routes__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: var(--bg-alt);
+}
+
+.rv-routes__row code {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.rv-routes__row span {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.rv-routes__row b {
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rv-routes__row .rv-routes__hot {
+  color: var(--accent);
+}
+
+/* Even columns for a chip set that would otherwise wrap into ragged rows. */
+.rv-chips--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr));
+}
+
+.rv-chips--grid span {
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Fixed chip rows (Project1-Self-Build's Ansible roles), pinned to the
+   bottom of the lead tile. Each row stretches edge to edge, so the set reads
+   as one block. Rows may wrap on narrow screens, where the fixed order no
+   longer fits. */
+.rv-chiprows {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: auto;
+}
+
+.rv-chiprows__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.rv-chiprows__row span {
+  flex: 1 1 auto;
+  padding: 0.32rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: 400 var(--t-micro) / 1 var(--font-mono);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.rv-chiprows__row .rv-chiprows__hot {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The pipeline: three equal stage boxes, then one row per destination. The
+   flow takes the tile's spare height and spaces its rows through it. */
+.rv-flow {
+  flex: 1;
+  display: grid;
+  align-content: space-evenly;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+}
+
+.rv-flow__steps {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rv-flow__steps span {
+  padding: 0.55rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  font-size: var(--t-tiny);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.rv-flow__steps i {
+  font-style: normal;
+  color: var(--text-secondary);
+}
+
+.rv-flow__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+}
+
+.rv-flow__row b {
+  flex: none;
+  width: 4.2rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rv-flow__row span {
+  color: var(--text-secondary);
+}
+
+.rv-flow__row--hot {
+  border-color: var(--accent);
+}
+
+/* A figures band whose labels sit beside the figure on one line, the pair
+   centred in its cell. The figure is set smaller than the stacked band's,
+   since it shares the line. */
+.role-band--inline .role-band__cell {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.7rem;
+  white-space: nowrap;
+}
+
+.role-band--inline .bento__value {
+  font-size: calc(var(--t-lead) * 2.4);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.role-band--inline .role-band__unit {
+  font-size: var(--t-tiny);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@media (max-width: 560px) {
+  .rv-chips--grid {
+    grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr));
+  }
+}
+
+/* Through the middle widths the small tile is too narrow for the condition,
+   the arrow and the profile on one line, so the condition takes a line of
+   its own and the arrow and profile follow it. */
+@media (max-width: 1150px) {
+  .rv-routes__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.1rem 0.4rem;
+  }
+  .rv-routes__row code {
+    flex: 1 0 100%;
+  }
+}
+
+.rv-cal {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.rv-cal__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.rv-cal__item > span {
+  font-family: var(--font-label);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.rv-cal__page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 3.4rem;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.rv-cal__page small {
+  width: 100%;
+  padding: 0.1rem 0;
+  background: var(--bg-alt);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.rv-cal__page b {
+  font-family: var(--font-mono);
+  font-size: calc(var(--t-lead) * 1.25);
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.rv-cal__page--hot {
+  border-color: var(--accent);
+}
+
+.rv-cal__page--hot small {
+  background: var(--accent);
+  color: #FFFFFF;
 }
 
 /* ---------- Implementation steps: calendar pair + phase list ---------- */
@@ -7817,13 +11220,18 @@ a.link-tile:hover .link-tile__mark {
   color: var(--ink);
 }
 
+/* Full width and the same size as the notes above it, so the block reads as
+   part of the section's prose. At 68ch and the small size it looked like a
+   caption from a different section. */
 .cost__measured-lede {
   margin: 0 0 1.2rem;
-  max-width: 68ch;
   font-family: var(--font-body);
-  font-size: var(--t-tiny);
-  line-height: 1.62;
+  font-size: var(--t-prose);
+  line-height: 1.72;
   color: var(--text-primary);
+  text-align: justify;
+  text-wrap: pretty;
+  hyphens: none;
 }
 
 /* Auto-fit rather than a fixed column count: the block takes however many
@@ -7834,7 +11242,8 @@ a.link-tile:hover .link-tile__mark {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(13rem, 100%), 1fr));
+  /* 11.5rem lets five figures sit in one row at desktop width. */
+  grid-template-columns: repeat(auto-fit, minmax(min(11.5rem, 100%), 1fr));
   gap: clamp(0.7rem, 1.4vw, 1rem);
 }
 
@@ -7847,7 +11256,8 @@ a.link-tile:hover .link-tile__mark {
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  overflow-wrap: anywhere;
+  /* Words wrap whole; nothing in a figure is long enough to need breaking. */
+  overflow-wrap: normal;
 }
 
 .cost__figure-value {
@@ -8044,5 +11454,777 @@ a.link-tile:hover .link-tile__mark {
 @media (max-width: 860px) {
   .figure__frame--drawn .archd {
     min-width: 700px;
+  }
+}
+
+/* ---------- Overview (Midam) ---------- */
+
+/* The opening block on a page with `overview`: four sibling cards stacked
+   with the page ground between them. Nothing inside a card carries a border
+   or a divider rule, and the mission band is the one tinted surface. */
+.ov {
+  display: grid;
+  gap: 1rem;
+}
+
+.ov-card {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  /* The workspace cards' radius, not --radius: these sit right above them. */
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Eyebrows: Chivo Mono, the role DESIGN.md gives eyebrows. */
+.ov-cap {
+  margin: 0 0 0.45rem;
+  font: 500 var(--t-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.ov-cap--start {
+  text-align: start;
+}
+
+/* The mission's label carries the program's name, so it takes the accent and
+   a step up in size to hold a line that long. */
+.ov-cap--program {
+  margin-bottom: 0.6rem;
+  font-size: var(--t-mini);
+  color: var(--accent);
+}
+
+/* The two captions under "<Team> Workspace" that split it into At a Glance
+   and Where the work lives. Mono caps like every eyebrow, but at the base
+   size and in the accent so they are not missed between the heading and the
+   cards. */
+.ov-heading {
+  margin: 0 0 0.85rem;
+  font: 600 var(--t-base) / 1.3 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.ov-links + .ov-heading {
+  margin-top: 1.6rem;
+}
+
+/* Where the work lives, as one row under the section heading: the GitHub
+   organization takes two of five columns and holds its repositories. */
+.ov-links {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+}
+
+.ov-link {
+  min-width: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+}
+
+.ov-link--org {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+}
+
+.ov-link__main {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.ov-link.ov-link__main,
+button.ov-link.ov-link__main {
+  padding: 0.85rem 1rem;
+}
+
+.ov-link__icon {
+  display: flex;
+  flex: none;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+
+.ov-link__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.ov-link__label {
+  font: 700 var(--t-base) / 1.25 var(--font-heading);
+  color: var(--ink);
+}
+
+.ov-link__note {
+  font: 500 var(--t-micro) / 1.35 var(--font-label);
+  color: var(--text-secondary);
+}
+
+.ov-link__arrow {
+  flex: none;
+  font: 700 1.05rem / 1 var(--font-mono);
+  color: var(--accent);
+}
+
+.ov-link__main:hover .ov-link__label {
+  color: var(--accent);
+}
+
+.ov-repos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ov-repo {
+  display: block;
+  padding: 0.4rem 0.5rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ink) 6%, var(--card-bg));
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  text-align: center;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+/* The team's own repository is the one in the accent. */
+.ov-repo--mine {
+  background: color-mix(in srgb, var(--accent) 16%, var(--card-bg));
+  color: var(--accent);
+}
+
+.ov-repo:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--card-bg));
+  color: var(--accent);
+}
+
+/* The section heading's own bottom margin is set for a body that starts
+   right under it; a caption needs the gap the samples had. */
+.section__title + .ov-heading {
+  margin-top: 1.2rem;
+}
+
+/* The mission is set as a heading on purpose (approved over the Newsreader
+   versions): one centred line at the top of the page that names the job. */
+.ov-mission {
+  padding: 1.6rem 1.5rem;
+  text-align: center;
+  background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+}
+
+.ov-mission__text {
+  margin: 0;
+  font: 700 var(--t-brand) / 1.3 var(--font-heading);
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* Nine weeks in four phases. The chevrons are equal widths: the program guide
+   names the phases but gives no dates for their boundaries. */
+.ov-time {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2.25rem;
+  padding: 1.6rem 1.75rem 1.8rem;
+}
+
+.ov-time__figures {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.ov-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.ov-figure__value {
+  font: 600 2.4rem / 1 var(--font-mono);
+  color: var(--accent);
+}
+
+.ov-figure__label {
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.ov-phases {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ov-phase {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  padding-left: 12px;
+  margin-left: -6px;
+  font: 600 var(--t-micro) / 1.2 var(--font-mono);
+  text-align: center;
+  color: var(--ink);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
+}
+
+.ov-phase:first-child {
+  margin-left: 0;
+  padding-left: 0;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
+}
+
+.ov-phase:nth-child(1) { background: color-mix(in srgb, var(--accent) 16%, var(--card-bg)); }
+.ov-phase:nth-child(2) { background: color-mix(in srgb, var(--accent) 32%, var(--card-bg)); }
+.ov-phase:nth-child(3) { background: color-mix(in srgb, var(--accent) 48%, var(--card-bg)); color: #FFFFFF; }
+.ov-phase:nth-child(4) { background: color-mix(in srgb, var(--accent) 64%, var(--card-bg)); color: #FFFFFF; }
+
+/* On the dark card the mix lightens toward the accent, so the light text
+   loses contrast on the later steps; the ink is light there already. */
+[data-theme='dark'] .ov-phase:nth-child(n) {
+  color: var(--ink);
+}
+
+[data-theme='dark'] .ov-phase:nth-child(4) {
+  color: var(--card-bg);
+}
+
+.ov-time__dates {
+  display: flex;
+  justify-content: space-between;
+  margin: 0.7rem 0 0;
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* Our Answer and My Role, side by side with space between and no rule. */
+.ov-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2.5rem;
+  padding: 1.5rem 1.75rem 1.75rem;
+}
+
+.ov-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.1rem;
+  border-radius: 10px;
+  background: #121B29;
+}
+
+/* The brand navy sits close to the dark card, so the plate gets an edge. */
+[data-theme='dark'] .ov-brand {
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.ov-brand__logo {
+  height: 42px;
+  aspect-ratio: 300 / 168;
+  background: #FFFFFF;
+  -webkit-mask: var(--logo) center / contain no-repeat;
+  mask: var(--logo) center / contain no-repeat;
+}
+
+.ov-brand__caption {
+  font: 600 var(--t-micro) / 1.3 var(--font-label);
+  letter-spacing: 0.04em;
+  color: #D3E1E3;
+}
+
+.ov-swatches {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ov-swatches li {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ov-swatch {
+  height: 20px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.ov-swatch__hex {
+  margin-top: 0.25rem;
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.ov-swatch__name {
+  font: 500 var(--t-micro) / 1.3 var(--font-label);
+  color: var(--text-secondary);
+}
+
+.ov-layers {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ov-layer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.42rem 0.7rem;
+  border-radius: 8px;
+}
+
+.ov-layer--mine {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
+}
+
+.ov-layer__name {
+  font: 600 var(--t-small) / 1.3 var(--font-heading);
+  color: var(--ink);
+}
+
+.ov-layer--mine .ov-layer__name {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.ov-layer__owner {
+  font: 500 var(--t-micro) / 1.3 var(--font-label);
+  color: var(--text-secondary);
+}
+
+.ov-prose {
+  margin: 0.9rem 0 0;
+  font: 400 var(--t-prose) / 1.6 var(--font-body);
+  color: var(--text-primary);
+  text-align: justify;
+  text-wrap: pretty;
+}
+
+/* What we delivered: number, label, and sentence each get their own room. */
+.ov-card--delivered {
+  padding: 2rem 1.75rem;
+}
+
+.ov-delivered {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2.25rem 2rem;
+  margin: 1.1rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+}
+
+.ov-delivered li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ov-delivered__value {
+  font: 600 1.9rem / 1 var(--font-mono);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.ov-delivered__label {
+  margin-top: 0.75rem;
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+}
+
+.ov-delivered__text {
+  margin-top: 0.5rem;
+  font: 400 var(--t-small) / 1.6 var(--font-body);
+  color: var(--text-secondary);
+  text-wrap: balance;
+}
+
+/* The reporting chart. Lines and nodes take theme tokens, so it follows the
+   dark theme without a second drawing. */
+.ov-card--chart {
+  padding: 1.8rem 1.25rem;
+}
+
+.ov-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ov-lines path {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1.6;
+}
+
+.ov-lines .is-hot {
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+
+.ov-lines .is-soft {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-opacity: 0.55;
+}
+
+.ov-lines .is-dashed {
+  stroke-dasharray: 6 4;
+}
+
+.ov-node rect {
+  fill: var(--card-bg);
+  stroke: var(--border);
+  stroke-width: 1.2;
+}
+
+.ov-node--tint rect {
+  fill: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  stroke: var(--accent);
+}
+
+.ov-node--me rect {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
+  stroke: var(--accent);
+  stroke-width: 2.2;
+}
+
+.ov-node text {
+  text-anchor: middle;
+}
+
+.ov-node__title {
+  font: 700 14px var(--font-heading);
+  fill: var(--ink);
+}
+
+.ov-node--lead .ov-node__title {
+  font-size: 16px;
+}
+
+.ov-node--tint .ov-node__title,
+.ov-node--me .ov-node__title {
+  fill: var(--accent);
+}
+
+.ov-node__sub {
+  font: 500 12px var(--font-label);
+  fill: var(--text-secondary);
+}
+
+.ov-chart__liaison {
+  font: 600 11.5px var(--font-label);
+  fill: var(--accent);
+  paint-order: stroke;
+  stroke: var(--card-bg);
+  stroke-width: 4px;
+}
+
+@container page (max-width: 940px) {
+  .ov-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ov-pair {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .ov-delivered {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* The chart keeps its size and scrolls sideways rather than shrinking its
+     12px captions below reading size. */
+  .ov-chart {
+    overflow-x: auto;
+  }
+
+  .ov-chart svg {
+    min-width: 680px;
+  }
+}
+
+/* A phone: the figures above the phases, and the phases as a 2 by 2 grid of
+   plain blocks, since a chevron too narrow for its label helps no one. */
+@media (max-width: 560px) {
+  .ov-time {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.1rem;
+    padding: 1.4rem 1.25rem 1.5rem;
+  }
+
+  .ov-time__figures {
+    display: flex;
+    gap: 1.75rem;
+  }
+
+  .ov-phases {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .ov-phase,
+  .ov-phase:first-child {
+    margin-left: 0;
+    padding: 0 0.4rem;
+    border-radius: 6px;
+    clip-path: none;
+  }
+
+  .ov-mission__text {
+    font-size: var(--t-lead);
+  }
+
+  .ov-pair,
+  .ov-card--delivered {
+    padding: 1.4rem 1.25rem;
+  }
+
+  .ov-delivered {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+  }
+
+  .ov-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ov-link--org {
+    grid-column: auto;
+  }
+
+  .ov-repos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Justified text on a phone measure opens wide gaps between words. */
+  .ov-prose {
+    text-align: start;
+  }
+}
+
+/* ---------- My Role, `stats` layout (Midam) ---------- */
+
+/* The project draws the grid: `role.areas` is one string per row of twelve
+   columns, and the hero tile is area A. Rows size to their content so no tile
+   carries a band of empty space at its foot. */
+.rs {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-areas: var(--role-areas);
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rs__tile {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.05rem 1.15rem;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.rs__tile--hero {
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+}
+
+.rs__title {
+  margin: 0;
+  font: 700 var(--t-lead) / 1.3 var(--font-heading);
+  color: var(--ink);
+}
+
+/* Figure and unit on one line. Restrained sizes on purpose: at 42px and up
+   the tiles read as a template. */
+.rs__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
+  row-gap: 0.2rem;
+  margin: 0;
+  font: 600 1.75rem / 1 var(--font-mono);
+  color: var(--accent);
+}
+
+.rs__figure--large {
+  font-size: 2.5rem;
+}
+
+.rs__figure--hero {
+  font-size: 4rem;
+}
+
+.rs__unit {
+  font: 500 var(--t-micro) / 1.3 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.rs__figure--large .rs__unit,
+.rs__figure--hero .rs__unit {
+  font-size: var(--t-small);
+}
+
+/* Justified by word spacing only. Hyphenation splits words, which he has
+   ruled out; the last two words of every sentence are glued in the component
+   so no line holds a single word. */
+.rs__prose {
+  margin: 0;
+  font: 400 var(--t-small) / 1.6 var(--font-body);
+  color: var(--text-primary);
+  text-align: justify;
+  hyphens: none;
+  -webkit-hyphens: none;
+  overflow-wrap: normal;
+}
+
+.rs__prose--reading {
+  font-size: var(--t-prose);
+}
+
+.rs__bars {
+  flex: 1;
+  display: grid;
+  align-content: space-evenly;
+  gap: 0.43rem;
+  margin: 0.9rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rs__bars li {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) 1.6rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rs__bar-name,
+.rs__bar-count {
+  font: 500 var(--t-micro) / 1.3 var(--font-mono);
+  color: var(--text-primary);
+}
+
+.rs__bar-count {
+  font-weight: 600;
+  text-align: right;
+  color: var(--accent);
+}
+
+.rs__bar {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 45%, var(--card-bg));
+}
+
+.rs__bar--strong {
+  background: var(--accent);
+}
+
+.rs__timeline {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0.2rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rs__timeline li {
+  padding-top: 0.4rem;
+  border-top: 3px solid color-mix(in srgb, var(--accent) 40%, var(--card-bg));
+}
+
+.rs__timeline b {
+  display: block;
+  font: 600 var(--t-micro) / 1.3 var(--font-mono);
+  color: var(--accent);
+}
+
+.rs__timeline span {
+  font: 500 var(--t-micro) / 1.35 var(--font-label);
+  color: var(--text-primary);
+}
+
+/* Narrower: the hero across the top, the figure tiles two by two. */
+@container page (max-width: 940px) {
+  .rs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: 'A A' 'B C' 'D E' 'F F' 'H H';
+  }
+}
+
+/* A phone: one column, and left-aligned text, since justified text on a
+   phone measure opens gaps no rewording can close. */
+@media (max-width: 560px) {
+  .rs {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'A' 'B' 'C' 'D' 'E' 'F' 'H';
+  }
+
+  .rs__prose {
+    text-align: start;
+  }
+
+  .rs__timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rs__bars li {
+    grid-template-columns: 10rem minmax(0, 1fr) 1.4rem;
   }
 }

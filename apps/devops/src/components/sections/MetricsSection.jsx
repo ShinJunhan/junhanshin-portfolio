@@ -15,6 +15,14 @@ import { createPortal } from 'react-dom'
 //   square  1 x 1              — the default: a short number that needs no room
 const SIZES = { big: 'big', wide: 'wide', square: 'square' }
 
+// Keeps a hyphenated word ("Always-On", "add-on") whole and ties the last two
+// words together, so a detail line or tooltip never ends on one word and never
+// splits a word after its hyphen.
+function unbroken(text) {
+  if (!text) return text
+  return text.replace(/(\w)-(\w)/g, '$1\u2011$2').replace(/ (?=\S+$)/, '\u00a0')
+}
+
 // An abbreviated label keeps its short form — the tiles have no room to spell
 // "Mean Time to Detect" out — and carries the full term in a tooltip.
 //
@@ -84,11 +92,37 @@ function Label({ metric }) {
             aria-hidden="true"
             style={{ '--tip-x': `${at.x}px`, '--tip-y': `${at.y}px` }}
           >
-            {metric.hint}
+            {unbroken(metric.hint)}
           </span>,
           document.body
         )}
       <span className="sr-only">, {metric.hint}</span>
+    </span>
+  )
+}
+
+// A thin bar under a tile's sentence that shows how its total divides, for a
+// wide tile whose two-line sentence would otherwise leave the bottom empty.
+// `split` is [{ label, value, strong }]; each part's width is its share.
+function Split({ parts }) {
+  return (
+    <span className="bento__split">
+      <span className="bento__split-bar" aria-hidden="true">
+        {parts.map((part) => (
+          <span
+            key={part.label}
+            className={`bento__split-part${part.strong ? ' bento__split-part--strong' : ''}`}
+            style={{ flexGrow: part.value }}
+          />
+        ))}
+      </span>
+      <span className="bento__split-keys">
+        {parts.map((part) => (
+          <span key={part.label}>
+            {part.label} · {part.value}
+          </span>
+        ))}
+      </span>
     </span>
   )
 }
@@ -102,7 +136,95 @@ function Tile({ metric }) {
       <span className="bento__label">
         <Label metric={metric} />
       </span>
-      {metric.detail && <span className="bento__detail">{metric.detail}</span>}
+      {metric.detail && <span className="bento__detail">{unbroken(metric.detail)}</span>}
+      {metric.split && <Split parts={metric.split} />}
+    </li>
+  )
+}
+
+// One drawn mark per metric for `metricsStyle: 'tiles'`, authored for that
+// layout in one stroke weight. A metric names its mark with `art`; a name
+// with no entry here simply draws nothing.
+const ART = {
+  stack: (
+    <>
+      <path d="M60 22 96 40 60 58 24 40Z" />
+      <path d="M24 40v14l36 18 36-18V40" />
+      <path d="M24 54v14l36 18 36-18V54" />
+      <path d="M24 68v14l36 18 36-18V68" />
+      <path d="M60 58v42" opacity=".5" />
+    </>
+  ),
+  modules: (
+    <>
+      <rect x="22" y="22" width="34" height="34" rx="7" />
+      <rect x="64" y="22" width="34" height="34" rx="7" />
+      <rect x="22" y="64" width="34" height="34" rx="7" />
+      <rect x="64" y="64" width="34" height="34" rx="7" strokeDasharray="4 4" />
+      <path d="M56 39h8M39 56v8M81 56v8M56 81h8" />
+    </>
+  ),
+  book: (
+    <>
+      <path d="M60 34c-10-7-24-8-36-5v58c12-3 26-2 36 5 10-7 24-8 36-5V29c-12-3-26-2-36 5Z" />
+      <path d="M60 34v58" />
+      <path d="M32 44h18M32 54h18M32 64h14M70 44h18M70 54h18M70 64h12" />
+    </>
+  ),
+  bolt: (
+    <>
+      <circle cx="60" cy="60" r="36" />
+      <path d="M66 30 50 62h14l-8 28 22-36H64l8-24Z" />
+    </>
+  ),
+  hybrid: (
+    <>
+      <rect x="18" y="44" width="34" height="38" rx="5" />
+      <path d="M18 56h34M18 68h34" />
+      <circle cx="26" cy="50" r="1.6" />
+      <circle cx="26" cy="62" r="1.6" />
+      <path d="M76 70a14 14 0 1 1 6-27 18 18 0 0 1 32 8 12 12 0 0 1-2 19Z" transform="translate(-10 -2)" />
+      <path d="M52 63h18" strokeDasharray="3 4" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M60 28c-14 0-22 10-22 24v14l-7 10h58l-7-10V52c0-14-8-24-22-24Z" />
+      <path d="M53 82a7 7 0 0 0 14 0" />
+      <path d="M92 40a26 26 0 0 1 6 14M28 40a26 26 0 0 0-6 14" />
+    </>
+  ),
+}
+
+// `metricsStyle: 'tiles'` is a different grid altogether, for a page that
+// should not read like the team pages' bento: three columns, the headline
+// metric a tall accent tile down the left, the others white, and a wide strip
+// along the bottom. Every tile carries a drawn mark and a detail line that
+// says what the number makes possible. Placement comes from each metric's
+// `area` (tf, roles, pb, chaos, alerts, env), and `accent: true` fills the tile.
+function MarkTile({ metric }) {
+  return (
+    <li
+      className={`mtiles__tile${metric.accent ? ' mtiles__tile--accent' : ''}${metric.area === 'env' ? ' mtiles__tile--strip' : ''}`}
+      style={{ gridArea: metric.area }}
+    >
+      {ART[metric.art] && (
+        <svg
+          className="mtiles__art"
+          viewBox="0 0 120 120"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          {ART[metric.art]}
+        </svg>
+      )}
+      <span className="mtiles__value">{metric.value}</span>
+      <span className="mtiles__label">{metric.label}</span>
+      {metric.detail && <span className="mtiles__detail">{unbroken(metric.detail)}</span>}
     </li>
   )
 }
@@ -110,10 +232,30 @@ function Tile({ metric }) {
 // `metricsStyle: 'hero'` turns the big tile into a solid accent block and
 // steps every number and label up a size. Opt-in per project: the bento is
 // shared, and a page should only get the louder treatment when it asks.
+//
+// `metricsLarge` makes the square tiles' numbers bigger and justifies the
+// detail lines, for a project whose small tiles would otherwise show a lot of
+// empty space. Also opt-in.
+//
+// `metricsEven` lines the small tiles up with each other: their content starts
+// at the top instead of the middle, their labels drop a size so each fits on
+// one line, and their detail lines are justified. The big tile keeps its own
+// centred layout, since it spans both rows.
 export default function MetricsSection({ project }) {
+  if (project.metricsStyle === 'tiles') {
+    return (
+      <ul className="mtiles">
+        {project.metrics.map((metric) => (
+          <MarkTile metric={metric} key={metric.label} />
+        ))}
+      </ul>
+    )
+  }
   const style = project.metricsStyle === 'hero' ? ' bento--hero' : ''
+  const large = project.metricsLarge ? ' bento--large' : ''
+  const even = project.metricsEven ? ' bento--even' : ''
   return (
-    <ul className={`bento${style}`}>
+    <ul className={`bento${style}${large}${even}`}>
       {project.metrics.map((metric) => (
         <Tile metric={metric} key={metric.label} />
       ))}

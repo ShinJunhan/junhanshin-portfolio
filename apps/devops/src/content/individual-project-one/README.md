@@ -1,22 +1,18 @@
-# teamproject01-hybrid-cloud-infra: A Hybrid Cloud Stack, Rebuilt Alone
+# Project1-Self-Build: Rebuilding a Hybrid Cloud Stack
 
 ### 🗨️ Project Introduction
 
 >
 >
 >
-> This is the EchoChallengers self-healing infrastructure, built a second time from an empty repository by one person.
+> This repository rebuilds the EchoChallengers architecture as a solo practice project. It keeps the same four-server design and adds a GitHub Actions pipeline to deploy both environments. The team project skipped this pipeline.
 >
-> On the team project I owned the infrastructure build, which meant parts of the system reached me as a pull request to review rather than as something I had written. This repository is how I found out which parts those were. The architecture is deliberately the same, because the point was never a new design. The point was whether I could produce that design again without a team around me.
->
-
-Nothing here was copied across from the team repository. Where I could not remember how something worked, I read the documentation and wrote it again.
 
 ### 💠 Project Type
 
-- Individual study build, from an empty repository
-- Same brief and the same four-server architecture as the EchoChallengers team project
-- Built alongside that project rather than after it
+- Started from an empty repository as an individual practice build
+- Uses the same brief and four-server architecture as the EchoChallengers team project
+- Built during the same weeks as the team project
 
 ### 💠 Scope & Ownership
 
@@ -24,32 +20,32 @@ Nothing here was copied across from the team repository. Where I could not remem
 
 | Area | What it covers | Directory |
 |---|---|---|
-| Infrastructure · IaC | VPC, subnets, NAT, ALB, four EC2 instances, CloudWatch alarms, SNS | `terraform/` |
-| Configuration management | 15 roles covering the database, the web tier, the load balancer, monitoring and recovery | `roles/` |
-| Orchestration | 17 playbooks, and the two site files that order them | `playbooks/` |
-| Application | FastAPI with a Prometheus instrumentator, containerised and served behind Nginx | `roles/docker_fastapi/files/app/` |
+| Infrastructure · IaC | VPC, subnets, NAT, ALB, four EC2 instances, CloudWatch alarms, and SNS | `terraform/` |
+| Configuration management | 15 roles for the database, the web tier, the load balancer, monitoring, and recovery | `roles/` |
+| Orchestration | 17 playbooks and two site files to set their order | `playbooks/` |
+| Application | A containerized FastAPI app behind Nginx with Prometheus metrics | `roles/docker_fastapi/files/app/` |
 | Monitoring · Alerting | Prometheus, Grafana, Alertmanager, Node Exporter, and a Telegram bridge | `monitoring/`, `roles/monitoring/` |
-| Automated recovery | A webhook that maps an alert to a service and restarts it over SSH | `recovery/` |
-| Failure injection | One script that breaks things on demand in either environment | `chaos/` |
-| CI/CD | Checks, image build, both deployments, and an unconditional teardown | `.github/workflows/` |
+| Automated recovery | A webhook matches each alert to a service and restarts it over SSH | `recovery/` |
+| Failure injection | One script breaks a service on demand | `chaos/` |
+| CI/CD | Checks, the image build, both deployments, and an automatic teardown | `.github/workflows/` |
 
 ### 💠 What Is Different From the Team Build
 
-The team spent its final week rehearsing the demo rather than building a pipeline. That was the right call for the deliverable they were judged on, and it left the one thing I most wanted to practise unbuilt. So this repository has the pipeline, and the AWS environment it deploys destroys itself at the end of every run.
+In the final week of EchoChallengers, the team chose to rehearse the demo and left the pipeline unbuilt. This repository adds the missing pipeline. Every run deploys VMware and AWS, and the AWS environment is destroyed when the run ends.
 
 ---
 
-# Two Environments, One Set of Roles
+# Two Environments, Mostly Shared Roles
 
-The same four machines exist twice. On VMware they are `proj-mgmt`, `proj-rocky1`, `proj-rocky2` and `proj-ubuntu1` on `192.168.61.0/24`. On AWS they are the same four names against Terraform-assigned addresses inside `10.0.0.0/16`. One set of 15 Ansible roles configures both. The AWS run swaps the inventory file and nothing else.
+The same four machines exist twice. On VMware they are `proj-mgmt`, `proj-rocky1`, `proj-rocky2`, and `proj-ubuntu1` on `192.168.61.0/24`. On AWS they carry the same roles inside `10.0.0.0/16`. Both environments reuse most of the same 15 Ansible roles. The AWS playbook `site_aws.yml` joins Tailscale first, runs monitoring in Docker, and skips the Cloudflare tunnel.
 
 ## ✨ Key Features
 
 - **One command per environment.** `ansible-playbook playbooks/site.yml` builds the on-premises stack. `./deploy_aws.sh` runs Terraform, generates the inventory from its outputs, waits for SSH, and runs Ansible.
-- **Self-healing at two speeds.** Nginx recovers through a systemd drop-in in about five seconds. FastAPI and Node Exporter recover through Prometheus, Alertmanager and a webhook that restarts the service over SSH.
-- **Alerts reach three places.** Slack and a Telegram bridge get every alert. The recovery webhook gets the critical ones only.
-- **Failure on demand.** `chaos/inject.sh` breaks seven things and puts them all back, in either environment, from the same script.
-- **A pipeline that cleans up after itself.** The AWS job ends in `terraform destroy` marked `if: always()`, so a failed run costs the same as a successful one.
+- **Self-healing at two speeds.** Nginx recovers through a systemd drop-in in about five seconds. FastAPI and Node Exporter recover through Prometheus and Alertmanager, and a webhook restarts the service over SSH.
+- **Alerts reach three places.** Slack and a Telegram bridge receive every alert. The recovery webhook receives the critical ones only.
+- **Failure on demand.** `chaos/inject.sh` breaks a service in seven different ways and puts everything back with one command.
+- **A self-cleaning pipeline.** The AWS job ends in `terraform destroy` marked `if: always()`, and a failed run leaves nothing behind to bill.
 
 ---
 
@@ -70,7 +66,7 @@ On-premises (VMware) · 192.168.61.0/24
         ▼
 
 AWS · ap-northeast-2 · VPC 10.0.0.0/16
-  ALB :80  ── public subnets 10.0.1.0/24 (AZ a) · 10.0.2.0/24 (AZ c)
+  ALB :80  ── public subnets 10.0.1.0/24 (AZ a) · 10.0.2.0/24 (AZ b)
     │         health check: GET /health every 15s, 2 healthy / 3 unhealthy
     │         alongside: aws-mgmt (public, subnet router), NAT gateway
     │
@@ -80,23 +76,24 @@ AWS · ap-northeast-2 · VPC 10.0.0.0/16
               └─► aws-ubuntu1  ── private subnet 10.0.11.0/24   PostgreSQL :5432
 
   CloudWatch   4 CPU alarms · ALB 5xx · ALB unhealthy hosts → SNS → Slack
-               plus a dashboard covering CPU, request count, latency and host health
+               plus a dashboard covering CPU, request count, latency, and host health
 ```
 
-All four instances are `t4g.small` on Graviton. The Rocky and Ubuntu AMIs are looked up dynamically by owner and name filter rather than pinned, so a rebuilt environment picks up the current image.
+All four instances are Arm-based `t4g.small` machines. Terraform looks up the Rocky and Ubuntu AMIs by owner and name filter, and a rebuilt environment always picks up the current image.
 
-Security groups reference each other rather than CIDR ranges. The app group accepts `80` only from the ALB group, and `22`, `8000` and `9100` only from the mgmt group. The database group accepts `5432` only from the app group. SSH from the Tailscale range `100.64.0.0/10` is the one exception, and it is what lets the CI runner reach a private instance without a jump host.
+Security groups reference each other in place of CIDR ranges. The app group accepts `80` only from the ALB group, and `22`, `8000`, and `9100` only from the mgmt group. The database group accepts `5432` only from the app group. SSH from the Tailscale range `100.64.0.0/10` is the one exception, and it lets the CI runner reach a private instance without a jump host.
 
 ### On-Premises and AWS: Key Differences
 
 | Concern | On-premises | AWS |
 |---|---|---|
 | External load balancing | HAProxy on `proj-mgmt` | ALB across two availability zones |
-| Internal load balancing | HAProxy, round robin over `/health` | HAProxy stays on `aws-mgmt`, so the same roles run |
-| Addressing | Static addresses in `inventory/hosts.ini` | Terraform outputs, rewritten into `inventory/hosts_aws_ts.ini` |
-| Reachability | Direct on the LAN | Tailscale mesh, so no jump host is needed |
+| Internal load balancing | HAProxy with round robin over `/health` | HAProxy on `aws-mgmt` from the same role |
+| Addressing | Static addresses in `inventory/hosts.ini` | Terraform outputs written into `inventory/hosts_aws_ts.ini` |
+| Reachability | Direct on the LAN | Tailscale mesh without a jump host |
 | Outbound from private hosts | Not applicable | NAT gateway |
-| Monitoring | Prometheus, Grafana, Alertmanager | The same stack, plus CloudWatch alarms and a dashboard |
+| Monitoring | Prometheus, Grafana, and Alertmanager under systemd | The same stack in Docker plus CloudWatch alarms and a dashboard |
+| Public access | Cloudflare tunnel | The ALB |
 | Lifetime | Persistent | Destroyed at the end of every pipeline run |
 
 ---
@@ -105,8 +102,8 @@ Security groups reference each other rather than CIDR ranges. The app group acce
 
 ### Prerequisites
 
-- Ansible on the control node, with the project key at `~/.ssh/teamproj01ansiblekey.pem`
-- Terraform 1.5 or later and an AWS CLI profile for `ap-northeast-2`, for the AWS half
+- Ansible on the control node and the project key at `~/.ssh/teamproj01ansiblekey.pem`
+- Terraform 1.5 or later and an AWS CLI profile for `ap-northeast-2` (AWS only)
 - A reusable Tailscale auth key tagged `tag:project1-ec2`
 - A Slack incoming webhook URL
 
@@ -124,7 +121,7 @@ ansible-playbook playbooks/site.yml --check
 ansible-playbook playbooks/site.yml
 ```
 
-Run it a second time to confirm idempotency. A clean second run reports `changed=0` for everything except the self-healing test in the `nginx_selfheal` role, which kills Nginx on purpose every time.
+Run it a second time to check idempotency. A clean second run reports `changed=0` for everything except the `nginx_selfheal` role. That role kills Nginx on purpose every time to test the self-healing.
 
 ### AWS
 
@@ -136,7 +133,7 @@ Run it a second time to confirm idempotency. A clean second run reports `changed
 ./deploy_aws.sh destroy   # tear it down
 ```
 
-`deploy_aws.sh` writes `inventory/hosts_aws.ini` from Terraform outputs, so the inventory can never describe the previous set of instances. The public key path, the admin CIDR, the Tailscale auth key and the Slack webhook URL all come in as Terraform variables, and none of them are committed.
+`deploy_aws.sh` writes `inventory/hosts_aws.ini` from Terraform outputs, and the inventory always describes the current instances. The public key path, the admin CIDR, the Tailscale auth key, and the Slack webhook URL come in as Terraform variables, and none of them are committed.
 
 ### Verify
 
@@ -156,32 +153,35 @@ for i in $(seq 1 6); do curl -s http://192.168.61.133/health | python3 -m json.t
 ## 📁 Folder Structure
 
 ```
-teamproject01-hybrid-cloud-infra/
+project1-on-premise-self-build/
 ├── terraform/
 │   ├── main.tf                  # VPC, subnets, NAT, 4 instances, ALB
 │   ├── variables.tf
-│   ├── outputs.tf               # emits a ready-to-use Ansible inventory
+│   ├── outputs.tf               # prints an Ansible inventory
 │   ├── locals.tf
 │   ├── cloudwatch.tf            # 6 alarms, SNS to Slack, dashboard
 │   ├── tailscale.tf
 │   ├── mgmt_bootstrap.sh        # user_data: subnet router, advertises the VPC
 │   └── app_bootstrap.sh         # user_data: joins the tailnet, accepts routes
 ├── playbooks/
-│   ├── site.yml                 # on-premises, imports 11 in a fixed order
+│   ├── site.yml                 # on-premises, imports 12 in a fixed order
 │   ├── site_aws.yml             # AWS, Tailscale first
 │   ├── docker_install.yml
 │   ├── db.yml
 │   ├── mgmt.yml
 │   ├── docker_web.yml
+│   ├── web.yml                  # the systemd version, no longer imported
 │   ├── nginx_selfheal.yml
 │   ├── monitoring.yml
+│   ├── monitoring-docker.yml    # the AWS monitoring stack
 │   ├── prometheus_bot.yml
 │   ├── prometheus_connect.yml   # promtool check, then restart
+│   ├── prometheus_connect_docker.yml
 │   ├── recovery_service.yml
 │   ├── cloudflared.yml
 │   ├── certbot.yml
 │   └── notify.yml
-├── roles/                       # 15 roles, tasks and handlers each
+├── roles/                       # 15 roles
 │   ├── docker/                  # engine, plus EPEL and stress for load tests
 │   ├── docker_fastapi/          # image build, container, app/
 │   ├── nginx/                   # reverse proxy, SELinux boolean
@@ -202,12 +202,14 @@ teamproject01-hybrid-cloud-infra/
 │   └── hosts_aws_ts.ini         # AWS, rewritten by the workflow
 ├── monitoring/
 │   ├── prometheus.yml
+│   ├── prometheus-docker.yml
 │   ├── prometheus_aws.yml.j2
 │   ├── alert.rules.yml          # 4 rules
+│   ├── test_alert.yml
 │   ├── alertmanager.yml         # 3 receivers
 │   └── docker-compose.yml
 ├── recovery/
-│   ├── webhook_server.py        # :9080, alert name to systemctl restart
+│   ├── webhook_server.py        # :9080, alert name to a restart command
 │   └── scripts/
 │       └── restart_service.sh
 ├── chaos/
@@ -215,23 +217,23 @@ teamproject01-hybrid-cloud-infra/
 ├── .github/workflows/
 │   └── deploy.yml               # checks, image, on-prem, AWS, destroy
 ├── ansible.cfg
-├── deploy_aws.sh
+├── deploy_aws.sh                # an earlier manual deploy through mgmt
 └── README.md
 ```
 
 ### Why `site.yml` imports in a fixed order
 
-The order is load bearing and the file says so at the top. Docker has to exist before the container role runs. The database has to exist before FastAPI starts, or the app logs a warning and retries on every request. Prometheus has to exist before `prometheus_connect.yml` validates its rules. The final notification only means something if everything above it succeeded.
+The order matters, and the file says so at the top. Docker must exist before the container role runs. The database must exist before FastAPI starts, or the app logs a warning and retries on every request. Prometheus must exist before `prometheus_connect.yml` validates its rules. The final notification only means something after everything above it succeeds.
 
 ---
 
 ## 🔄 Self-Healing Flow
 
-Two mechanisms, chosen by how fast the failure can be seen.
+Two mechanisms handle failures. The choice depends on how fast the failure can be seen.
 
-**systemd, for a process that dies.** The `nginx_selfheal` role writes a `Restart=always` drop-in with `RestartSec=5s`. systemd already knows the process exited and does not need to be told, so Nginx is back in about five seconds and no alert ever fires. The role then kills Nginx and checks it came back, so every deployment leaves proof in its own output.
+**systemd handles a crashed process.** The `nginx_selfheal` role writes a `Restart=always` drop-in with `RestartSec=5s`. systemd sees the exit on its own, and Nginx is back in about five seconds with no alert raised. The role then kills Nginx and confirms it came back, and every deployment leaves this proof in its own output.
 
-**The alert pipeline, for everything else.** Node Exporter and the FastAPI instrumentator are scraped every 15 seconds. A rule fires, Alertmanager fans it out, and the webhook restarts the service over SSH.
+**The alert pipeline handles everything else.** Prometheus scrapes Node Exporter and the FastAPI instrumentator every 15 seconds. A rule fires, Alertmanager sends it out, and the webhook restarts the service over SSH.
 
 ```
 node_exporter :9100  ─┐
@@ -244,8 +246,8 @@ FastAPI /metrics :8000┘   scrape 15s     group_wait 5s  ├─► prometheus_b
                                                                     │
                                               ┌─────────────────────┴─────────────────────┐
                                               ▼                                           ▼
-                                  ssh systemctl restart                        no mapping found
-                                  fastapi | node_exporter                      logged for a person
+                                  ssh docker restart fastapi                   no mapping found
+                                  ssh systemctl restart node_exporter          logged for a manual check
                                               │                                           │
                                               └─────────────────┬─────────────────────────┘
                                                                 ▼
@@ -261,16 +263,16 @@ FastAPI /metrics :8000┘   scrape 15s     group_wait 5s  ├─► prometheus_b
 | `HighCPU` | CPU above 40% | 1m | warning |
 | `HighMemory` | memory above 85% | 3m | warning |
 
-The CPU threshold is 40% rather than a production figure, because the point of this environment is that `chaos/inject.sh cpu1` reliably crosses it.
+The CPU threshold sits at 40% on purpose. A production figure would be higher, and 40% lets `chaos/inject.sh cpu1` cross it every time.
 
 ### Recovery policy
 
-| Alert | Service restarted | Where the host comes from |
+| Alert | Restart command | Where the host comes from |
 |---|---|---|
-| `FastAPIDown` | `fastapi` | `HOST_MAP`, keyed by the Prometheus job name |
-| `NodeDown` | `node_exporter` | `HOST_MAP`, keyed by the Prometheus job name |
+| `FastAPIDown` | `docker restart fastapi` | `HOST_MAP` by Prometheus job name |
+| `NodeDown` | `systemctl restart node_exporter` | `HOST_MAP` by Prometheus job name |
 
-Both maps have to match. An alert the webhook does not recognise is logged and announced as needing a person, and nothing is restarted on a guess.
+Both maps must match. An alert the webhook does not recognize is logged and reported for a manual check, and nothing is restarted on a guess.
 
 ### Failure injection
 
@@ -283,50 +285,50 @@ Both maps have to match. An alert the webhook does not recognise is logged and a
 ./chaos/inject.sh cpu1         # stress all cores on rocky1 for 120s
 ./chaos/inject.sh haproxy      # stop the load balancer
 ./chaos/inject.sh all          # put everything back
-./chaos/inject.sh status       # print the state of all nine services
+./chaos/inject.sh status       # print the state of all ten services
 ```
 
-Add `--aws` to any of them to run against the AWS environment instead. The script reads host addresses out of whichever inventory file matches, so the targets can never drift away from what was actually deployed.
+The script reads host addresses from the Ansible inventory. Adding `--aws` switches it to the AWS inventory file.
 
 ---
 
 ## 🔁 Delivery
 
-One workflow on `.github/workflows/deploy.yml`, triggered by a push to `main`.
+One workflow in `.github/workflows/deploy.yml` runs on every push to `main`.
 
 | Job | Runner | What it does |
 |---|---|---|
 | `test` | hosted | `ast.parse` on the application, `yaml.safe_load` on every playbook and role |
 | `docker` | hosted | Builds the FastAPI image and pushes it tagged `latest` and by commit SHA |
-| `deploy-onprem` | self-hosted, on `proj-mgmt` | `git pull`, `ansible-playbook site.yml --diff`, then a health check |
-| `deploy-aws` | hosted | Terraform apply, join the tailnet, `ansible-playbook site_aws.yml`, check the ALB, then destroy |
+| `deploy-onprem` | self-hosted, on `proj-mgmt` | `git pull`, `ansible-playbook site.yml --diff`, and a health check |
+| `deploy-aws` | hosted | Terraform apply, join the tailnet, `ansible-playbook site_aws.yml`, check the ALB, and destroy |
 
-Both deploy jobs wait on the image build and then run in parallel, so one push updates VMware and AWS from the same commit. Slack and Telegram get a message at every outcome: on-premises success, AWS success, destroy complete, and either failure.
+Both deploy jobs start after the image build and run in parallel. One push updates VMware and AWS from the same commit. Slack receives a message at every outcome, and Telegram receives every success and failure. The destroy notice goes to Slack only.
 
-The destroy step carries `if: always()`. The environment is not meant to outlive the run that created it.
+The destroy step carries `if: always()`. The environment is never meant to outlive its own run.
 
 ---
 
 ## 🧠 What This Repository Taught Me
 
-The architecture I could redraw from memory. The install details I could not.
+The architecture I could redraw from memory. The install details took real work.
 
-- Every binary download needed switching on `ansible_architecture`, because the fleet is arm64 and most published release URLs assume it is not.
-- `prometheus_bot` has no arm64 image at all, so the role installs Go and compiles it from source.
-- `httpd_can_network_connect` is why Nginx returns 502 when it proxies to a container on a SELinux host, and no amount of reading the Nginx config finds that.
-- Facts are not always gathered when a role expects them. Both `cloudflared` and `monitoring` call `setup` explicitly to get `ansible_architecture` before they use it.
-- PostgreSQL's config path is found with `find` rather than hardcoded to a version number, because the version moved once and hardcoding it cost an afternoon.
+- Every binary download needed a switch on `ansible_architecture`. The fleet is arm64, and most published release URLs assume x86.
+- `prometheus_bot` ships no arm64 image, and its role installs Go to compile the bot from source.
+- `httpd_can_network_connect` is why Nginx returns 502 when it proxies to a container on a SELinux host. Nothing in the Nginx config points to it.
+- Facts are not always gathered when a role expects them. Both `cloudflared` and `monitoring` call `setup` explicitly to read `ansible_architecture` before using it.
+- The PostgreSQL role finds its config path with `find`. A hardcoded version number broke once when the version moved.
 
-The other lesson was about ordering, and it is the one I would carry to any project. Eleven playbooks import in a sequence, and every dependency in that sequence is invisible until the day it is wrong.
+The other lesson was about ordering, and I would carry it to any project. Twelve playbooks import in a sequence, and every dependency in the sequence stays invisible until the day it breaks.
 
 ---
 
 ## Limits
 
-This is a study build and it stops where a production system would keep going.
+This is a study build, and it stops where a production system would keep going.
 
-- Terraform state is local, so a second machine cannot pick up where the first left off.
-- The recovery webhook restarts a service once, with no retry and no cooldown.
+- Terraform state is local. A second machine cannot pick up where the first left off.
+- The recovery webhook restarts a service only once. No retry or cooldown follows a failed restart.
 - Grafana dashboards are imported by hand.
-- Secrets live in GitHub Actions secrets rather than in a vault.
-- The AWS environment is expected to live for the length of a workflow run and nothing is backed up.
+- Secrets live in GitHub Actions secrets and Ansible variables. No dedicated vault holds them.
+- The AWS environment lives only for the length of a workflow run, and nothing in it is backed up.

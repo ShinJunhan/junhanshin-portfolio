@@ -4,7 +4,7 @@ import BrowserPanel, { splitPath } from '../BrowserPanel.jsx'
 import Markdown from '../Markdown.jsx'
 import { docsFor } from '../../data/docs.js'
 import { slidesFor } from '../../data/slides.js'
-import { ExternalIcon, LanguageIcon } from '../icons.jsx'
+import { ExternalIcon, GithubIcon, LanguageIcon } from '../icons.jsx'
 import { useSlideDeck } from './SlideDeck.jsx'
 import EmptySlot from './EmptySlot.jsx'
 import 'prismjs/components/prism-hcl'
@@ -79,7 +79,7 @@ function CodeTab({ file, expanded }) {
   )
 }
 
-function DocTab({ active, expanded }) {
+function DocTab({ active, expanded, related }) {
   const viewportRef = useRef(null)
 
   useEffect(() => {
@@ -93,7 +93,26 @@ function DocTab({ active, expanded }) {
           <Markdown source={active.source} />
         </div>
       </div>
+      {related?.repos?.length > 0 && <RelatedRepos related={related} />}
     </>
+  )
+}
+
+// The other repositories behind the same product, as a row of chips under the
+// README. Links only: their READMEs describe other teams' work, so the page
+// points at them rather than reproducing them. `relatedRepos` in a project's
+// data: { label, repos: [{ name, url }] }.
+function RelatedRepos({ related }) {
+  return (
+    <div className="readme__related">
+      <span className="readme__related-label">{related.label}</span>
+      {related.repos.map((repo) => (
+        <a className="readme__related-chip" href={repo.url} target="_blank" rel="noreferrer" key={repo.url}>
+          <GithubIcon />
+          {repo.name}
+        </a>
+      ))}
+    </div>
   )
 }
 
@@ -198,7 +217,13 @@ export default function SourceSection({ project }) {
           {expandedIds[doc] ? `Collapse ${entry.expand}` : `Show full ${entry.expand}`}
         </button>
       ),
-      render: () => <DocTab active={active} expanded={!!expandedIds[doc]} />,
+      render: () => (
+        <DocTab
+          active={active}
+          expanded={!!expandedIds[doc]}
+          related={doc === 'README' ? project.relatedRepos : null}
+        />
+      ),
     })
   }
 
@@ -217,6 +242,7 @@ export default function SourceSection({ project }) {
     const fileTab = (file) => ({
       id: file.path,
       label: splitPath(file.path).base,
+      note: file.note,
       address: file.path,
       footer: (
         <button

@@ -1,0 +1,545 @@
+{
+  "deck": "Project1-Self-Build: Rebuilding a Hybrid Cloud Stack",
+  "totalSlides": 79,
+  "imageFormat": "webp",
+  "imageDimensions": {
+    "width": 1800,
+    "height": 1013
+  },
+  "sourceRenderer": "PowerPoint-exported PDF, rasterised with PDFKit",
+  "imageBase": "/projects/project1-self-build/slides/",
+  "coverSlides": [
+    1,
+    2,
+    3
+  ],
+  "sections": [
+    {
+      "id": "context",
+      "num": "01",
+      "title": "Problem and Context",
+      "slideStart": 4,
+      "slideEnd": 6
+    },
+    {
+      "id": "architecture",
+      "num": "02",
+      "title": "Architecture",
+      "slideStart": 7,
+      "slideEnd": 12
+    },
+    {
+      "id": "implementation",
+      "num": "03",
+      "title": "Implementation",
+      "slideStart": 13,
+      "slideEnd": 21
+    },
+    {
+      "id": "pipeline",
+      "num": "04",
+      "title": "Delivery Pipeline",
+      "slideStart": 22,
+      "slideEnd": 25
+    },
+    {
+      "id": "results",
+      "num": "05",
+      "title": "Results",
+      "slideStart": 26,
+      "slideEnd": 30
+    },
+    {
+      "id": "evidence",
+      "num": "06",
+      "title": "Evidence",
+      "slideStart": 31,
+      "slideEnd": 73
+    },
+    {
+      "id": "reflection",
+      "num": "07",
+      "title": "Reflection",
+      "slideStart": 74,
+      "slideEnd": 79
+    }
+  ],
+  "slides": [
+    {
+      "number": 1,
+      "file": "slide-01.webp",
+      "section": "cover",
+      "hasNotes": false
+    },
+    {
+      "number": 2,
+      "file": "slide-02.webp",
+      "section": "cover",
+      "hasNotes": false,
+      "label": "Project Summary"
+    },
+    {
+      "number": 3,
+      "file": "slide-03.webp",
+      "section": "cover",
+      "hasNotes": false,
+      "label": "Contents"
+    },
+    {
+      "number": 4,
+      "file": "slide-04.webp",
+      "section": "context",
+      "hasNotes": false
+    },
+    {
+      "number": 5,
+      "file": "slide-05.webp",
+      "section": "context",
+      "hasNotes": false
+    },
+    {
+      "number": 6,
+      "file": "slide-06.webp",
+      "section": "context",
+      "hasNotes": false
+    },
+    {
+      "number": 7,
+      "file": "slide-07.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 8,
+      "file": "slide-08.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 9,
+      "file": "slide-09.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 10,
+      "file": "slide-10.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 11,
+      "file": "slide-11.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 12,
+      "file": "slide-12.webp",
+      "section": "architecture",
+      "hasNotes": false
+    },
+    {
+      "number": 13,
+      "file": "slide-13.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 14,
+      "file": "slide-14.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 15,
+      "file": "slide-15.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 16,
+      "file": "slide-16.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 17,
+      "file": "slide-17.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 18,
+      "file": "slide-18.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 19,
+      "file": "slide-19.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 20,
+      "file": "slide-20.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 21,
+      "file": "slide-21.webp",
+      "section": "implementation",
+      "hasNotes": false
+    },
+    {
+      "number": 22,
+      "file": "slide-22.webp",
+      "section": "pipeline",
+      "hasNotes": false
+    },
+    {
+      "number": 23,
+      "file": "slide-23.webp",
+      "section": "pipeline",
+      "hasNotes": false
+    },
+    {
+      "number": 24,
+      "file": "slide-24.webp",
+      "section": "pipeline",
+      "hasNotes": false
+    },
+    {
+      "number": 25,
+      "file": "slide-25.webp",
+      "section": "pipeline",
+      "hasNotes": false
+    },
+    {
+      "number": 26,
+      "file": "slide-26.webp",
+      "section": "results",
+      "hasNotes": false
+    },
+    {
+      "number": 27,
+      "file": "slide-27.webp",
+      "section": "results",
+      "hasNotes": false
+    },
+    {
+      "number": 28,
+      "file": "slide-28.webp",
+      "section": "results",
+      "hasNotes": false
+    },
+    {
+      "number": 29,
+      "file": "slide-29.webp",
+      "section": "results",
+      "hasNotes": false
+    },
+    {
+      "number": 30,
+      "file": "slide-30.webp",
+      "section": "results",
+      "hasNotes": false
+    },
+    {
+      "number": 31,
+      "file": "slide-31.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 32,
+      "file": "slide-32.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 33,
+      "file": "slide-33.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 34,
+      "file": "slide-34.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 35,
+      "file": "slide-35.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 36,
+      "file": "slide-36.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 37,
+      "file": "slide-37.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 38,
+      "file": "slide-38.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 39,
+      "file": "slide-39.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 40,
+      "file": "slide-40.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 41,
+      "file": "slide-41.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 42,
+      "file": "slide-42.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 43,
+      "file": "slide-43.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 44,
+      "file": "slide-44.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 45,
+      "file": "slide-45.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 46,
+      "file": "slide-46.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 47,
+      "file": "slide-47.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 48,
+      "file": "slide-48.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 49,
+      "file": "slide-49.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 50,
+      "file": "slide-50.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 51,
+      "file": "slide-51.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 52,
+      "file": "slide-52.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 53,
+      "file": "slide-53.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 54,
+      "file": "slide-54.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 55,
+      "file": "slide-55.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 56,
+      "file": "slide-56.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 57,
+      "file": "slide-57.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 58,
+      "file": "slide-58.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 59,
+      "file": "slide-59.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 60,
+      "file": "slide-60.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 61,
+      "file": "slide-61.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 62,
+      "file": "slide-62.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 63,
+      "file": "slide-63.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 64,
+      "file": "slide-64.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 65,
+      "file": "slide-65.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 66,
+      "file": "slide-66.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 67,
+      "file": "slide-67.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 68,
+      "file": "slide-68.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 69,
+      "file": "slide-69.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 70,
+      "file": "slide-70.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 71,
+      "file": "slide-71.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 72,
+      "file": "slide-72.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 73,
+      "file": "slide-73.webp",
+      "section": "evidence",
+      "hasNotes": false
+    },
+    {
+      "number": 74,
+      "file": "slide-74.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 75,
+      "file": "slide-75.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 76,
+      "file": "slide-76.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 77,
+      "file": "slide-77.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 78,
+      "file": "slide-78.webp",
+      "section": "reflection",
+      "hasNotes": false
+    },
+    {
+      "number": 79,
+      "file": "slide-79.webp",
+      "section": "reflection",
+      "hasNotes": false
+    }
+  ]
+}

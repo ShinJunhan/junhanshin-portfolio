@@ -15,6 +15,9 @@ import useSectionReached from '../../lib/useSectionReached.js'
 //   { tiles: [{ size, label, stat, text }] }
 //
 //   title  the role, in one line, under the monogram
+//   tracks optional { items, short, rows [{ name, caption, owned }] }: a track strip
+//          drawn above the tiles in place of the figures band
+//   even   on a tile: share its spare height evenly instead of leaving a strip
 //   size   lead | medium | small — three tiers, not one repeated shape. On the
 //          six-column grid they span 3x2, 3x1 and 2x1, which fills eighteen
 //          cells over three rows exactly. Six equal tiles was the version this
@@ -116,6 +119,42 @@ function Who({ project, lit }) {
       ) : (
         <p className="role__title">{title}</p>
       )}
+    </div>
+  )
+}
+
+// The track strip (ShimonVault): one row per project, the same five tracks in
+// each, the owned ones filled. It sits where a team page puts its figures band,
+// because on a solo project the count that matters is how many tracks were
+// covered, set against the team project that split them five ways.
+function TrackStrip({ tracks }) {
+  return (
+    <div className="role-tracks">
+      {tracks.rows.map((row) => {
+        const owned = row.owned === 'all' ? tracks.items : row.owned
+        return (
+          <div className="role-tracks__row" key={row.name}>
+            <p className="role-tracks__name">
+              {row.name}
+              <span>{row.caption}</span>
+            </p>
+            <ol>
+              {tracks.items.map((item, i) => (
+                <li
+                  className={owned.includes(item) ? 'role-tracks__on' : undefined}
+                  data-short={tracks.short?.[i]}
+                  key={item}
+                >
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="role-tracks__count">
+              {owned.length} of {tracks.items.length}
+            </p>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -238,13 +277,15 @@ export default function RoleSection({ project }) {
           </div>
         )}
 
+        {project.role?.tracks && <TrackStrip tracks={project.role.tracks} />}
+
         <ul
           className={`bento bento--role bento--role-${layout}`}
           style={areas.length ? { '--role-areas': areas.map((row) => `"${row}"`).join(' ') } : undefined}
         >
         {tiles.map((tile) => (
           <li
-            className={`bento__tile bento__tile--${SIZES[tile.size] ?? 'small'}${tile.tone === 'accent' ? ' bento__tile--accent' : ''}`}
+            className={`bento__tile bento__tile--${SIZES[tile.size] ?? 'small'}${tile.tone === 'accent' ? ' bento__tile--accent' : ''}${tile.even ? ' bento__tile--even' : ''}`}
             style={tile.area ? { '--role-area': tile.area } : undefined}
             key={tile.label}
           >

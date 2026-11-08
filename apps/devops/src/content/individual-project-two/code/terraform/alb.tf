@@ -91,10 +91,8 @@ resource "aws_lb_target_group" "green" {
 }
 
 # ─── HTTP Listener (port 80) ──────────────────────────────────────────────────
-# Kept as a plain forward (NOT a 301 to HTTPS) on purpose: scripts/deploy.sh and
-# scripts/blue_green_switch.sh poll http://$ALB_DNS/health with a bare curl and
-# assert a literal 200, so a redirect here would fail every deploy's health gate.
-# Public browser traffic arrives on the 443 listener below.
+# Plain forward, no HTTPS redirect: deploy.sh curls http://$ALB_DNS/health and
+# expects a literal 200. Browser traffic arrives on the 443 listener below.
 #
 # CHANGED for Option 1: the listener now forwards to whichever target group
 # var.active_color names (blue by default, green during a deploy). This makes

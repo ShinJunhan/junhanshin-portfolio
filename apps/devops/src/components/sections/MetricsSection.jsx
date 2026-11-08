@@ -229,6 +229,56 @@ function MarkTile({ metric }) {
   )
 }
 
+// `metricsStyle: 'rows'` stacks rows of uneven widths, so the gaps between
+// tiles never line up from top to bottom. `metricsRows` gives each row's
+// column template (for example '1.6fr 1fr 1.25fr'), and the metrics fill the
+// rows in order, one per column. Each number and its label share one line,
+// the label sitting on the number's baseline like a unit, with the sentence
+// underneath. `accent: true` fills a tile; `cards` ([{ title, text }]) swaps
+// the sentence for a row of small cards.
+function RowTile({ metric }) {
+  return (
+    <li className={`mrows__tile${metric.accent ? ' mrows__tile--accent' : ''}`}>
+      <span className="mrows__head">
+        <span className="mrows__value">{metric.value}</span>
+        <span className="mrows__label">{metric.label}</span>
+      </span>
+      {metric.cards ? (
+        <span className="mrows__cards">
+          {metric.cards.map((card) => (
+            <span className="mrows__card" key={card.title}>
+              <span className="mrows__card-title">{card.title}</span>
+              <span className="mrows__card-text">{card.text}</span>
+            </span>
+          ))}
+        </span>
+      ) : (
+        metric.detail && <span className="mrows__detail">{unbroken(metric.detail)}</span>
+      )}
+    </li>
+  )
+}
+
+function Rows({ project }) {
+  let next = 0
+  return (
+    <div className="mrows">
+      {project.metricsRows.map((columns) => {
+        const count = columns.trim().split(/\s+/).length
+        const metrics = project.metrics.slice(next, next + count)
+        next += count
+        return (
+          <ul className="mrows__row" style={{ '--mrows-cols': columns }} key={columns}>
+            {metrics.map((metric) => (
+              <RowTile metric={metric} key={metric.label} />
+            ))}
+          </ul>
+        )
+      })}
+    </div>
+  )
+}
+
 // `metricsStyle: 'hero'` turns the big tile into a solid accent block and
 // steps every number and label up a size. Opt-in per project: the bento is
 // shared, and a page should only get the louder treatment when it asks.
@@ -242,6 +292,7 @@ function MarkTile({ metric }) {
 // one line, and their detail lines are justified. The big tile keeps its own
 // centred layout, since it spans both rows.
 export default function MetricsSection({ project }) {
+  if (project.metricsStyle === 'rows') return <Rows project={project} />
   if (project.metricsStyle === 'tiles') {
     return (
       <ul className="mtiles">

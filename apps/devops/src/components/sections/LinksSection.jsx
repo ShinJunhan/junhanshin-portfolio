@@ -1,10 +1,12 @@
 import { Fragment, useId, useState } from 'react'
+import { techIcon, techTone } from '../../data/tech.js'
 import RichText from '../../lib/richText.jsx'
 import { CheckIcon, GithubIcon, NotionIcon, SlidesIcon } from '../icons.jsx'
 import Overview, { OverviewLinks } from './Overview.jsx'
 import WorkspaceApps from './WorkspaceApps.jsx'
 import WorkspaceCards from './WorkspaceCards.jsx'
 import WorkspaceFaces from './WorkspaceFaces.jsx'
+import WorkspaceStack from './WorkspaceStack.jsx'
 import WorkspaceTiles from './WorkspaceTiles.jsx'
 
 // Every link a project can carry, in the order each group shows them.
@@ -495,8 +497,76 @@ function PodResult({ pods, measured }) {
   )
 }
 
+// The build week by week: the week and its title on one line, then what the
+// week added as logo pills stretched across the full width, so every week's
+// row ends flush on both sides. A tool with no logo is its name alone.
+function WeekPills({ weeks }) {
+  return (
+    <ol className="glance-weeks">
+      {weeks.map((week) => (
+        <li className="glance-weeks__week" key={week.week}>
+          <span className="glance-weeks__label">{week.week}</span>
+          <b className="glance-weeks__title">{week.title}</b>
+          <span className="glance-weeks__tools">
+            {week.tools.map((tool) => {
+              const icon = tool.icon && techIcon(tool.icon)
+              return (
+                <span className="glance-weeks__tool" key={tool.label}>
+                  {icon && (
+                    <span className="glance-weeks__mark" data-tone={techTone(tool.icon)}>
+                      <img src={icon} alt="" />
+                    </span>
+                  )}
+                  {tool.label}
+                </span>
+              )
+            })}
+          </span>
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+// One row per threshold, all on the same scale so the rows can be compared
+// at a glance: a row's squares end where its count ends, and a marked square
+// names what happens at that count. Squares from `blockFrom` on are refused.
+function Meters({ meters }) {
+  return (
+    <div className="glance-meters">
+      {meters.rows.map((row) => (
+        <div className="glance-meters__row" key={row.label}>
+          <span className="glance-meters__name">{row.label}</span>
+          <span
+            className="glance-meters__scale"
+            style={{ gridTemplateColumns: `repeat(${meters.scale}, minmax(0, 1fr))` }}
+          >
+            {Array.from({ length: row.count }, (_, i) => {
+              const n = i + 1
+              const mark = row.marks?.[n]
+              const cls = [
+                'glance-meters__step',
+                mark && 'glance-meters__step--mark',
+                row.blockFrom && n >= row.blockFrom && 'glance-meters__step--block',
+                n === meters.scale && 'glance-meters__step--end',
+              ]
+              return (
+                <i className={cls.filter(Boolean).join(' ')} key={n}>
+                  {mark && <span>{mark}</span>}
+                </i>
+              )
+            })}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // A line's shape picks its renderer. See `glance` in src/data/projects.js.
 function GlanceBody({ value, open, onToggle }) {
+  if (value.weeks) return <WeekPills weeks={value.weeks} />
+  if (value.meters) return <Meters meters={value.meters} />
   if (value.loop) return <LoopChart loop={value.loop} />
   if (value.pods && value.measured) return <PodResult pods={value.pods} measured={value.measured} />
   if (value.rail) return <HowRail rail={value.rail} open={open} onToggle={onToggle} />
@@ -632,6 +702,21 @@ export default function LinksSection({ project, label, headingId }) {
         </h2>
         {glance && <Glance glance={glance} />}
         <WorkspaceFaces faces={project.workspaceFaces} />
+      </div>
+    )
+  }
+
+  // A project with `workspaceStack` gets At a Glance on the left and a column
+  // of three cards on the right: one across the top, two side by side under
+  // it, stretched to At a Glance's height.
+  if (project.workspaceStack) {
+    return (
+      <div className="workspace-row workspace-row--cards">
+        <h2 className="section__title workspace-row__title" id={headingId}>
+          {label}
+        </h2>
+        {glance && <Glance glance={glance} />}
+        <WorkspaceStack stack={project.workspaceStack} />
       </div>
     )
   }

@@ -8,11 +8,11 @@
 # with per-function inline policies for least-privilege access.
 #
 # Triggers (who calls each Lambda):
-#   block_ip        ← SNS topic: security-alert
-#   log_incident    ← SNS topic: security-alert
-#   validate_file   ← S3 PUT event on docs bucket
-#   meeting_notify  ← EventBridge scheduled rule (per meeting)
-#   meeting_expire  ← EventBridge scheduled rule (per meeting)
+#   block_ip        ← SNS security-alert        not live, no publisher yet
+#   log_incident    ← SNS security-alert/infra  live through infra-alert
+#   validate_file   ← S3 PUT on docs bucket     live
+#   meeting_notify  ← EventBridge, every 5 min  live (health ping)
+#   meeting_expire  ← per-meeting rules         not live, rules never created
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ─── Helper: zip each Lambda directory ───────────────────────────────────────

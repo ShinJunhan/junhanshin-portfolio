@@ -1,4 +1,5 @@
 import { Fragment } from 'react'
+import { techIcon, techTone } from '../../data/tech.js'
 
 // The small diagram a role tile can carry above (or, on the lead, below) its
 // sentence. Each one restates the sentence's claim as something you can see at
@@ -20,6 +21,8 @@ import { Fragment } from 'react'
 //   flow         steps [text], rows [{ name, text, active }]
 //   routes       rows [{ when, profile, active }]
 //   calendar     dates [{ month, day, label, active }]
+//   span         from / to { icon, name, note }, then either via { icon, text }
+//                or tools [{ icon, hot }] + toggle { options, active } + note
 
 function Hub({ from, to }) {
   return (
@@ -45,10 +48,13 @@ function Hub({ from, to }) {
 
 // Bars are scaled to the largest count, not to the total: the point is which
 // repos took the review load, and against 248 the smaller two would vanish.
-function Reviews({ value, unit, bars }) {
+//
+// `wide` gives the count column room for four-digit figures (ShimonVault's
+// lines per folder), which the default column clips.
+function Reviews({ value, unit, bars, wide }) {
   const max = Math.max(...bars.map((bar) => bar.count))
   return (
-    <div className="rv-reviews">
+    <div className={'rv-reviews' + (wide ? ' rv-reviews--wide' : '')}>
       <p className="rv-reviews__head">
         <b>{value}</b>
         <span>{unit}</span>
@@ -58,7 +64,7 @@ function Reviews({ value, unit, bars }) {
           <div className="rv-bars__row" key={bar.name}>
             <span>{bar.name}</span>
             <i style={{ '--w': `${(bar.count / max) * 100}%` }} aria-hidden="true" />
-            <em>{bar.count}</em>
+            <em>{bar.count.toLocaleString('en-US')}</em>
           </div>
         ))}
       </div>
@@ -175,7 +181,67 @@ function Calendar({ dates }) {
   )
 }
 
+function Logo({ label, size, hot }) {
+  const icon = techIcon(label)
+  if (!icon) return null
+  return (
+    <span className={`rv-span__logo rv-span__logo--${size}${hot ? ' rv-span__logo--hot' : ''}`} data-tone={techTone(label)}>
+      <img src={icon} alt="" />
+    </span>
+  )
+}
+
+function End({ end }) {
+  return (
+    <p className="rv-span__end">
+      <Logo label={end.icon} size="lg" />
+      <b>{end.name}</b>
+      <span>{end.note}</span>
+    </p>
+  )
+}
+
+// Two systems at the tile's edges and what joins them in the middle. The
+// middle is either a link (`via`: a logo over one line, between hairlines) or
+// a switch (`toggle`), with the tools that operate it in a small triangle
+// beside it. A `hot` tool is the one that flips the switch.
+function Span({ from, to, via, tools, toggle, note }) {
+  return (
+    <div className="rv-span">
+      <End end={from} />
+      {via ? (
+        <div className="rv-span__mid rv-span__mid--via">
+          <Logo label={via.icon} size="sm" />
+          <span className="rv-span__via">{via.text}</span>
+        </div>
+      ) : (
+        <div className="rv-span__mid">
+          {tools && (
+            <span className="rv-span__tools">
+              {tools.map((tool) => (
+                <Logo label={tool.icon} size="tool" hot={tool.hot} key={tool.icon} />
+              ))}
+            </span>
+          )}
+          <span className="rv-span__switch">
+            <span className="rv-span__toggle">
+              {toggle.options.map((option) => (
+                <span className={option === toggle.active ? 'rv-span__on' : undefined} key={option}>
+                  {option}
+                </span>
+              ))}
+            </span>
+            {note && <span className="rv-span__note">{note}</span>}
+          </span>
+        </div>
+      )}
+      <End end={to} />
+    </div>
+  )
+}
+
 const VISUALS = {
+  span: Span,
   hub: Hub,
   reviews: Reviews,
   result: Result,

@@ -188,9 +188,58 @@ function TrackBoard({ notes }) {
   )
 }
 
+// The `compare` board (ShimonVault): one pinned note per Lock‑N‑Lock track,
+// two across. Each note reads top to bottom as the team's approach (on a
+// shaded band, in the small grey size), what that setup lacked, and what this
+// project set out to practice (in the reading size). Every paragraph is
+// justified with its last two words bound, and the wording was tuned in the
+// browser so no paragraph ends on a near-empty line.
+const COMPARE_TILTS = [-1.2, 1.4, -1.6, 1.1]
+
+function CompareBoard({ notes }) {
+  return (
+    <ul className="board board--compare">
+      {notes.map((note, i) => {
+        const [team, setup, focus] = note.parts
+        return (
+          <li
+            key={note.label}
+            className="board__note"
+            style={{
+              '--tilt': `${COMPARE_TILTS[i % COMPARE_TILTS.length]}deg`,
+              '--note-tint': TINTS[i % TINTS.length],
+            }}
+          >
+            <span className="board__pin" aria-hidden="true" />
+            <h3 className="board__label">{note.label}</h3>
+            <div className="compare__team">
+              <p className="compare__cap">{team.caption}</p>
+              <p className="compare__text compare__text--team">
+                <RichText>{glueLastWord(team.text)}</RichText>
+              </p>
+            </div>
+            <p className="compare__cap compare__cap--accent">{setup.caption}</p>
+            <p className="compare__text compare__text--setup">
+              <RichText>{glueLastWord(setup.text)}</RichText>
+            </p>
+            <p className="compare__cap compare__cap--accent">{focus.caption}</p>
+            <p className="compare__text compare__text--focus">
+              <RichText>{glueLastWord(focus.text)}</RichText>
+            </p>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export default function ContextSection({ project }) {
   const notes = notesOf(project.context)
   const collage = project.context?.layout === 'collage'
+
+  if (project.context?.layout === 'compare' && notes?.length) {
+    return <CompareBoard notes={notes} />
+  }
 
   if (project.context?.layout === 'pinned' && notes?.length) {
     return <PinnedBoard notes={notes} />

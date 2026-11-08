@@ -1,52 +1,48 @@
-# Event-Driven Security Detection and Automated Response for a Hybrid Cloud Platform
+# ShimonVault: Self‑Directed Practice in Cloud Security on Hybrid Infrastructure
 
 ### 🗨️ Project Introduction
 
+> ShimonVault is a secure internal operations platform on AWS. Users upload documents and schedule meetings. The platform records every request and defends against misuse as it happens.
 >
->
->
-> ShimonVault is a secure internal operations platform deployed on AWS. Teams upload documents, schedule meetings, and every action taken on the platform is logged, monitored and defended while the service is running.
->
-> This is an individual project, built alone against the same brief as the Lock & Lock team project. The purpose was to find out which parts of that platform I understood as an engineer and which parts I only understood as a reviewer. The rule I set was that the brief could be the same and the mechanism had to be different: detection lives in application middleware, response lives in Lambda, scheduling lives in EventBridge, and the audit trail lives in DynamoDB.
->
-
-Nothing in this repository was copied from the team repository. Where the team answered a problem with a container on an EC2 instance, this build answers it with the AWS service that owns the problem.
+> This practice project rebuilds the Lock‑N‑Lock brief as an individual build. On Lock‑N‑Lock, I led the team and owned the infrastructure track. This build adds the application to that scope. The detection rules and the response path come with it. Detection runs in application middleware, and automated checks run in Lambda. The audit trail lives in DynamoDB.
 
 ### 💠 Project Type
 
-- Individual project, built from an empty repository
-- Same four-week brief as the Lock & Lock team project, deliberately different execution
+- The project started from an empty repository as individual practice.
+- It keeps the four‑week Lock‑N‑Lock brief and changes the design behind it.
 
 ### 💠 Scope & Ownership
 
-`Solo build. Every area below is mine.`
+The table below maps each area of the platform to its directory.
 
-| Area | What it covers | Directory |
+| Area | What it covers | Directory |
 |---|---|---|
-| Infrastructure · IaC | VPC, subnets, ALB, EC2, RDS, S3, DynamoDB, Lambda, SNS, EventBridge, IAM | `terraform/` |
-| Application · API | FastAPI, SQLAlchemy models, JWT auth, role-based access, audit middleware | `app/` |
-| Frontend | React SPA baked into the application image at build time | `frontend/` |
-| Serverless response | Five Lambda handlers for blocking, logging, file validation and meeting lifecycle | `lambda/` |
-| Monitoring · Alerting | Prometheus, Grafana, Alertmanager and the Telegram relay on the on-premises host | `monitoring/` |
-| Configuration management | Docker and CloudWatch agent roles, dynamic EC2 inventory, stack verification | `ansible/` |
-| CI/CD | Lint, test and image build on every push; blue/green deploy on `main` | `.github/workflows/` |
-| Operations · Demo | One-command deploy and teardown, replication setup, five attack simulations | `scripts/` |
+| Infrastructure and IaC | Terraform builds every AWS resource in the project, starting with the VPC and ending with IAM. | `terraform/` |
+| Application and API | FastAPI serves the API on SQLAlchemy models. Sign‑in uses JWT, and role checks guard each protected route. The audit middleware wraps every request. | `app/` |
+| Frontend | A React single‑page app is compiled into the application image for a single deployable unit. | `frontend/` |
+| Serverless response | Five Lambda handlers cover the serverless work. Three respond to security events, and two manage the meeting lifecycle. | `lambda/` |
+| Monitoring and alerting | Prometheus and Grafana run on the on‑premises host. Alertmanager and a Telegram relay share the same machine. | `monitoring/` |
+| Configuration management | Ansible roles install Docker and the CloudWatch agent. A dynamic EC2 inventory feeds them, and a separate playbook verifies the stack. | `ansible/` |
+| CI/CD | Every push runs linting and tests before an image build. Blue/green deploys wait for a manual trigger. | `.github/workflows/` |
+| Operations and demo | Scripts handle the one‑command deploy and teardown. They also set up replication and run four attack simulations. | `scripts/` |
 
 ### 💠 The Three Modules
 
-| Module | What it does |
+| Module | What it does |
 |---|---|
-| **SecureDocs** | Upload, list, download, version and soft-delete documents. Bytes live in S3 under `{owner_id}/{date}/{uuid}-{filename}`, encrypted at rest, with versioning on the bucket. Downloads are presigned URLs that expire after 15 minutes. Every access attempt is logged. |
-| **ShimonMeet** | Create, update, cancel and join meetings. Each meeting gets a random join token. Creating a meeting registers two one-time EventBridge rules: a reminder 10 minutes before the start, and an archive at the end time. |
-| **AuditStream** | The live feed of everything the other two modules did. Every request is written to DynamoDB by middleware, read back by the admin console, and mirrored into PostgreSQL for reporting. |
+| **SecureDocs** | Users upload and version documents. Downloads and soft deletes run through the same module. Each file lives in S3 under `{owner_id}/{date}/{uuid}-{filename}` and stays encrypted at rest in a versioned bucket. Every download is a presigned URL with a 15‑minute expiry, and every access attempt is logged. |
+| **ShimonMeet** | Users create and update meetings. They can also cancel a meeting or join one. Each meeting receives a random join token, and the platform refuses a wrong or expired token and logs it as a replay attempt. |
+| **AuditStream** | AuditStream is the live feed of every action in the other two modules. The audit middleware writes each request to DynamoDB, and the admin console reads the feed back every four seconds. |
 
 ---
 
-# ShimonVault: Detection in the Application, Response in the Cloud
+## Design Principles
 
-A hybrid platform (AWS ↔ on-premises) built on three ideas. **Nothing gets to skip the audit trail**, because the logger is middleware rather than a call each route has to remember. **The thing that responds to a failure is not part of the failure**, because the response path is Lambda behind SNS rather than a process on a machine that may itself be down. **A defence nobody has attacked is a configuration**, so all five attack scenarios are buttons inside the product that fire real requests at real endpoints.
+**Every request reaches the audit trail.** The logger wraps every route as middleware. Health and metrics checks are the only exceptions.
 
----
+**Automated responses run outside the servers they protect.** File checks and incident logging run in Lambda functions. Running them outside the instances keeps the response path available during an instance failure.
+
+**Every defense faces a real attack.** Four built‑in attack simulations hit real endpoints with real requests.
 
 ## Architecture at a Glance
 
@@ -65,14 +61,14 @@ App EC2 (green)     Docker, uvicorn on :8000, node_exporter on :9100
   ├─► S3   shimonvault-docs-<account>   ·   shimonvault-reports-<account>
   ├─► DynamoDB   audit-log · incidents · meetings
   ├─► SNS   security-alert · infra-alert · meeting-reminders
-  └─► EventBridge   one-time at() rules, created per meeting
+  └─► EventBridge   a scheduled health check every 5 minutes
 
 Tailscale mesh (100.64.0.0/10)
   ├─ proj-mgmt      Prometheus · Grafana · Alertmanager · cAdvisor · Portainer · Telegram relay
   └─ proj-ubuntu01  PostgreSQL read replica on :5433 · NFS share
 ```
 
-Security groups reference each other rather than CIDR ranges. The app group accepts `8000` only from the ALB group and `22` only from the bastion group. The RDS group accepts `5432` only from the app group and the bastion group. Ports `9100` (node exporter), `2376` (Docker TLS) and `2049` (NFS) are open only to the Tailscale range.
+The security groups reference each other instead of CIDR ranges. The app group accepts `8000` from the ALB group and `22` from the bastion group. The RDS group accepts `5432` from the app group and the bastion group. Port `9100` serves the node exporter, and port `2376` serves Docker TLS. NFS listens on `2049`. All three accept traffic only from the Tailscale range.
 
 ---
 
@@ -80,15 +76,15 @@ Security groups reference each other rather than CIDR ranges. The app group acce
 
 ### Prerequisites
 
-- AWS CLI configured (`aws configure`)
-- Terraform 1.7 or later
-- Docker Desktop running
-- An EC2 key pair in `ap-northeast-2`, and an SSH key at `~/.ssh/id_ed25519_shimonvault`
-- Tailscale installed on the on-premises hosts, with an auth key from the admin console
+- The AWS CLI is installed and configured with `aws configure`.
+- Terraform 1.7 or later is installed.
+- Docker Desktop is running.
+- An EC2 key pair exists in `ap-northeast-2`, and an SSH key sits at `~/.ssh/id_ed25519_shimonvault`.
+- Tailscale runs on the on‑premises hosts with an auth key from the admin console.
 
-### One-time state bootstrap
+### One‑time state bootstrap
 
-Terraform state lives on an S3 backend with a DynamoDB lock table. Both are created once by hand and are never managed by Terraform, so `terraform destroy` can never delete the state it is writing to.
+Terraform state lives on an S3 backend with a DynamoDB lock table. Both are created by hand and never managed by Terraform.
 
 ```bash
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -110,7 +106,7 @@ aws dynamodb create-table \
   --region ap-northeast-2
 ```
 
-Then put your account ID into the backend block in `terraform/main.tf`.
+Add your account ID to the backend block in `terraform/main.tf`.
 
 ### Configure
 
@@ -121,38 +117,38 @@ cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 # and the Tailscale IPs of proj-mgmt and proj-ubuntu01
 ```
 
-`terraform.tfvars` is gitignored. Nothing sensitive is ever committed, and `app/.env` is generated from Terraform outputs rather than written by hand.
+`terraform.tfvars` is gitignored. `generate_env.sh` builds `app/.env` from the Terraform outputs.
 
 ---
 
 ## Deployment
 
-One command stands the whole environment up. It takes about 15 minutes, and RDS is the slow part.
+One command provisions everything in about 10 minutes.
 
 ```bash
 bash scripts/deploy.sh
 ```
 
-`deploy.sh` runs in order:
+`deploy.sh` runs these steps in order:
 
-| Step | What happens |
+| Step | What happens |
 |---|---|
-| 0 | Detects your current public IP and rewrites `your_ip_cidr` in `terraform.tfvars`, so the bastion rule follows you between networks |
-| 0.5 | Reads `proj-mgmt`'s own Tailscale address for the Prometheus URL |
-| 1 – 2 | `terraform init` and `terraform apply` |
-| 3 | `generate_env.sh` writes `app/.env` from Terraform outputs: RDS endpoint, bucket names, table names, SNS ARNs |
-| 4 | `update_ssh_config.sh` rewrites the bastion jump-host entry |
-| 5.5 | Points the Cloudflare record for `shimonvault.junhanshin.com` at the current ALB, unproxied |
-| 6 – 7 | Waits for bastion SSH, then polls the app until `/health` answers, up to 4 minutes |
-| 8.5 | Seeds the three demo accounts, idempotently |
-| 11 | Installs `node_exporter` on the EC2 instances through Ansible |
-| 12 | `setup_replica.sh` configures logical replication from RDS to `proj-ubuntu01` |
-| 13 | `ansible-playbook playbooks/verify_stack.yml` checks the whole stack end to end |
-| 14 | Fetches the Docker TLS certificates and repoints Portainer at the new instance |
+| 1 | The script detects your current public IP and rewrites `your_ip_cidr` in `terraform.tfvars`. The bastion rule then follows you between networks. |
+| 2 | The script reads the Tailscale address of `proj-mgmt` for the Prometheus URL. |
+| 3 | The script runs `terraform init` and `terraform apply`. |
+| 4 | `generate_env.sh` fills `app/.env` from the Terraform outputs with the RDS endpoint and every resource name the app needs. |
+| 5 | `update_ssh_config.sh` rewrites the bastion jump‑host entry. |
+| 6 | The script points the Cloudflare record for `shimonvault.junhanshin.com` at the current ALB without the proxy. |
+| 7 | The script waits for bastion SSH and polls the app for up to 4 minutes until `/health` answers. A last request through the ALB confirms that the app is serving. |
+| 8 | The script seeds the three demo accounts and skips any account that already exists. |
+| 9 | The script points Ansible at the new bastion. Ansible then installs `node_exporter` on the EC2 instances. |
+| 10 | `setup_replica.sh` sets up logical replication from RDS to `proj-ubuntu01`. |
+| 11 | `ansible-playbook playbooks/verify_stack.yml` checks the whole stack from end to end. |
+| 12 | The script fetches the Docker TLS certificates and points Portainer at the new instance. Prometheus reloads with the new targets at the end. |
 
-### Monitoring stack (on-premises, always on)
+### Monitoring stack on premises
 
-The monitoring host is never destroyed with the AWS environment.
+The on‑premises host is never torn down.
 
 ```bash
 cp .env.example monitoring/.env
@@ -161,21 +157,31 @@ cp .env.example monitoring/.env
 cd monitoring && docker compose up -d
 ```
 
-Seven containers come up: Prometheus (`:9090`), Grafana (`:3000`), Alertmanager (`:9093`), node exporter (`:9100`), cAdvisor (`:8080`), the Telegram relay (`:8001`) and Portainer (`:9000`).
+Seven containers start on these ports.
+
+| Container | Port |
+|---|---|
+| Prometheus | `:9090` |
+| Grafana | `:3000` |
+| Alertmanager | `:9093` |
+| Node exporter | `:9100` |
+| cAdvisor | `:8080` |
+| Telegram relay | `:8001` |
+| Portainer | `:9000` |
 
 ### Lambda packaging
 
-Terraform zips each Lambda directory at apply time through `archive_file`, so the normal path needs no manual step. `scripts/package_lambdas.sh` builds the same five zips with their dependencies and the shared `notification.py` helper, for when a handler needs a real package installed.
+Terraform zips each Lambda directory at apply time through `archive_file`. When a handler needs a real package installed, `scripts/package_lambdas.sh` builds the same five zips with their dependencies and the shared `notification.py` helper.
 
-### Teardown (required after every session)
+### Teardown after every session
 
 ```bash
 bash scripts/destroy.sh
 ```
 
-`destroy.sh` removes the EC2 nodes from the Tailscale mesh first, runs `terraform destroy`, and then verifies rather than trusts. It re-checks EC2 instances, RDS, load balancers, the NAT instance, leftover EBS volumes, Lambda functions and stale Tailscale nodes, and prints the console links for the two manual checks that are worth a human eye.
+`destroy.sh` leaves the Tailscale mesh and runs `terraform destroy`. It then sweeps seven resource types for leftovers and prints two console links for manual checks.
 
-State is preserved across sessions. The S3 bucket and the lock table are outside Terraform, so the next `apply` picks up where the last one left off.
+State persists across sessions.
 
 ---
 
@@ -197,7 +203,7 @@ shimon-vault/
 │   │   ├── meetings_router.py    create, list, get, update, cancel, join, archive
 │   │   ├── audit_router.py       feed, incidents, my-activity
 │   │   ├── admin_router.py       dashboard summary, timeseries, infra
-│   │   └── demo_router.py        the five one-click attack simulations
+│   │   └── demo_router.py        4 attack simulations and a notification test
 │   ├── services/                 S3, DynamoDB audit, EventBridge, Prometheus, notify, rate limiter
 │   ├── middleware/
 │   │   └── audit_middleware.py   logs every request, counts, suspends, alerts
@@ -206,19 +212,19 @@ shimon-vault/
 │   └── src/                      Login, Docs, Meetings, Console, api.js, toast
 ├── terraform/                    27 files, 90 resource blocks
 │   ├── main.tf                   provider, S3 backend, caller identity
-│   ├── vpc.tf                    VPC, 4 subnets, IGW, route tables
-│   ├── alb.tf                    ALB, blue and green target groups, 80 and 443
+│   ├── vpc.tf                    VPC, 3 subnets, IGW, route tables
+│   ├── alb.tf                    ALB, second public subnet, target groups, 80 and 443
 │   ├── acm.tf                    the cert the 443 listener serves, DNS-validated
 │   ├── app_ec2_blue.tf           the live instance
 │   ├── app_ec2_green.tf          created only when deploy_green = true
 │   ├── asg.tf                    launch template, scale policies, CPU alarms
 │   ├── rds.tf                    PostgreSQL 16, logical replication parameters
-│   ├── s3.tf                     docs and reports, encrypted, versioned
+│   ├── s3.tf                     docs versioned, reports expire in 30 days
 │   ├── dynamodb.tf               audit-log, incidents, meetings
 │   ├── lambda.tf                 5 functions, zipped at apply time
 │   ├── sns.tf                    security-alert, infra-alert, meeting-reminders
-│   ├── eventbridge.tf            the static warm-up rule
-│   ├── iam.tf                    2 roles, one inline policy per Lambda
+│   ├── eventbridge.tf            a scheduled health check every 5 minutes
+│   ├── iam.tf                    2 roles, 4 inline policies for 5 Lambdas
 │   ├── security_groups.tf        5 groups, referencing each other
 │   ├── nat_instance.tf           t3.micro with iptables masquerade
 │   ├── bastion.tf                SSH from my IP only
@@ -230,14 +236,14 @@ shimon-vault/
 │   ├── block_ip/                 NACL deny rule, incident record, notify
 │   ├── log_incident/             SNS message to the incidents table
 │   ├── validate_file/            magic-byte check on S3 upload
-│   ├── meeting_notify/           fires 10 minutes before a meeting
-│   ├── meeting_expire/           fires at meeting end
+│   ├── meeting_notify/           meeting reminder handler
+│   ├── meeting_expire/           meeting archive handler
 │   └── shared/notification.py    the Slack and Telegram helper
 ├── monitoring/                   on-premises stack, docker compose
 │   ├── prometheus/
 │   │   ├── prometheus.yml        4 scrape jobs, 15s interval
 │   │   ├── rules/                4 alert rules
-│   │   └── targets/              file_sd JSON, rewritten by deploy.sh
+│   │   └── targets/              file_sd JSON, rewritten by fetch_docker_certs.sh
 │   ├── alertmanager/             Slack receiver plus a webhook to the relay
 │   ├── grafana/dashboards/       infra_health.json, auditstream.json
 │   └── telegram_relay/           the bridge Alertmanager posts to
@@ -247,18 +253,16 @@ shimon-vault/
 │   └── roles/                    docker_app, monitoring_stack, cloudwatch_agent
 ├── scripts/
 │   ├── deploy.sh                 apply to healthy in one command
-│   ├── destroy.sh                teardown, then verify 9 resource types
+│   ├── destroy.sh                teardown, then 7 leftover checks
 │   ├── generate_env.sh           app/.env from Terraform outputs
 │   ├── setup_replica.sh          RDS to on-premises logical replication
 │   ├── fetch_docker_certs.sh     the Docker TLS certs Portainer connects with
 │   ├── update_ssh_config.sh      rewrites ~/.ssh/config for the new bastion
 │   ├── package_lambdas.sh        zips the five functions with dependencies
-│   ├── update_ssh_config.sh      bastion jump host
-│   ├── fetch_docker_certs.sh     Docker TLS certs for Portainer
 │   ├── generate_report.py        incident report from DynamoDB
-│   └── simulate_*.sh|.py         the terminal versions of the five demos
+│   └── simulate_*.sh|.py         terminal versions of the attack demos
 ├── db/                           schema.sql, seed.sql, schema_from_rds.sql
-├── tests/                        pytest, SQLite in memory, no AWS needed
+├── tests/                        pytest on a SQLite file, no AWS needed
 ├── docs/                         the GitHub Pages landing page
 └── .github/workflows/            ci.yml and cd.yml
 ```
@@ -267,23 +271,23 @@ shimon-vault/
 
 ## Security Controls
 
-| Control | Where it lives | Trigger | Response |
+| Control | Where it lives | Trigger | Response |
 |---|---|---|---|
-| Request auditing | `middleware/audit_middleware.py` | Every request except `/health`, `/metrics`, `/favicon.ico` | One row in the DynamoDB audit log, with method, path, status, IP and severity |
-| Role-based access | `auth.require_role()` | Any route declaring required roles | HTTP 403, logged as `doc_access_denied` |
-| Account suspension | `audit_middleware` | 5 access-denied responses from one account | `users.suspended = true`, incident record, Slack and Telegram alert |
-| Download rate limit | `rate_limit.py` and `docs_router` | 10 downloads in 60 seconds per IP | HTTP 429, logged as `rate_limit_hit` |
-| Exfiltration report | `audit_middleware` | The first 429 on a `/docs/download` path from an IP | JSON incident report written to the reports bucket, incident record, one alert per IP per burst |
-| Login failure tracking | `auth_router` | 5 failures from one IP, then 8 | Warning alert at 5, incident record and critical alert at 8 |
-| Upload validation | `lambda/validate_file` | S3 `ObjectCreated:Put` on the docs bucket | Reads the first 512 bytes, rejects on signature or size, deletes the object, writes an incident |
-| Automatic IP block | `lambda/block_ip` | An SNS message on the security-alert topic | Inserts a DENY entry into the network ACL at the lowest free rule number between 1 and 99 |
-| Presigned downloads | `services/s3_service.py` | Every document download | A URL that expires in 900 seconds, so a leaked link is short-lived |
-| Password hashing | `auth.py` | Registration and login | SHA-256 pre-hash, then bcrypt at work factor 12 |
-| Least-privilege IAM | `terraform/iam.tf` | Every Lambda | One inline policy per function rather than one shared policy |
+| Request auditing | `middleware/audit_middleware.py` | Every request reaches the middleware. Only the health and metrics checks and the favicon skip it. | The middleware writes one row to the DynamoDB audit log. Each row records the request details and a severity level. |
+| Role‑based access | `auth.require_role()` | A request reaches a route that declares required roles. | The route returns HTTP 403, and the middleware logs `doc_access_denied`. |
+| Account suspension | `audit_middleware` | One account receives five access‑denied responses. | The middleware sets `users.suspended = true` and records an incident. Slack and Telegram receive the alert. |
+| Download rate limit | `rate_limit.py` and `docs_router` | One IP requests more than 10 downloads in 60 seconds. | The route returns HTTP 429, and the middleware logs `rate_limit_hit`. |
+| Exfiltration report | `audit_middleware` | An IP receives its first 429 on a `/docs/download` path. | The middleware writes a JSON report to the reports bucket and records an incident. One alert goes out for that IP. |
+| Login failure tracking | `auth_router` | One IP fails to sign in five times and then eight times. | The route sends a warning alert at five failures and records an incident with a critical alert at eight. |
+| Upload validation | `lambda/validate_file` | S3 reports `ObjectCreated:Put` on the docs bucket. | The Lambda reads the first 512 bytes of each upload. A blocked signature or size gets the object deleted and an incident recorded. |
+| Automatic IP block | `lambda/block_ip` | A message arrives on the security‑alert SNS topic. | The Lambda inserts a DENY entry into the network ACL at the lowest free rule number between 1 and 99. |
+| Presigned downloads | `services/s3_service.py` | A user downloads a document. | The service issues a URL with a 900‑second expiry, and a leaked link stops working quickly. |
+| Password hashing | `auth.py` | A user registers or signs in. | The service hashes the password with SHA‑256 first and then with bcrypt at work factor 12. |
+| Least‑privilege IAM | `terraform/iam.tf` | A Lambda function runs. | Two roles and four inline policies limit each function to the actions it needs. |
 
-### Why the block is a network ACL and not a security group
+### Why the block uses a network ACL
 
-A security group has allow rules only. There is no such thing as a security group deny rule, so an automatic block cannot be expressed there. Network ACLs are stateless and ordered by rule number, which is exactly what an automatic block needs. `block_ip` reads the existing entries, takes the lowest free number between 1 and 99, and inserts a DENY for `<ip>/32`. Rule numbers 100 and above are left for the ordinary allow rules.
+A security group holds allow rules only and cannot express a deny. Network ACLs are stateless and ordered by rule number, and an automatic block needs both of those properties. `block_ip` reads the existing entries first. It then inserts a DENY for `<ip>/32` at the lowest free number between 1 and 99. Rule numbers 100 and above stay reserved for the ordinary allow rules.
 
 ---
 
@@ -321,62 +325,62 @@ SNS infra-alert
 
 ## Demo Scenarios
 
-All five are admin-only endpoints under `/demo`, gated by `DEMO_ENABLED`. Each one logs in as a real seeded account and calls real endpoints over HTTP, so what appears in the audit feed is the application running rather than fixture data. Every scenario also has a terminal equivalent in `scripts/`, for when the app itself is the thing under test.
+All five demos are admin‑only endpoints under `/demo`, and `DEMO_ENABLED` controls them. Each demo uses a seeded account and real HTTP calls. Every attack also has a terminal version in `scripts/` for runs where the app itself is under test.
 
-| Act | Endpoint | Script | What it proves |
+| Act | Endpoint | Script | What it proves |
 |---|---|---|---|
-| 1 | `POST /demo/test-notification` | | Slack and Telegram wiring is live |
-| 2 | `POST /demo/credential-stuffing` | `simulate_credential_stuffing.sh` | 30 login attempts with weak passwords produce real 401s, the failure counter crosses both thresholds, and the alerts fire |
-| 3 | `POST /demo/access-control` | `simulate_access_control.sh` | A viewer account repeatedly requests a document it does not own, gets real 403s, and is suspended on the fifth |
-| 4 | `POST /demo/exfiltration` | `simulate_exfiltration.py` | An editor re-downloads a real document until the limiter trips, producing a 429, an S3 incident report and one alert |
-| 5 | `POST /demo/ddos` | `simulate_ddos.sh` | A concurrent burst at `/docs/list` raises the real Prometheus request rate and CPU |
+| 1 | `POST /demo/test-notification` | | The Slack and Telegram connections are live. |
+| 2 | `POST /demo/credential-stuffing` | `simulate_credential_stuffing.sh` | Thirty login attempts with weak passwords return real 401s. The failure counter crosses both thresholds, and the alerts fire. |
+| 3 | `POST /demo/access-control` | `simulate_access_control.sh` | A viewer account keeps requesting a document it does not own and receives real 403s. The fifth refusal suspends the account. |
+| 4 | `POST /demo/exfiltration` | `simulate_exfiltration.py` | An editor downloads one real document until the limiter trips. The run ends in a 429. An S3 incident report and one alert follow. |
+| 5 | `POST /demo/ddos` | `simulate_ddos.sh` | A concurrent burst against `/docs/list` raises the Prometheus request rate and the CPU. |
 
-The attacker address is `203.0.113.42` by default, inside the RFC 5737 documentation range, sent as `X-Forwarded-For` so the audit trail shows a plausible source that belongs to nobody.
+The demo sets `X-Forwarded-For` to `203.0.113.42` from the RFC 5737 range.
 
-`DEMO_ENABLED=false` turns every one of these into a 403. A public "launch attack" button would itself be a vulnerability, which is why the master switch exists and why the admin role is required on top of it.
+All demo endpoints require the admin role, and `DEMO_ENABLED=false` disables them.
 
 ---
 
 ## Monitoring and Alerting
 
-Prometheus scrapes every 15 seconds across four jobs: the on-premises node exporter, cAdvisor, the EC2 nodes, and the application's `/metrics` endpoint. The EC2 and application targets are file-based service discovery, and `deploy.sh` rewrites those JSON files after each apply.
+Prometheus scrapes four jobs every 15 seconds. The node exporter and cAdvisor report on the on‑premises host. The other two jobs cover the EC2 nodes and the application's `/metrics` endpoint. The EC2 and application targets use file‑based service discovery, and `fetch_docker_certs.sh` rewrites those JSON files after each apply.
 
 ### Alert rules
 
 | Alert | Expression | For | Severity |
 |---|---|---|---|
-| `HighCPU` | CPU above 80% | 2m | warning |
-| `HighMemory` | memory above 85% | 2m | warning |
+| `HighCPU` | CPU above 80% | 2m | warning |
+| `HighMemory` | memory above 85% | 2m | warning |
 | `NodeDown` | `up{job="ec2-nodes"} == 0` | 1m | critical |
 | `FastAPIDown` | `up{job="fastapi-app"} == 0` | 1m | critical |
 
-Alertmanager groups by alert name, instance and severity, waits 30 seconds, and repeats every 4 hours. One receiver fans out to the `#shimonvault-alerts` Slack channel and to the Telegram relay, which exists because Alertmanager has no native Telegram support. An inhibit rule suppresses `HighCPU`, `HighMemory` and `FastAPIDown` on any instance already reporting `NodeDown`, so one dead host sends one alert instead of four.
+Alertmanager groups alerts by name and instance as well as severity. Each group waits 30 seconds before it goes out, and an unresolved alert repeats every 4 hours. One receiver feeds Slack and a Telegram relay. An inhibit rule mutes the other three alerts on any instance reporting `NodeDown`.
 
-Alertmanager does not expand environment variables inside its own configuration file, so the compose entrypoint writes the Slack webhook URL to `/tmp/slack_url` at startup and the config reads it with `slack_api_url_file`.
+The Slack webhook reaches Alertmanager through `/tmp/slack_url` and `slack_api_url_file` because the config file cannot expand environment variables.
 
 ### CloudWatch alarms
 
 | Alarm | Watches | Action |
 |---|---|---|
-| `high-cpu` | ASG CPU above 80% for 2 periods | scale-out policy and the infra-alert topic |
-| `instance-status-check` | EC2 status check failures | infra-alert topic |
-| `alb-5xx-errors` | ALB 5xx count | infra-alert topic |
-| `high-cpu-asg` | ASG CPU high | scale out |
-| `low-cpu-asg` | ASG CPU low | scale in |
+| `high-cpu` | ASG CPU above 80% for 2 periods | scale-out policy and the infra-alert topic |
+| `instance-status-check` | EC2 status check failures | infra-alert topic |
+| `alb-5xx-errors` | ALB 5xx count | infra-alert topic |
+| `high-cpu-asg` | ASG CPU high | scale out |
+| `low-cpu-asg` | ASG CPU low | scale in |
 
 ### Grafana
 
-Two provisioned dashboards: `infra_health` for the node and container metrics, and `auditstream` for the security event view.
+Grafana loads two provisioned dashboards. `infra_health` shows the node and container metrics, and `auditstream` shows the security events.
 
 ---
 
 ## Delivery
 
-### CI, on every push and every pull request to `main`
+### CI on every push and every pull request to `main`
 
-flake8 at 120 columns → pytest against SQLite in memory with a 50 percent coverage floor → a Docker build check that never pushes. The build check runs the full multi-stage Dockerfile, which means the Vite frontend build is verified too.
+CI starts with flake8 and then pytest with a 50 percent coverage floor. A Docker build check that never pushes runs last. The build check runs the full multi‑stage Dockerfile and verifies the Vite frontend build as well.
 
-### CD, dispatched by hand
+### CD started by hand
 
 ```
 build and push  mindmug/shimonvault-app:green  and  :green-<sha>   (amd64 and arm64)
@@ -394,13 +398,13 @@ retag :green as :blue
 Slack: complete, or failed with blue still live
 ```
 
-`cd.yml` is `workflow_dispatch` only. It ran on every push to `main` until that trigger rebuilt live AWS infrastructure after a `terraform destroy` and started the billing again with nobody watching, so deploying is now an explicit `gh workflow run cd.yml --ref main`. CI still runs on every push, because linting and testing cost nothing.
+`cd.yml` runs only on `workflow_dispatch` through `gh workflow run cd.yml --ref main`. CI still runs on every push because linting and testing cost nothing.
 
-A `concurrency` group named `deploy-production` with `cancel-in-progress: false` makes sure two deploys never run at once and no deploy is ever cancelled mid-flight.
+A `deploy-production` concurrency group runs deploys one at a time without cancelling any.
 
-The switch is a Terraform variable rather than an `aws elbv2 modify-listener` call. A CLI switch is drift: the next `terraform apply` quietly puts traffic back on blue and nobody knows why. Making the listener target a variable puts the switch in state, and the pipeline only reaches it after the green target group has actually reported healthy.
+The listener moves through a Terraform variable. A CLI call would leave the change outside state, and the next apply would return traffic to blue.
 
-A rollback is the same apply with `active_color=blue`, so it goes through the same variable and leaves no drift behind it.
+A rollback is the same apply with `active_color=blue`. It goes through the same variable and leaves no drift behind.
 
 ---
 
@@ -408,122 +412,122 @@ A rollback is the same apply with `active_color=blue`, so it goes through the sa
 
 | Method | Path | Role | Notes |
 |---|---|---|---|
-| POST | `/auth/register` | public | defaults to the viewer role |
-| POST | `/auth/login` | public | 10 per minute per IP |
-| POST | `/auth/logout` | any | client-side token discard |
-| POST | `/docs/upload` | admin, editor | triggers `validate_file` through S3 |
+| POST | `/auth/register` | public | New accounts start with the viewer role. |
+| POST | `/auth/login` | public | Each IP can try 10 times per minute. |
+| POST | `/auth/logout` | any | The client discards its token. |
+| POST | `/docs/upload` | admin, editor | S3 triggers `validate_file` on each upload. |
 | GET | `/docs/list` | any | |
-| GET | `/docs/download/{doc_id}` | any | 10 per 60 seconds per IP, presigned URL |
-| DELETE | `/docs/{doc_id}` | admin, editor | soft delete |
+| GET | `/docs/download/{doc_id}` | any | Each IP can download 10 times per 60 seconds through a presigned URL. |
+| DELETE | `/docs/{doc_id}` | admin, editor | The document is soft‑deleted. |
 | GET | `/docs/{doc_id}/versions` | any | |
-| POST | `/meetings/create` | admin, editor | registers two EventBridge rules |
+| POST | `/meetings/create` | admin, editor | The meeting receives a random join token. |
 | GET | `/meetings/list` | any | |
 | GET | `/meetings/{id}` | participant | |
 | PUT | `/meetings/{id}` | organizer | |
-| DELETE | `/meetings/{id}` | organizer | removes the EventBridge rules |
-| POST | `/meetings/{id}/join` | participant | join token required |
-| GET | `/meetings/{id}/archive` | organizer | attendance record |
-| GET | `/audit/feed` | admin | the live AuditStream |
+| DELETE | `/meetings/{id}` | organizer | The meeting is cancelled. |
+| POST | `/meetings/{id}/join` | participant | A join token is required. |
+| GET | `/meetings/{id}/archive` | organizer | The route returns the attendance record. |
+| GET | `/audit/feed` | admin | The route returns the live AuditStream. |
 | GET | `/audit/incidents` | admin | |
-| GET | `/audit/my-activity` | any | own events only |
-| GET | `/admin/metrics/summary` | admin | headline numbers |
-| GET | `/admin/metrics/timeseries` | admin | per-minute counts |
-| GET | `/admin/metrics/infra` | admin | read through the Prometheus HTTP API |
-| POST | `/demo/*` | admin | five simulations, gated by `DEMO_ENABLED` |
-| GET | `/health` | public | always 200, with a `db` field carrying the real state |
-| GET | `/metrics` | public | Prometheus format |
+| GET | `/audit/my-activity` | any | Each user sees only their own events. |
+| GET | `/admin/metrics/summary` | admin | The route returns the headline numbers. |
+| GET | `/admin/metrics/timeseries` | admin | The route returns counts per minute. |
+| GET | `/admin/metrics/infra` | admin | The route reads from the Prometheus HTTP API. |
+| POST | `/demo/*` | admin | Four attacks and a notification test run here, and `DEMO_ENABLED` controls them. |
+| GET | `/health` | public | The route always returns 200, and its `db` field carries the real state. |
+| GET | `/metrics` | public | The route serves metrics in Prometheus format. |
 
 ### Why `/health` returns 200 before the database is ready
 
-RDS takes 30 to 60 seconds to answer after the instance boots, and the ALB marks a target unhealthy long before that. Initialising the schema during startup meant a deploy never went green. `init_db()` now runs in a daemon thread that retries 20 times at 15 seconds, and `/health` answers 200 immediately with a `db` field that reads `initialising`, then `ok`, then the error text if it fails. The ALB reads the status code. A human reads the body.
+RDS takes 30 to 60 seconds to answer after the instance boots, and the ALB marks a target unhealthy long before that. `init_db()` runs in a background thread with 20 retries at 15‑second intervals. `/health` answers 200 right away. Its `db` field starts at `initialising` and changes to `ok` or to the error text. The ALB reads the status code, and an operator reads the body.
 
 ---
 
 ## Data Model
 
-PostgreSQL, five tables, UUID primary keys throughout. Sequential integers let an attacker enumerate records by incrementing an ID.
+All five PostgreSQL tables use UUID primary keys.
 
 | Table | Holds |
 |---|---|
-| `users` | email, username, bcrypt hash, role, `is_active`, `suspended` |
-| `documents` | filename, S3 key, content type, size, version, parent version, owner, status |
-| `meetings` | title, organizer, join token, status, scheduled and end times, EventBridge rule name |
-| `participants` | meeting, user, attended flag, join time |
-| `audit_events` | event type, user, IP, resource, detail JSON, severity, timestamp |
+| `users` | email, username, bcrypt hash, role, `is_active`, `suspended` |
+| `documents` | filename, S3 key, content type, size, version, parent version, owner, status |
+| `meetings` | title, organizer, join token, status, scheduled and end times, EventBridge rule name |
+| `participants` | meeting, user, attended flag, join time |
+| `audit_events` | event type, user, IP, resource, detail JSON, severity, timestamp |
 
-DynamoDB, three tables, all on-demand billing:
+DynamoDB holds three tables, and all three use on‑demand billing:
 
 | Table | Keys | Notes |
 |---|---|---|
-| `audit-log` | `id` / `created_at` | GSI on `event_type`, 90-day TTL |
-| `incidents` | `id` / `created_at` | the dedicated incident view |
-| `meetings` | `meeting_id` | read by the two meeting Lambdas |
+| `audit-log` | `id` / `created_at` | It has a GSI on `event_type` and a 90‑day TTL. |
+| `incidents` | `id` / `created_at` | It holds the dedicated incident view. |
+| `meetings` | `meeting_id` | The two meeting Lambdas read it. |
 
-The audit trail is written to both. DynamoDB serves the fast queries the console makes, and PostgreSQL keeps the relational copy for reporting.
+The audit middleware writes to DynamoDB, and the security console reads its feed from there. The PostgreSQL models also define an `audit_events` table for future relational reports.
 
 ### Read and write split
 
-`WRITE_DB_URL` points at the RDS primary and takes every mutation. `READ_DB_URL` points at the on-premises replica on `proj-ubuntu01:5433` and takes the select-only routes. Both engines are created lazily with `pool_pre_ping`, a 30-minute recycle and a 10-second connect timeout. `setup_replica.sh` sets up the subscription over Tailscale, reaching RDS through a socat relay on the app instance rather than through the bastion, so replication survives a bastion that is down.
+`WRITE_DB_URL` points at the RDS primary and takes every write. `READ_DB_URL` points at the on‑premises replica on `proj-ubuntu01:5433` and serves the read‑only routes. Both engines start lazily with `pool_pre_ping`. Connections recycle every 30 minutes and time out after 10 seconds. `setup_replica.sh` builds the subscription over Tailscale and reaches RDS through a socat relay on the app instance.
 
-The URL scheme must be `postgresql+psycopg2`. `asyncpg` fails at runtime rather than at import, with a `MissingGreenlet` error that says nothing about the driver.
+The URL scheme must be `postgresql+psycopg2`. `asyncpg` fails at runtime instead of at import, and its `MissingGreenlet` error says nothing about the driver.
 
 ---
 
 ## Configuration
 
-Nothing is hardcoded. `app/.env` is generated by `generate_env.sh` from Terraform outputs after every apply.
+`generate_env.sh` writes `app/.env` from the Terraform outputs after every apply.
 
 ### Application environment
 
 | Group | Variables |
 |---|---|
-| Identity | `PROJECT_NAME`, `APP_VERSION`, `ENVIRONMENT` |
-| Database | `WRITE_DB_URL`, `READ_DB_URL` |
-| Auth | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` |
-| AWS | `AWS_REGION`, `AWS_ACCOUNT_ID` |
-| S3 | `S3_BUCKET_DOCS`, `S3_BUCKET_REPORTS`, `S3_PRESIGNED_URL_EXPIRY` |
-| DynamoDB | `DYNAMODB_AUDIT_TABLE`, `DYNAMODB_INCIDENTS_TABLE`, `DYNAMODB_MEETINGS_TABLE` |
-| SNS | `SNS_TOPIC_SECURITY_ALERT`, `SNS_TOPIC_INFRA_ALERT`, `SNS_TOPIC_MEETING_REMINDERS` |
-| Notifications | `SLACK_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
+| Identity | `PROJECT_NAME`, `APP_VERSION`, `ENVIRONMENT` |
+| Database | `WRITE_DB_URL`, `READ_DB_URL` |
+| Auth | `JWT_SECRET_KEY`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRE_MINUTES` |
+| AWS | `AWS_REGION`, `AWS_ACCOUNT_ID` |
+| S3 | `S3_BUCKET_DOCS`, `S3_BUCKET_REPORTS`, `S3_PRESIGNED_URL_EXPIRY` |
+| DynamoDB | `DYNAMODB_AUDIT_TABLE`, `DYNAMODB_INCIDENTS_TABLE`, `DYNAMODB_MEETINGS_TABLE` |
+| SNS | `SNS_TOPIC_SECURITY_ALERT`, `SNS_TOPIC_INFRA_ALERT`, `SNS_TOPIC_MEETING_REMINDERS` |
+| Notifications | `SLACK_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` |
 | Monitoring | `PROMETHEUS_URL` |
-| Rate limits | `RATE_LIMIT_LOGIN`, `RATE_LIMIT_DOWNLOAD`, `RATE_LIMIT_DEFAULT` |
-| Demo | `DEMO_ENABLED`, `DEMO_BASE_URL`, `DEMO_ATTACKER_IP`, and the per-scenario counts |
+| Rate limits | `RATE_LIMIT_LOGIN`, `RATE_LIMIT_DOWNLOAD`, `RATE_LIMIT_DEFAULT` |
+| Demo | `DEMO_ENABLED`, `DEMO_BASE_URL`, `DEMO_ATTACKER_IP`, `DEMO_*_ATTEMPTS` |
 
 ### GitHub Actions secrets
 
-| Secret | Where it comes from |
+| Secret | Where it comes from |
 |---|---|
-| `AWS_ACCESS_KEY_ID` · `AWS_SECRET_ACCESS_KEY` | IAM user security credentials |
-| `DOCKERHUB_USERNAME` · `DOCKERHUB_TOKEN` | Docker Hub access token |
-| `DB_PASSWORD` · `JWT_SECRET_KEY` | the same values as `terraform.tfvars` |
-| `SLACK_WEBHOOK_URL` | Slack incoming webhook |
-| `TELEGRAM_BOT_TOKEN` · `TELEGRAM_CHAT_ID` | BotFather, then `getUpdates` |
-| `ALERT_EMAIL` · `YOUR_IP_CIDR` | the SNS email subscription and the bastion rule |
-| `TAILSCALE_AUTH_KEY` · `ONPREM_TAILSCALE_IP` | Tailscale admin console |
-| `SSH_PUBLIC_KEY` | the public half of the deploy key |
+| `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` | The IAM user's security credentials |
+| `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` | A Docker Hub access token |
+| `DB_PASSWORD` and `JWT_SECRET_KEY` | The same values as `terraform.tfvars` |
+| `SLACK_WEBHOOK_URL` | A Slack incoming webhook |
+| `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` | BotFather, followed by `getUpdates` |
+| `ALERT_EMAIL` and `YOUR_IP_CIDR` | The SNS email subscription and the bastion rule |
+| `TAILSCALE_AUTH_KEY` and `ONPREM_TAILSCALE_IP` | The Tailscale admin console |
+| `SSH_PUBLIC_KEY` | The public half of the deploy key |
 
-Every secret is passed to Terraform as a `TF_VAR_` at job level, so both `apply` steps in the deploy see the same values.
+Secrets reach Terraform as job‑level `TF_VAR_` values.
 
 ### Demo accounts
 
-Seeded from `db/seed.sql`, one per role: `admin@shimonvault.com`, `editor@shimonvault.com`, `viewer@shimonvault.com`. These are demo credentials for a build that is destroyed at the end of every session, and the demo router still reads them from the environment so nothing is truly hardcoded.
+`db/seed.sql` creates one account per role. Each address follows the pattern `<role>@shimonvault.com`. These demo credentials belong to a build that is destroyed after every session, and the demo router reads them from the environment.
 
 ---
 
 ## Tech Stack
 
-- Cloud: AWS (VPC, EC2, ALB, RDS, S3, DynamoDB, Lambda, SNS, EventBridge, CloudWatch, IAM, NACL)
-- Hybrid connectivity: Tailscale (mesh, zero public ports on either side)
-- DNS: Cloudflare, DNS only. TLS: ACM on the ALB, DNS-validated through the same zone
-- IaC: Terraform 1.7, S3 backend with a DynamoDB lock
-- Configuration management: Ansible, with dynamic EC2 inventory
-- Containers: Docker, multi-stage and multi-platform (amd64 and arm64), Docker Hub
-- App: FastAPI, Python 3.12, SQLAlchemy, slowapi, python-jose, passlib
-- Frontend: React, Vite, Chart.js
-- Database: PostgreSQL 16 on RDS, logical replication to an on-premises replica
-- Monitoring: Prometheus, Grafana, Alertmanager, node exporter, cAdvisor, Portainer
-- Alerting: Slack, Telegram
-- CI/CD: GitHub Actions, blue/green through a Terraform variable
+- **Cloud:** AWS runs every layer of the platform, and network ACLs carry the automatic block.
+- **Hybrid connectivity:** A Tailscale mesh joins AWS and the on‑premises hosts.
+- **DNS and TLS:** Cloudflare serves DNS without its proxy, and ACM provides the ALB certificate through the same DNS zone.
+- **IaC:** Terraform 1.7 keeps its state in an S3 backend with a DynamoDB lock.
+- **Configuration management:** Ansible configures the hosts through a dynamic EC2 inventory.
+- **Containers:** Docker builds a multi‑stage image for amd64 and arm64 and pushes it to Docker Hub.
+- **Application:** FastAPI runs on Python 3.12 with SQLAlchemy for data access and slowapi for rate limits. python‑jose and passlib handle tokens and password hashing.
+- **Frontend:** React and Vite drive the interface, and Chart.js renders the console charts.
+- **Database:** PostgreSQL 16 runs on RDS and replicates to an on‑premises copy.
+- **Monitoring:** Prometheus and Grafana watch the platform with metrics from the node exporter and cAdvisor. Alertmanager routes the alerts, and Portainer manages the containers.
+- **Alerting:** Slack and Telegram carry every alert to the operator.
+- **CI/CD:** GitHub Actions runs the pipeline, and a Terraform variable handles the blue/green switch.
 
 ---
 
@@ -534,24 +538,23 @@ cd app && pip install -r requirements.txt pytest pytest-cov && cd ..
 pytest tests/ -v
 ```
 
-Tests run against SQLite in memory and need no AWS credentials. `conftest.py` sets every environment variable before the first application import, overrides both database dependencies and bypasses the rate limiter, so a test never depends on wall-clock timing.
+Tests use a SQLite file and no AWS credentials. `conftest.py` prepares the environment and overrides both database dependencies. It also bypasses the rate limiter.
 
-Coverage is enforced in CI at 50 percent. The suite covers authentication (registration, login, wrong password, unknown email, token acceptance, missing token) and auditing (middleware firing on every request, `/health` staying out of the log, failed logins recorded at warning severity, admin-only incident access).
+CI enforces 50 percent coverage. Authentication tests cover registration and login with their failure cases. Audit tests check what the middleware logs and who can read incidents.
 
 ---
 
-## Known Gaps
+## Roadmap
 
-Written down rather than left to be discovered.
+Detection and alerting are complete, as are account suspension and incident reporting. The roadmap below builds on them.
 
-- **The SNS publish on credential stuffing is still a TODO.** `block_ip` is deployed, subscribed to the security-alert topic and IAM-authorised, and the application currently writes the incident and sends the alerts directly instead of publishing. The automatic block therefore has no live trigger from the login path.
-- **`block_ip` no-ops when `NACL_ID` is unset.** It logs a warning and returns, which is a silent failure in exactly the path that is supposed to be automatic.
-- **All the counters are in-process.** The exfiltration window, the suspension count and the login-failure count live in module-level dictionaries. Two application instances count separately, and a restart forgets everything. Redis or DynamoDB is the right home for them.
-- **The test folder is smaller than it looks.** `tests/test_docs.py` and `tests/test_meetings.py` are copies of their router source rather than tests, so the real suite is 15 tests over auth and audit.
-- **Rejected uploads are deleted after they land.** `validate_file` runs on `ObjectCreated:Put`, so the file is in the bucket for the moment it takes to check. A quarantine bucket with a promotion step would close that window.
-- **The Auto Scaling group is a demonstration, not the serving path.** It sits at `desired_capacity = 0` with its launch template, both scaling policies and both CPU alarms intact. Blue/green is what actually serves traffic.
-- **Prometheus targets are files, not discovery.** `deploy.sh` rewrites `targets/*.json` after each apply, where EC2 service discovery would remove the step.
+- **Automatic IP blocking.** `block_ip` is deployed and subscribed to the security‑alert topic. Its IAM permissions are in place as well. An SNS publish at the eighth failed login and a `NACL_ID` value would complete it.
+- **Shared counters.** All three detection counters live in memory inside the application. Moving them to Redis or DynamoDB would let two instances share one count and keep it through a restart.
+- **A wider test suite.** The 15 tests cover authentication and auditing. Real tests for documents and meetings are next in line for `tests/test_docs.py` and `tests/test_meetings.py`.
+- **A quarantine step for uploads.** `validate_file` checks each file after it lands on `ObjectCreated:Put`. A quarantine bucket with a promotion step would check files before they reach the docs bucket.
+- **Meeting reminders.** `eventbridge_service.py` and the two meeting Lambdas are in place. Calling the scheduler from `/meetings/create` would turn on the reminder and the attendance archive.
+- **Service discovery for Prometheus.** `fetch_docker_certs.sh` rewrites `targets/*.json` after each apply. EC2 service discovery would remove that step.
 
 ### One bug worth recording
 
-The bulk-download simulation never produced a 429 while it requested 50 different document IDs, and produced one immediately when it requested the same ID repeatedly. slowapi's default `key_style="url"` keys the counter on the resolved URL, so `/docs/download/doc-0001` and `/docs/download/doc-0002` are different keys and neither ever reaches 2. Setting `key_style="endpoint"` keys on the route function instead, which is shared across every value of `{doc_id}`. The limiter had been decorating the route correctly the whole time and counting the wrong thing.
+The bulk download simulation never produced a 429 while it requested 50 different document IDs. It produced one right away when it requested the same ID repeatedly. slowapi's default `key_style="url"` keys the counter on the resolved URL, and `/docs/download/doc-0001` and `/docs/download/doc-0002` count as different keys. Neither ever reaches two. Setting `key_style="endpoint"` keys the counter on the route function, and every `{doc_id}` shares that key. The limiter had decorated the route correctly the whole time and had counted the wrong thing.

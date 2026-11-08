@@ -1,41 +1,30 @@
 # Runbook: ShimonVault Operations Platform
 
-Operating instructions for the running system. Every section is written to be
-followed under pressure: what to check, what to run, what the correct output
-looks like, and what to do when it isn't.
+> 📘 Each procedure lists its steps in order. A ✅ callout shows the expected result. A ⚠️ callout marks a step that can go wrong.
 
-Alerts reach you on two independent paths. Anything Prometheus sees arrives
-through Alertmanager, which fans out to Slack and to a Telegram relay.
-Anything the application itself detects, a burst of failed logins, an account
-hitting the access-control wall, a bulk download, calls `notify_all()` directly
-and reaches the same two channels without passing through Prometheus at all.
-The wording of the message tells you which path fired: Alertmanager messages
-carry an instance label, application messages carry an IP and a timestamp.
+### Alert sources
 
-Two things to know before anything else.
+| Message shows | Sent by | Path |
+| --- | --- | --- |
+| An instance label | Alertmanager | Prometheus rules reach Slack and the Telegram relay through Alertmanager. |
+| An IP with a timestamp | The application | `notify_all()` posts straight to both channels without Prometheus. |
 
-**Nothing in this system recovers itself.** There is no recovery controller and
-no alert-to-action map. Docker Swarm restarts a crashed container up to five
-times and that is the entire extent of the automation. Every alert in this
-document ends at a human. If you are reading this because your phone buzzed,
-you are the recovery mechanism.
+### Two rules before any procedure
 
-**A green ALB target does not mean a working application.** `/health` returns
-HTTP 200 from the moment the process starts, before the database is reachable,
-and the load balancer only reads the status code. The truth is in the body.
-Always read the `db` field.
+1. **Recovery is mostly manual.** Swarm restarts a crashed container up to five times. High CPU scales the auto scaling group out. Every other alert needs an operator.
+2. **A green ALB target can hide a broken database.** `/health` returns 200 from process start. Only its `db` field reports the database.
 
 ---
 
-## 1. Confirm the system is healthy
+## 1. Confirm the System Is Healthy
 
-Start here, from proj-mgmt.
+### Step 1. Read the health body from proj‑mgmt
 
 ```bash
 curl -s http://<alb-dns>/health | python3 -m json.tool
 ```
 
-The only fully healthy answer:
+> ✅ The body matches this example with `"db": "ok"`.
 
 ```json
 {
@@ -47,32 +36,24 @@ The only fully healthy answer:
 }
 ```
 
-The `db` field is the one that matters:
-
-| `db` value | Means | Action |
+| `db` value | Meaning | Action |
 | --- | --- | --- |
-| `ok` | schema created, connections working | nothing |
-| `initialising` | background thread still retrying | wait, normal for 1 to 3 minutes after a boot |
-| `error: ...` | the retry loop gave up or is failing | section 4 |
+| `ok` | The schema exists. Connections work. | No action is needed. |
+| `initialising` | The background thread is still retrying. | Wait up to three minutes after a boot. |
+| `error: ...` | The retry loop failed or gave up. | Go to section 4. |
 
-`initialising` for more than five minutes is a failure, not a slow start. The
-retry loop runs 20 times at 15 seconds and then stops trying, so a value that
-never changes past the five minute mark means the loop has already exhausted
-itself and nothing further will happen on its own.
+> ⚠️ Past five minutes, `initialising` means failure. The loop has used all 20 tries at 15‑second intervals.
 
-Then the whole stack, end to end:
+### Step 2. Run the stack playbook
 
 ```bash
 cd ansible
 ansible-playbook playbooks/verify_stack.yml
 ```
 
-It is read-only and safe to run at any time. It checks `/health`, `/metrics`
-and node_exporter on every app instance, prints the Swarm node and service
-lists, and then checks the four on-premises monitoring endpoints. Everything
-should print `✅ OK`.
+> ✅ Every line prints `✅ OK`. The playbook only reads state.
 
-Check the pieces individually if something is red:
+### Step 3. Check any red piece alone
 
 ```bash
 # The app service is running and has its replica
@@ -91,11 +72,11 @@ curl -s localhost:8001/health              # Telegram relay
 
 ---
 
-## 2. Deploy or redeploy
+## 2. Deploy or Redeploy
 
-State lives in an **S3 backend with a DynamoDB lock table**, and both are
-created by hand and never managed by Terraform, so `terraform destroy` can
-never delete the state it is writing to. Once only, before the first init:
+### Step 1. Create the state backend once
+
+The S3 bucket and the DynamoDB lock table sit outside Terraform. A destroy never touches them.
 
 ```bash
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -108,61 +89,36 @@ aws dynamodb create-table --table-name shimonvault-tfstate-lock \
   --billing-mode PAY_PER_REQUEST --region ap-northeast-2
 ```
 
-Then the normal path. One command, about 15 minutes, and RDS is the slow part:
+### Step 2. Run the deploy script
 
 ```bash
 bash scripts/deploy.sh
 ```
 
-`deploy.sh` is not just `terraform apply`. In order, it rewrites
-`your_ip_cidr` in `terraform.tfvars` from your current public IP, applies,
-generates `app/.env` from the Terraform outputs, rewrites your SSH config,
-points the Cloudflare record at the new ALB, waits for the bastion and then for
-a healthy target, seeds the three demo accounts, installs node_exporter through
-Ansible, configures replication, runs `verify_stack.yml`, and refetches the
-Docker TLS certificates for Portainer.
+> ✅ The script finishes in about 10 minutes. The README's Deployment table lists its twelve steps.
 
-The app is **not** deployed as a separate step. Each instance installs Docker,
-joins the tailnet, writes `/opt/shimonvault/stack.yml` from its `user_data`,
-and runs `docker stack deploy` on its own at boot, so the application comes up
-with the infrastructure.
+The app has no deploy step of its own. Each instance starts the Swarm stack from its `user_data` at boot. Seeding waits for a 200 from the ALB. That response proves the schema exists.
 
-The seeding step runs **after** the ALB reports 200, and the order is
-load bearing: that 200 is the proof `init_db()` already created the schema.
-Seeding any earlier means the `users` table does not exist yet.
-
-The monitoring stack is separate and lives on proj-mgmt, which is never
-destroyed:
+### Step 3. Start monitoring on proj‑mgmt
 
 ```bash
 cp .env.example monitoring/.env    # fill in DB, Grafana, Slack, Telegram
 cd monitoring && docker compose up -d
 ```
 
-`terraform.tfvars` and `monitoring/.env` are gitignored because they hold real
-secrets. Copy each from its `.example` before the first run.
+> ℹ️ Both `terraform.tfvars` and `monitoring/.env` are gitignored. Each one starts from its `.example` file.
 
 ---
 
-## 3. Blue/green: switch and roll back
+## 3. Blue/Green: Switch and Roll Back
 
-Dispatching `cd.yml` (`gh workflow run cd.yml --ref main`, or the Run workflow
-button) builds `:green`, brings a green instance
-up behind the same ALB, waits for the green target group to report healthy on
-its own health check, and only then moves the listener.
+### Step 1. Dispatch the pipeline
 
-The switch is a **Terraform variable**, not an AWS CLI call:
+Run `gh workflow run cd.yml --ref main` or press Run workflow. The pipeline builds `:green` behind the same ALB.
 
-```bash
-terraform apply -auto-approve -var="deploy_green=true" -var="active_color=green"
-```
+> ✅ The listener moves after the green target group passes its health check.
 
-Do not use `aws elbv2 modify-listener` for this. The listener target lives in
-state, so a CLI switch is drift and the next `terraform apply` silently puts
-traffic back on blue. That failure surfaces days later with no obvious cause.
-
-Manual switch and rollback, for a demo or an emergency, is the same apply with
-the colour changed:
+### Step 2. Switch or roll back by hand
 
 ```bash
 cd terraform
@@ -170,14 +126,13 @@ terraform apply -auto-approve -var="deploy_green=true" -var="active_color=green"
 terraform apply -auto-approve -var="deploy_green=true" -var="active_color=blue"   # roll back
 ```
 
-Rollback is cheap because **blue is never torn down by the deploy**. It keeps
-running and simply receives no traffic until `terraform destroy` removes it at
-the end of the session. If green is bad, switch back and investigate at
-leisure.
+> ⚠️ Avoid `aws elbv2 modify-listener`. A CLI switch drifts from state. The next apply sends traffic back to blue.
 
-If the pipeline stops at the health poll, green never came up. The poll runs 40
-attempts at 15 seconds, so a failure there means roughly ten minutes have
-already passed:
+**The deploy never tears blue down.** Blue idles until `terraform destroy`. A rollback is one apply away.
+
+### Step 3. Read the reason after a failed poll
+
+A stop at the health poll means green never came up. The poll gives up after 40 tries at 15 seconds.
 
 ```bash
 aws elbv2 describe-target-health --target-group-arn <green-tg-arn> \
@@ -186,14 +141,13 @@ aws elbv2 describe-target-health --target-group-arn <green-tg-arn> \
   --output table
 ```
 
-Blue is still live the whole time, so this is a failed deploy and not an
-outage. Read the reason, fix it, push again.
+> ✅ Blue keeps serving traffic. Dispatch the workflow again after the fix.
 
 ---
 
-## 4. When the application is unhealthy
+## 4. Application Troubleshooting
 
-Work down this list in order. Each step depends on the one above it.
+### Step 1. Work down the checks in order
 
 ```bash
 # 1. Is the target registered and healthy at all?
@@ -212,31 +166,26 @@ systemctl status rds-relay
 curl -s localhost:8000/health | python3 -m json.tool
 ```
 
-The Swarm restart policy is `on-failure`, `delay: 10s`, `max_attempts: 5`. A
-service that has burned all five attempts stays down and Swarm will not try
-again. `docker service ps` shows the failed tasks; that history is the fastest
-way to tell a crash loop from a single bad start.
+> ⚠️ Swarm stops after five failed restarts under `on-failure`. The task history in `docker service ps` shows a crash loop.
 
-Force a fresh start once you know what was wrong:
+### Step 2. Force a fresh start after the fix
 
 ```bash
 docker service update --force shimonvault_app
 ```
 
-That also **clears every in-process counter**, which matters more than it
-sounds: the login-failure, account-suspension and exfiltration counters all
-live in module-level dictionaries and are wiped by any restart. See section 8.
+> ⚠️ A forced restart **clears every in‑process counter** (section 9).
 
-If `/health` reports `db: error`, the application is up and the database is
-not. The path from the app to RDS runs through a **socat relay** installed by
-`user_data` as a systemd unit on the app instance itself:
+### Step 3. Trace a `db: error` to the relay
+
+The app reaches RDS through a **socat relay** on its own instance.
 
 ```bash
 systemctl status rds-relay
 journalctl -u rds-relay --no-pager -n 50
 ```
 
-Then check RDS directly through the bastion tunnel:
+### Step 4. Test RDS through the bastion
 
 ```bash
 ssh -F ~/.ssh/shimonvault_config -L 5434:<rds-endpoint>:5432 shimonvault-bastion
@@ -245,51 +194,43 @@ psql -h localhost -p 5434 -U shimonvault -d shimonvault -c 'SELECT 1;'
 
 ---
 
-## 5. When an alert fires
+## 5. Alert Response
 
-Four rules, and none of them triggers an action:
+### Step 1. Identify the rule
+
+Four Prometheus rules raise alerts. None of them triggers an action.
 
 | Alert | Expression | For | Severity |
 | --- | --- | --- | --- |
-| `HighCPU` | CPU above 80% | 2m | warning |
-| `HighMemory` | memory above 85% | 2m | warning |
+| `HighCPU` | CPU above 80% | 2m | warning |
+| `HighMemory` | memory above 85% | 2m | warning |
 | `NodeDown` | `up{job="ec2-nodes"} == 0` | 1m | critical |
 | `FastAPIDown` | `up{job="fastapi-app"} == 0` | 1m | critical |
 
-Routing, from `monitoring/alertmanager/alertmanager.yml`:
-
 | Setting | Value |
 | --- | --- |
-| Group by | `alertname`, `instance`, `severity` |
+| Group by | `alertname`, `instance`, `severity` |
 | `group_wait` | 30s |
 | `group_interval` | 5m |
 | `repeat_interval` | 4h |
-| Receiver | Slack `#shimonvault-alerts` **and** the Telegram relay |
+| Receiver | Slack `#shimonvault-alerts` **and** the Telegram relay |
 
-One inhibit rule is worth knowing about: an instance already reporting
-`NodeDown` has `HighCPU`, `HighMemory` and `FastAPIDown` suppressed on it. One
-dead host therefore sends **one** alert and not four. If a host is down and you
-expected a CPU alert that never came, that is the inhibit rule and not a
-missing scrape.
+> ℹ️ `NodeDown` silences the other three alerts on the same instance. A dead host sends a single alert.
 
-The application's own detections are separate, and these are the live
-thresholds:
+### Step 2. Match an application detection
 
 | Trigger | Threshold | Where | Response |
 | --- | --- | --- | --- |
-| Failed logins | 5 from one IP | `auth_router.py` | warning to Slack and Telegram |
-| Failed logins | 8 from one IP | `auth_router.py` | incident record, critical alert |
-| Access denied | 5 for one account | `audit_middleware.py` | account suspended, incident, alert |
-| Downloads | 10 in 60s per IP | slowapi on `/docs/download` | HTTP 429 |
-| First 429 on a download | once per IP | `audit_middleware.py` | JSON report to the reports bucket, alert |
-| Upload signature | any blocked magic bytes | `validate_file` Lambda | object deleted, incident record |
+| Failed logins | 5 from one IP | `auth_router.py` | Slack and Telegram receive a warning. |
+| Failed logins | 8 from one IP | `auth_router.py` | The router opens an incident with a critical alert. |
+| Access denied | 5 for one account | `audit_middleware.py` | The middleware suspends the account and opens an incident. |
+| Downloads | 10 in 60s per IP | slowapi on `/docs/download` | The route returns HTTP 429. |
+| First 429 on a download | Once per IP | `audit_middleware.py` | One JSON report lands in the reports bucket with one alert. |
+| Upload signature | Any blocked magic bytes | `validate_file` Lambda | The Lambda deletes the object and opens an incident. |
 
-**Do not read the thresholds out of `services/rate_limiter.py`.** That module
-defines a 20-and-50 login pair and a 10-download exfiltration check, and
-nothing imports it. It is dead code. The numbers in the table above are the
-ones that run.
+> ⚠️ `services/rate_limiter.py` holds stale numbers. Nothing imports it.
 
-After any security alert:
+### Step 3. Read what the alert left behind
 
 ```bash
 # What the app recorded
@@ -305,28 +246,19 @@ aws s3 ls s3://shimonvault-reports-<account-id>/ --recursive
 
 ---
 
-## 6. Database and replication
+## 6. Database and Replication
 
-RDS is the write primary. A PostgreSQL 16 container on proj-ubuntu01 subscribes
-to it over logical replication and serves the read-only routes.
+### Step 1. Build the replica
+
+RDS is the write primary. A PostgreSQL 16 replica on `proj-ubuntu01:5433` serves the read‑only routes.
 
 ```bash
 bash scripts/setup_replica.sh
 ```
 
-The script creates the replication user and publication on RDS, starts the
-replica container on `proj-ubuntu01:5433`, applies the schema **before**
-subscribing, drops any orphaned slot left by a previous session, creates the
-subscription, and waits for the initial table sync to land actual rows.
+> ✅ The script applies the schema **before** subscribing. It drops any orphaned slot from an earlier session.
 
-The connection path is the part that surprises people. The replica does not
-reach RDS directly. It goes through the **socat relay on the app instance**,
-which is on the tailnet, so replication depends on the app instance existing.
-Every `terraform destroy` therefore breaks replication and every `deploy.sh`
-rebuilds it. A subscription that worked yesterday and is dead today, with no
-other change, is almost always this.
-
-Verify both ends:
+### Step 2. Verify both ends
 
 ```bash
 # On RDS: the slot should exist and be active
@@ -338,8 +270,11 @@ ssh user1@100.87.141.40 "docker exec shimonvault-postgres-replica \
   psql -U shimonvault -d shimonvault -p 5433 -c 'SELECT * FROM pg_stat_subscription;'"
 ```
 
-End-to-end proof, which is better than either query: upload a document through
-the API, then read it back off the replica.
+> ⚠️ The replica reaches RDS through the **socat relay on the app instance**. Each teardown breaks replication. Each `deploy.sh` rebuilds it.
+
+### Step 3. Prove the full path
+
+Upload a document through the API. Read it back from the replica.
 
 ```bash
 ssh user1@100.87.141.40 "docker exec shimonvault-postgres-replica \
@@ -348,13 +283,11 @@ ssh user1@100.87.141.40 "docker exec shimonvault-postgres-replica \
 
 ---
 
-## 7. Test the security path
+## 7. Security Path Testing
 
-Never wait for a real attack to find out whether the defences work. Generate
-one. Every simulation logs in as a real seeded account and calls real endpoints
-over HTTP, so what lands in the audit feed is the application running.
+### Step 1. Run the simulations
 
-From the admin console, or by hand:
+Each simulation signs in as a seeded account with real HTTP calls. The admin console buttons run the same calls.
 
 ```bash
 TOKEN=$(curl -s -X POST http://<alb-dns>/auth/login \
@@ -369,18 +302,15 @@ curl -s -X POST http://<alb-dns>/demo/exfiltration        -H "Authorization: Bea
 curl -s -X POST http://<alb-dns>/demo/ddos                -H "Authorization: Bearer $TOKEN"
 ```
 
-What each one should produce:
-
 | Simulation | Default volume | Expected result |
 | --- | --- | --- |
-| `test-notification` | 1 message | a message in Slack and in Telegram |
-| `credential-stuffing` | 30 attempts | 401s, warning at 5, incident at 8 |
-| `access-control` | 6 attempts | 403s, the viewer account suspended on the 5th |
-| `exfiltration` | 15 downloads | 429 after 10, one S3 report, one alert |
-| `ddos` | 200 requests, 20 concurrent | a visible spike in the Prometheus request rate |
+| `test-notification` | 1 message | One message arrives in Slack and in Telegram. |
+| `credential-stuffing` | 30 attempts | Every attempt returns 401. A warning fires at 5 before an incident opens at 8. |
+| `access-control` | 6 attempts | Each attempt returns 403. The fifth one suspends the viewer account. |
+| `exfiltration` | 15 downloads | Downloads return 429 after the tenth. One S3 report and one alert follow. |
+| `ddos` | 200 requests at 20 concurrent | The Prometheus request rate shows a clear spike. |
 
-The shell equivalents live in `scripts/` and take a base URL, for when the app
-itself is the thing that is broken:
+The shell versions in `scripts/` take a base URL. Use them when the app itself is broken.
 
 ```bash
 bash scripts/simulate_credential_stuffing.sh https://<domain>
@@ -389,153 +319,91 @@ python3 scripts/simulate_exfiltration.py --base-url https://<domain> --token <jw
 bash scripts/simulate_ddos.sh https://<domain>       # needs `hey` installed
 ```
 
-Two things to do afterwards:
-
-**Un-suspend the viewer account.** The access-control simulation genuinely sets
-`users.suspended = true`, and the account stays suspended until you clear it.
-Every later login as `viewer@shimonvault.com` returns 403 and it looks like a
-broken app.
+### Step 2. Un‑suspend the viewer
 
 ```sql
 UPDATE users SET suspended = false WHERE email = 'viewer@shimonvault.com';
 ```
 
-**Reset the counters** if you want to run a simulation twice in one session.
-They are in-process, so a service restart is the reset:
+> ⚠️ The suspension persists after the run. The `ddos` simulation signs in as the viewer too.
+
+### Step 3. Reset the counters
 
 ```bash
 docker service update --force shimonvault_app
 ```
 
-The attacker address is `203.0.113.42` by default, inside the RFC 5737
-documentation range, sent as `X-Forwarded-For`. It belongs to nobody, which is
-the point.
+> ℹ️ The default attacker address is `203.0.113.42` from the RFC 5737 range. It arrives as `X-Forwarded-For`.
 
-**Set `DEMO_ENABLED=false` on anything you would not call a demo.** Every
-`/demo/*` route then returns 403. An admin-only button that fires real attack
-traffic is still a button that fires real attack traffic.
+> ⚠️ Set `DEMO_ENABLED=false` outside a demo. Every `/demo/*` route then returns 403.
 
 ---
 
-## 8. Hybrid networking
+## 8. Hybrid Networking
 
-AWS and the two on-premises hosts are joined by a Tailscale mesh with no public
-port open on either side. When a scrape fails across environments, check the
-tunnel before anything else.
+### Step 1. Check the tunnel
+
+A Tailscale mesh joins AWS with the two on‑premises hosts.
 
 ```bash
 tailscale status
 tailscale ping shimonvault-app-blue
 ```
 
-The EC2 nodes join from `user_data` with an ephemeral auth key and self-expire
-after a teardown, so stale nodes clear themselves within about 30 minutes. The
-app joins with `--accept-routes=false` deliberately.
+> ✅ Ports `9100` and `2376` answer from the Tailscale range `100.64.0.0/10`. NFS on `2049` follows the same rule.
 
-Three ports are open to the Tailscale range `100.64.0.0/10` and to nothing
-else: `9100` for node_exporter, `2376` for the Docker TLS socket that Portainer
-uses, and `2049` for NFS. A scrape failing from proj-mgmt while the instance is
-otherwise fine is either an expired key or a node that never came up on the
-mesh, and `tailscale status` tells you which.
+### Step 2. Refetch the Portainer certificates
 
-Portainer needs its client certificates refetched **after every deploy**,
-because `user_data` generates a fresh CA on each new instance:
+Each new instance generates its own CA. Run this **after every deploy**.
 
 ```bash
 bash scripts/fetch_docker_certs.sh <bastion-ip> <blue-ip>
 ```
 
-Skipping this leaves Portainer pointed at an endpoint whose certificate no
-longer verifies, which presents as a Portainer that connects to nothing while
-Docker itself is perfectly healthy.
+---
+
+## 9. Known Traps
+
+1. **`/health` answers before the database.** RDS needs 30 to 60 seconds after boot. Read the `db` field.
+2. **Security groups cannot deny traffic.** The automatic block lives in a network ACL at rules 1 to 99.
+3. **`block_ip` has no live trigger.** Nothing in `app/` publishes to SNS yet. The alert line `IP block Lambda triggered` describes the plan.
+4. **`block_ip` succeeds without `NACL_ID`.** The function logs a warning only.
+5. **Counters live in process memory.** Two instances count separately. A restart forgets everything.
+6. **`rate_limiter.py` is dead code.** Section 5 lists the live thresholds.
+7. **The limiter keys on the endpoint.** A bulk download test without a 429 points to `key_style` in `rate_limit.py`.
+8. **`deploy.sh` pins the bastion to your IP.** Re‑run it after a move to another network.
+9. **Alertmanager ignores `${SLACK_WEBHOOK_URL}`.** The webhook has to come from `/tmp/slack_url`.
+10. **Uploads land before validation.** The docs bucket can briefly hold a rejected file.
+11. **The auto scaling group serves traffic.** One to two instances sit in the blue target group. The zero‑capacity comment in `asg.tf` is outdated.
+12. **Passwords pass through SHA-256 before bcrypt.** An external hash has to repeat that step.
 
 ---
 
-## 9. Known traps
+## 10. Tear Down
 
-- **A green target is not a working app.** `/health` answers 200 before the
-  database is up, on purpose, because RDS takes 30 to 60 seconds after boot and
-  the ALB would otherwise kill the instance before it ever became useful. The
-  `db` field carries the truth. Read the body, never just the code.
-- **A security group cannot deny anything.** Security groups hold allow rules
-  only, so the automatic block lives in a network ACL instead, at the lowest
-  free rule number between 1 and 99. If you go looking for a block rule in the
-  app security group you will not find one and nothing is wrong.
-- **`block_ip` has no live trigger.** The Lambda is deployed, subscribed to the
-  security-alert topic and IAM-authorised, but nothing in `app/` ever publishes
-  to SNS. `auth_router.py` still carries the `TODO`. The alerts you receive on
-  a credential-stuffing run are sent directly by the application, and no IP is
-  actually blocked. Do not report an attack as contained on the strength of
-  that alert.
-- **`block_ip` also no-ops when `NACL_ID` is unset.** It logs a warning and
-  returns success. Check the environment variable before trusting the function
-  even once the publish above is wired.
-- **Every counter is in-process.** Login failures, access violations and the
-  exfiltration alert set all live in module-level dictionaries. Two replicas
-  count separately, and any restart forgets everything. A threshold that
-  refuses to trip during a demo is usually a container that restarted.
-- **`services/rate_limiter.py` is dead code.** Nothing imports it. Its
-  thresholds are not the ones running. See the table in section 5.
-- **The download limiter counts on the endpoint, not the URL.** slowapi's
-  default `key_style="url"` keys on the resolved path, so 50 downloads of 50
-  different document ids are 50 counters of 1 and the limit never trips, while
-  50 downloads of the *same* id trips it immediately. `rate_limit.py` sets
-  `key_style="endpoint"` for exactly this reason. If a bulk-download test
-  produces no 429, check that setting before you check the rule.
-- **`deploy.sh` rewrites your bastion rule from your current public IP.** Move
-  to a different network and the old rule no longer matches you. Re-run
-  `deploy.sh`, or edit `your_ip_cidr` and apply, rather than debugging SSH.
-- **Alertmanager will not expand environment variables in its own config.**
-  The compose entrypoint writes the Slack webhook to `/tmp/slack_url` first and
-  the config reads it with `slack_api_url_file`. Putting `${SLACK_WEBHOOK_URL}`
-  in the YAML fails silently and alerts simply never arrive.
-- **A rejected upload lands in the bucket before it is deleted.** `validate_file`
-  runs on `ObjectCreated:Put`, so the file exists for as long as the check
-  takes. Treat the docs bucket as holding unvalidated content.
-- **The auto scaling group is parked at `desired_capacity = 0`.** It has its
-  launch template, both scaling policies and both CPU alarms, and it serves no
-  traffic. Blue/green is the serving path. Do not expect a scale-out to answer
-  a load problem here.
-- **Passwords are SHA-256'd before bcrypt.** bcrypt truncates at 72 bytes, so
-  `hash_password()` hashes once first. Any external tool generating a hash for
-  this database must do the same or the login will fail with correct
-  credentials.
-
----
-
-## 10. Tear down
-
-This runs on a personal AWS account. Tearing down is not optional.
-
-**Pull the evidence out first.** `terraform destroy` deletes the DynamoDB
-tables and both S3 buckets carry `force_destroy = true`, so the incident
-history and every uploaded report go with them.
+### Step 1. Export the evidence
 
 ```bash
 python3 scripts/generate_report.py --output-local incident-report.json
 ```
 
-Then:
+> ⚠️ `terraform destroy` deletes the DynamoDB tables. Both S3 buckets carry `force_destroy = true`.
+
+### Step 2. Run the teardown
 
 ```bash
 bash scripts/destroy.sh
 ```
 
-It asks for a literal `yes`, runs `terraform destroy`, and then verifies rather
-than trusts. It re-checks EC2 instances, RDS, load balancers, the NAT instance,
-leftover EBS volumes, Lambda functions and stale Tailscale nodes, and prints
-the console links for the checks worth a human eye.
+> ✅ The script asks for a literal `yes`. It checks seven resource types for leftovers afterward.
 
-Deliberately preserved, and never destroyed:
+### Step 3. Confirm what stays
 
-| Resource | Why |
+| Resource | Why it stays |
 | --- | --- |
-| `shimonvault-tfstate-<account>` | Terraform state, outside Terraform on purpose |
-| `shimonvault-tfstate-lock` | the state lock table, same reason |
-| proj-mgmt | Prometheus, Grafana, Alertmanager, always on and free |
-| proj-ubuntu01 | the read replica and the NFS share, always on and free |
+| `shimonvault-tfstate-<account>` | It holds the Terraform state outside Terraform. |
+| `shimonvault-tfstate-lock` | The state lock table stays for the same reason. |
+| proj‑mgmt | The monitoring stack runs here around the clock at no cost. |
+| proj‑ubuntu01 | The read replica and the NFS share live here at no cost. |
 
-Confirm the plan lists only this project's resources before approving, and that
-the state bucket is not among them. Then check the billing console reads
-`$0.00` for the day, because a NAT instance or an ALB left running is the one
-mistake here that costs real money overnight.
+> ✅ The billing console reads `$0.00` the next day.

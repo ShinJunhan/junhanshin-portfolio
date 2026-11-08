@@ -7809,17 +7809,16 @@ project1-on-premise-self-build/
     // never render, the same opt-out individual-project-one uses.
     title: 'ShimonVault',
     // The descriptive page heading. `title` above stays the short name the
-    // sidebar shows and the eyebrow repeats. Deliberately parallel to the
-    // Lock-N-Lock title above: same brief, and "Event-Driven" against that
-    // page's "Self-Healing" is the whole difference between the two builds.
-    // Trimmed by one word from "...for a Hybrid Cloud Operations Platform",
-    // which is a real constraint rather than a preference: at 93 characters it
-    // wrapped to three lines where Lock-N-Lock's title, also 93 characters,
-    // packs into two, and DESIGN.md's rule is to fix the type or the text and
-    // never to widen a header past the content it heads. "Operations" was the
-    // word the sentence could lose without losing a claim.
-    fullTitle:
-      'Event-Driven Security Detection and Automated Response for a Hybrid Cloud Platform',
+    // sidebar shows and the eyebrow repeats. Chosen 2026-10-25 from live
+    // samples: a personal register to sit beside individual-project-one's
+    // "Self-Directed Study…", with Cloud Security first because it is the
+    // strongest part of the build. Hybrid is the AWS platform plus the
+    // monitoring stack on the on-premises server. The old title's "Automated
+    // Response" was dropped because block_ip is deployed with no live trigger.
+    // The hyphen is U+2011. The spaces in "Cloud Security" and "Hybrid
+    // Infrastructure" are U+00A0: without them, desktop split "Cloud" from
+    // "Security" and a phone left "Infrastructure" alone on the last line.
+    fullTitle: 'Self‑Directed Practice in Cloud Security on Hybrid Infrastructure',
     // Plum, the palette's eighth accent. Steel sat here first and was wrong
     // twice: it is a grey, so the eyebrow over the title read as uncoloured
     // where every other project page has a hue there, and it was already the
@@ -7830,82 +7829,340 @@ project1-on-premise-self-build/
     // brief in the evenings. The week boundaries below match that page's
     // schedule exactly.
     period: 'May 27 – June 24, 2026',
+    // Approved 2026-10-29 from live samples. How is the build by week, each
+    // week's components read off the files its commits added in the public
+    // repository (the commit titles name the weeks). No dates: the commit
+    // dates do not line up with the project period above. `icon` is a
+    // techIcon label; slowapi has no logo and renders as text alone. Result
+    // is the three thresholds the app enforces (auth_router.py: alert at 5,
+    // incident at 8; audit_middleware.py: suspend at 5; slowapi: 10 downloads
+    // per 60s), drawn on one shared 11-step scale.
     glance: {
-      why: 'I led Lock-N-Lock and owned the infrastructure track, so several parts of that platform reached me as a pull request to approve rather than as code I wrote. I built a second platform against the same brief, on my own, to find out which parts I actually understood.',
-      how: 'ShimonVault is an internal operations platform with documents, meetings and a live audit stream, standing on 90 Terraform resource blocks: a two-AZ VPC, RDS, S3, DynamoDB, five Lambda functions, SNS and EventBridge, with the monitoring stack on my own on-premises server over Tailscale.',
-      result: 'One dispatch of the CD workflow builds the image, launches a green instance, waits for it to pass the ALB health check and then moves the listener. Every attack this page claims to defend against can be fired from a button inside the admin console and watched land in the audit feed.',
+      why: 'Leading Lock‑N‑Lock showed me how a secure hybrid platform comes together as a team. As team lead, I owned the infrastructure track. Four teammates owned the application, security, CI/CD, and monitoring tracks. In this project, I wanted to take on the network, the application, and the detection rules by myself. The goal was to find out whether I could build one alone and to gain hands‑on experience beyond the infrastructure track. Each job in the same brief went to an AWS service built for it. My plan was to learn how **Lambda**, **DynamoDB**, and **EventBridge** handle security work and to test each defense with real attacks.',
+      how: {
+        weeks: [
+          {
+            week: 'Week 1',
+            title: 'Foundation',
+            tools: [
+              { label: 'Terraform', icon: 'Terraform' },
+              { label: 'shell scripts', icon: 'Bash' },
+              { label: 'PostgreSQL', icon: 'PostgreSQL' },
+              { label: 'Docker Compose', icon: 'Docker' },
+            ],
+          },
+          {
+            week: 'Week 2',
+            title: 'Core build',
+            tools: [
+              { label: 'Terraform', icon: 'Terraform' },
+              { label: 'FastAPI', icon: 'FastAPI' },
+              { label: 'Lambda', icon: 'Lambda' },
+              { label: 'Ansible', icon: 'Ansible' },
+              { label: 'GitHub Actions', icon: 'GitHub Actions' },
+              { label: 'attack scripts', icon: 'Bash' },
+            ],
+          },
+          {
+            week: 'Week 3',
+            title: 'Demo check',
+            tools: [
+              { label: 'Prometheus rules', icon: 'Prometheus' },
+              { label: 'PostgreSQL replication', icon: 'PostgreSQL' },
+              { label: 'audit middleware', icon: 'FastAPI' },
+            ],
+          },
+          {
+            week: 'Week 4',
+            title: 'Demo and corrections',
+            tools: [
+              { label: 'React console', icon: 'React' },
+              { label: 'Prometheus targets', icon: 'Prometheus' },
+              { label: 'slowapi' },
+            ],
+          },
+        ],
+      },
+      result: {
+        meters: {
+          scale: 11,
+          rows: [
+            { label: 'Failed logins', count: 8, marks: { 5: 'alert', 8: 'incident' } },
+            { label: 'Denied requests', count: 5, marks: { 5: 'suspend' } },
+            { label: 'Downloads in 60s', count: 11, marks: { 11: 'blocked' }, blockFrom: 11 },
+          ],
+        },
+      },
     },
-    // Solo, so this is the whole scope. Prose rather than the bento the team
-    // pages use: a tile grid divides a contribution into parts, and there is
-    // nobody here to divide it from.
-    role: 'Solo build from an empty repository. I wrote the 27 Terraform files, the FastAPI application, the React console, the five Lambda handlers, the monitoring stack and both GitHub Actions workflows. The rule I set was that the brief could be the same as the team project and the mechanism had to be different, so nothing here is a copy of the Lock-N-Lock repository. Where the team ran a container and a controller on a VM, I had to pick the AWS service that owns that job and learn it properly.',
-    context: {
-      notes: [
+    // The workspace column: an event map across the top, Console and Network
+    // side by side beneath it, rendered by WorkspaceStack.jsx. Approved
+    // 2026-10-29. Event sources are terraform/lambda.tf (S3 notification, the
+    // two SNS subscriptions, the EventBridge permissions); block_ip is drawn
+    // idle because nothing in app/ publishes to its topic yet. The attacks and
+    // their endpoints are app/routers/demo_router.py, and alerts go to both
+    // channels through notify_service.notify_all. Routes are
+    // terraform/security_groups.tf; 9100 is node_exporter, reached over
+    // Tailscale.
+    workspaceStack: {
+      eventMap: {
+        title: 'Event map',
+        subtitle: 'What triggers each Lambda function',
+        figure: { value: '5', label: 'functions' },
+        rows: [
+          {
+            source: 'S3 upload',
+            event: 'ObjectCreated',
+            icon: 'S3',
+            functions: [{ name: 'validate_file' }],
+            text: 'Reads the first bytes and deletes executables and archives.',
+          },
+          {
+            source: 'EventBridge',
+            event: 'schedule',
+            icon: 'EventBridge',
+            functions: [{ name: 'meeting_notify' }, { name: 'meeting_expire' }],
+            text: 'Sends the meeting reminder and archives attendance afterward.',
+          },
+          {
+            source: 'SNS',
+            event: 'alert topics',
+            icon: 'SNS',
+            functions: [{ name: 'log_incident' }, { name: 'block_ip', idle: true }],
+            text: 'Logs each alert. The IP block is subscribed but not yet triggered.',
+          },
+        ],
+        foot: 'lambda.tf',
+        href: 'https://github.com/ShinJunhan/shimon-vault/blob/main/terraform/lambda.tf',
+        linkLabel: 'View file',
+      },
+      console: {
+        title: 'Console',
+        subtitle: 'Demo controls',
+        figure: { value: '4', label: 'attacks' },
+        attacks: [
+          { name: 'Credential stuffing', target: 'POST /auth/login' },
+          { name: 'Broken access control', target: 'GET /docs/download' },
+          { name: 'Bulk exfiltration', target: 'GET /docs/download' },
+          { name: 'Traffic flood', target: 'GET /docs/list' },
+        ],
+        alerts: { label: 'Alerts go to', channels: ['Slack', 'Telegram'] },
+        foot: 'Console.jsx',
+        href: 'https://github.com/ShinJunhan/shimon-vault/blob/main/frontend/src/Console.jsx',
+        linkLabel: 'View code',
+      },
+      network: {
+        title: 'Network',
+        subtitle: 'Security groups',
+        figure: { value: '5', label: 'groups' },
+        routes: [
+          { from: 'Internet', to: 'ALB', port: '80/443', service: 'HTTP/HTTPS' },
+          { from: 'ALB', to: 'App', port: '8000', service: 'FastAPI' },
+          { from: 'App', to: 'RDS', port: '5432', service: 'PostgreSQL' },
+          { from: 'Admin', to: 'Bastion', port: '22', service: 'SSH' },
+          { from: 'Tailnet', to: 'App', port: '9100', service: 'Metrics' },
+        ],
+        foot: 'security_groups.tf',
+        href: 'https://github.com/ShinJunhan/shimon-vault/blob/main/terraform/security_groups.tf',
+        linkLabel: 'View file',
+      },
+    },
+    // The team pages' My Role template: monogram column, a band across the
+    // top, and an areas bento. The band is a track strip instead of figures,
+    // set against Lock‑N‑Lock where the same five tracks were split five ways.
+    // Nothing here repeats Workspace (the Lambda map, the attacks, the
+    // security groups) or Key Impact Metrics (resource and file counts).
+    role: {
+      title: 'Solo Engineer',
+      subtitle: 'Infra and Security',
+      tracks: {
+        items: ['Infrastructure', 'Application', 'Security', 'CI/CD', 'Monitoring'],
+        // Labels for a phone, where five segments cannot fit the full words.
+        short: ['Infra', 'App', 'Security', 'CI/CD', 'Monitor'],
+        rows: [
+          { name: 'Lock‑N‑Lock', caption: 'my track', owned: ['Infrastructure'] },
+          { name: 'ShimonVault', caption: 'my tracks', owned: 'all' },
+        ],
+      },
+      layout: 'areas',
+      areas: [
+        'L L L L L L P P P P P P',
+        'L L L L L L Q Q Q Q Q Q',
+        'A A A A B B B B C C C C',
+      ],
+      tiles: [
         {
+          area: 'L',
           size: 'lead',
-          label: 'Why do it twice',
-          text: 'Being team lead on Lock-N-Lock meant I reviewed more of that platform than I typed. Reviewing a pull request teaches you what a thing is called. Building it alone teaches you what breaks. This repository is where I found out the difference.',
+          label: 'Solo Build',
+          text: 'Covered the app, security, CI/CD, and monitoring tracks that teammates owned on Lock‑N‑Lock. None of that work was familiar at the start. The folders below show how the practice spread across the platform.',
+          // Lines in code files per top-level folder, counted from the
+          // repository export. Tests are left out: two of the test files are
+          // copies of their router source.
+          footer: {
+            type: 'reviews',
+            value: '~14,000',
+            unit: 'lines written',
+            wide: true,
+            bars: [
+              { name: 'app', count: 3242 },
+              { name: 'terraform', count: 2870 },
+              { name: 'scripts', count: 2164 },
+              { name: 'frontend', count: 1774 },
+              { name: 'ansible', count: 1237 },
+              { name: 'monitoring', count: 1170 },
+              { name: 'lambda', count: 772 },
+              { name: 'db', count: 428 },
+              { name: 'workflows', count: 295 },
+            ],
+          },
         },
+        // scripts/setup_replica.sh: a publication on RDS and a subscription on
+        // proj-ubuntu01, reached through a socat relay on the app EC2's
+        // Tailscale address.
         {
-          size: 'lead',
-          label: 'The rule I set',
-          text: 'Same brief, different mechanism. Lock-N-Lock answered every problem with a container on an EC2 instance. Here every problem had to be answered with the AWS service that owns it, so detection sits in application middleware, response sits in Lambda, scheduling sits in EventBridge and the audit trail sits in DynamoDB.',
+          area: 'P',
+          size: 'medium',
+          tone: 'accent',
+          even: true,
+          label: 'Hybrid replication',
+          visual: {
+            type: 'span',
+            from: { icon: 'RDS', name: 'RDS', note: 'primary on AWS' },
+            via: { icon: 'Tailscale', text: 'in sync over Tailscale' },
+            to: { icon: 'PostgreSQL', name: 'proj‑ubuntu01', note: 'replica on‑prem' },
+          },
+          text: 'Set up logical replication from the AWS **RDS** primary to an on‑prem **PostgreSQL** replica over **Tailscale**.',
         },
+        // cd.yml: Actions builds and pushes the :green image, Terraform starts
+        // app_green, the job waits for the ALB health check on /health, and a
+        // second Terraform apply sets active_color=green. Only Terraform
+        // touches the listener, which is why it is the ringed tool.
         {
-          size: 'support',
-          label: 'What the app is',
-          text: 'Three modules on one FastAPI app. SecureDocs stores files in S3 with role-based access and 15-minute download links. ShimonMeet schedules meetings and hands each one a join token. AuditStream is the live feed of everything the other two did.',
+          area: 'Q',
+          size: 'medium',
+          even: true,
+          label: 'Blue/green release',
+          visual: {
+            type: 'span',
+            from: { icon: 'ALB', name: 'ALB', note: 'listener' },
+            tools: [{ icon: 'GitHub Actions' }, { icon: 'Docker' }, { icon: 'Terraform', hot: true }],
+            toggle: { options: ['blue', 'green'], active: 'green' },
+            note: 'after /health returns 200',
+            to: { icon: 'EC2', name: 'app_green', note: 'new instance' },
+          },
+          text: 'Built a manual **blue/green** release in **GitHub Actions**. The ALB switched to green only after the new version passed its health check.',
         },
+        // scripts/deploy.sh records each degraded step and exits non-zero.
         {
-          size: 'support',
-          label: 'Where the security lives',
-          text: 'One middleware sits outside every route and writes each request to DynamoDB, so no endpoint can forget to log. It also counts. Five access-denied responses from one account suspends the account. The first rate-limited download from an address writes an incident report to S3 and posts to Slack and Telegram.',
+          area: 'A',
+          size: 'small',
+          label: 'Deploy script',
+          text: 'Wrote one **deploy script** for the start of each session. It exits with an error when any step fails.',
         },
+        // _OBSERVER_PATHS in the audit middleware: the console polls four
+        // endpoints every four seconds. Failed polls are still audited.
         {
-          size: 'support',
-          label: 'The demo is in the product',
-          text: 'The five attack simulations are admin-only endpoints inside the app rather than scripts on my laptop. Each one logs in as a real seeded account and calls real endpoints over HTTP, so the audit trail on screen is the actual application code running. `DEMO_ENABLED=false` turns all of them into 403s.',
+          area: 'B',
+          size: 'small',
+          label: 'Audit trail',
+          text: 'Removed the console’s successful polls from the **audit trail**. They added about 40 rows a minute.',
         },
+        // 15 tests across test_auth.py and test_audit.py; ci.yml runs flake8
+        // and pytest on a push to any branch.
         {
-          size: 'support',
-          label: 'Where it stops',
-          text: 'This is a study build. The environment is expected to live for the length of a session and `scripts/destroy.sh` takes it down again. Secrets are GitHub Actions secrets, the auto scaling group sits at `desired_capacity = 0` so it costs nothing while idle, and the test suite covers auth and audit and not much else.',
+          area: 'C',
+          size: 'small',
+          label: 'Tests',
+          text: 'Wrote **15 tests** for sign‑in and the audit trail. CI runs them with **flake8** on every push.',
         },
       ],
     },
-    // Every figure below is counted from the repository tree rather than
-    // estimated: 90 `resource` blocks across 27 files in terraform/, 5
-    // directories under lambda/ with a handler each, 26 `@router` decorators
-    // across app/routers/, 13 members of AuditEventType in app/models.py, 5
-    // POST routes in demo_router.py, and 4 rules in
-    // monitoring/prometheus/rules/shimonvault.yml plus 5 aws_cloudwatch_metric_alarm
-    // blocks across cloudwatch.tf and asg.tf.
+    // What each Lock‑N‑Lock track did, what that setup lacked, and what this
+    // build set out to practice. Facts are from the Lock‑N‑Lock source
+    // (docker/app/main.py, docker/fail2ban, security/, .github/workflows,
+    // docs/guides/c-cicd.md, monitoring/) and this repository. The blue/green
+    // switch script was removed there to focus the pipeline on its four-layer
+    // security gate; the blue and green target groups stayed in alb.tf.
+    // Monitoring keeps "My Involvement": that track was a teammate's, and his
+    // part was reading its alerts.
+    context: {
+      layout: 'compare',
+      notes: [
+        {
+          label: 'Application',
+          parts: [
+            { caption: 'Team Approach', text: 'We ran the LockBank banking demo from one **FastAPI** file of about 300 lines, and a teammate on the app track owned that code.' },
+            { caption: 'Existing Setup', text: 'The app covered sign‑in, a dashboard, and money transfers. It relied on one session cookie and used no user roles or file uploads.' },
+            { caption: 'Practice Focus', text: 'The demo never needed more than a sign‑in page and a transfer form. I wanted to design a **FastAPI** app with separate routers for documents, meetings, and audit records.' },
+          ],
+        },
+        {
+          label: 'Security',
+          parts: [
+            { caption: 'Team Approach', text: 'Our security track tested the platform by attacking it with **Locust** scripts. The defenses they checked all lived outside the application code.' },
+            { caption: 'Existing Setup', text: '**fail2ban** read the **Nginx** logs and banned an address after five failed sign‑ins in five minutes. Scanners and rate‑limit abuse earned their own bans.' },
+            { caption: 'Practice Focus', text: '**fail2ban** only knew IP addresses from the **Nginx** log. It could ban an address, and it could never tell which account was behind a request. I wanted to design detection inside **FastAPI** that follows each signed‑in user through an audit log in **DynamoDB** and suspends an account after repeated access denials.' },
+          ],
+        },
+        {
+          label: 'CI/CD',
+          parts: [
+            { caption: 'Team Approach', text: 'Our pipeline ran **Terraform** plans, scanned the code and images with **Bandit** and **Trivy**, and pushed images to **Docker Hub**. An **OWASP ZAP** scan checked the site after each deploy.' },
+            { caption: 'Existing Setup', text: 'The pipeline scanned code and images with **Bandit** and **Trivy** but ran no unit tests. The team removed the blue/green switch script to focus on scanning.' },
+            { caption: 'Practice Focus', text: 'The pipeline never tested whether the app still worked after a change. I wanted to add **pytest** to CI and finish the blue/green switch that moves traffic only after a health check.' },
+          ],
+        },
+        {
+          label: 'Monitoring',
+          parts: [
+            { caption: 'Team Approach', text: 'A teammate set up **Prometheus** for metrics, **Loki** for logs, and a recovery service that restarted failed containers.' },
+            { caption: 'My Involvement', text: 'Its alerts reached our team chat, and I read them like everyone else.' },
+            { caption: 'Practice Focus', text: 'I never wrote the rules behind them, and I did not know how a rule decides when to fire. I wanted to write those rules myself and follow an alert from the metric to a message on my phone.' },
+          ],
+        },
+      ],
+    },
+    // Approved 2026-11-04 from live samples (X3). Each figure is read from the
+    // repository: security_groups.tf opens only the ALB to 0.0.0.0/0, the
+    // bastion takes SSH from the operator /32, and rds.tf sets
+    // publicly_accessible = false; the three roles and the admin-only demo
+    // routes come from auth.py and demo_router.py; Console.jsx polls the
+    // audit feed with POLL_MS = 4000; Docs.jsx, Meetings.jsx and Console.jsx
+    // are the three apps; AuditMiddleware writes both apps' requests to the
+    // DynamoDB audit table that audit_router reads. The captions are worded to
+    // justify cleanly at 1440, so a rewording needs a fresh check there.
+    metricsStyle: 'rows',
+    metricsRows: ['1.6fr 1fr 1.25fr', '1.9fr 1.25fr'],
     metrics: [
-      { size: 'big', value: '90', label: 'Terraform Resource Blocks', hint: 'Across 27 .tf files' },
       {
-        size: 'square',
-        value: '5',
-        label: 'Lambda Functions',
-        hint: 'block_ip, log_incident, validate_file, meeting_notify, meeting_expire',
-      },
-      { size: 'square', value: '26', label: 'API Endpoints', hint: 'Across 6 routers' },
-      {
-        size: 'square',
-        value: '9',
-        label: 'Alerts Wired',
-        hint: '4 Prometheus rules and 5 CloudWatch alarms',
+        accent: true,
+        value: '1',
+        label: 'Public Entry Point',
+        detail: 'Only the load balancer accepts internet traffic. The bastion answers one operator address, and the database sits in a private subnet with no public endpoint.',
       },
       {
-        size: 'wide',
-        value: '5',
-        label: 'Attack Simulations',
-        detail: 'Credential stuffing, access control, exfiltration, request flooding and a notification test, each firing real requests at real endpoints',
+        value: '3',
+        label: 'Access Roles',
+        detail: 'Each account signs in as an admin, an editor, or a viewer. Only the admin can run the attack demos.',
       },
       {
-        size: 'square',
-        value: '13',
-        label: 'Audit Event Types',
-        hint: 'Every one written to DynamoDB and PostgreSQL both',
+        value: '4s',
+        label: 'Live Attack Feed',
+        detail: 'The security console pulls the newest audit events every four seconds. Each attack shows up while it is still running.',
+      },
+      {
+        value: '3',
+        label: 'Apps on One Platform',
+        cards: [
+          { title: 'SecureDocs', text: 'Encrypted, versioned documents' },
+          { title: 'ShimonMeet', text: 'Meetings with join tokens' },
+          { title: 'Security Console', text: 'Live attack feed and demos' },
+        ],
+      },
+      {
+        value: '1',
+        label: 'Shared Audit Trail',
+        detail: 'Requests from SecureDocs and ShimonMeet pass through one middleware that writes each of them to the same DynamoDB table.',
       },
     ],
     stack: [
@@ -7923,33 +8180,40 @@ project1-on-premise-self-build/
       { category: 'Network & Delivery', items: ['Tailscale', 'Cloudflare'] },
       { category: 'Notifications', items: ['Slack', 'Telegram'] },
     ],
+    // Checked against both repositories. Lock‑N‑Lock's recovery service
+    // (monitoring/recovery/main.py) is FastAPI. lambda.tf wires the five
+    // functions to S3, EventBridge, and SNS. dynamodb.tf indexes events by id
+    // and time with a second index on type (its TTL attribute is configured
+    // but the app never writes it, so no expiry is claimed). The NAT figure is
+    // the Seoul list price, about $0.059 an hour; nat_instance.tf's comment
+    // quotes the US price. Replication is left out: My Role already shows it.
     stackNotes: [
       {
         tool: 'Why Lambda and SNS?',
         icon: 'Lambda',
-        text: 'Lock-N-Lock answered a failure with a Flask controller running on a machine that also had to stay up. Here the response is five Lambda functions behind two SNS topics, so **the thing that reacts to an outage is not itself part of the outage**. The trade is five cold starts and five inline IAM policies to get right, against one process I could have opened a shell on.',
+        text: 'On Lock‑N‑Lock, a **FastAPI** recovery service on our monitoring server restarted failed containers. In ShimonVault, I moved those reactions into **five** Lambda functions that S3 uploads, EventBridge schedules, and SNS alerts trigger. None of them depend on a server that must stay up.',
       },
       {
         tool: 'Why DynamoDB next to PostgreSQL?',
         icon: 'DynamoDB',
-        text: 'Every request writes an audit row, and I did not want that write queueing in front of the same RDS instance the application depends on. DynamoDB is **on-demand with no capacity to plan**, the partition key is the event id and the sort key is the timestamp, and a 90-day TTL clears it out on its own.',
+        text: 'Every request writes an audit row, and I wanted those writes kept away from the RDS database the app depends on. **DynamoDB** runs on demand with no capacity to plan. Each event is stored by its id and time, and a second index finds events by type.',
       },
       {
         tool: 'Why EventBridge?',
         icon: 'EventBridge',
-        text: 'A meeting reminder fires ten minutes before the meeting, and the instance that created the meeting may not exist by then. An `at()` rule created through boto3 **runs outside my application** and survives a deploy, a scale-out and a crash. A background thread dies with the process.',
+        text: 'A meeting reminder must fire **ten minutes** before the meeting, even if the server that created it is gone by then. The app creates a one‑time EventBridge rule for each meeting, and the rule keeps working through a deploy or a crash.',
       },
       {
         tool: 'Why a NAT instance?',
-        // EC2 rather than AWS: `ec2.svg` exists and `aws.svg` does not, and
-        // the point of the note is that the NAT *is* an EC2 instance.
+        // EC2 rather than AWS: the point of the note is that the NAT *is* an
+        // EC2 instance.
         icon: 'EC2',
-        text: 'A managed NAT gateway bills roughly **$33 a month** whether or not anything routes through it. A `t3.micro` with `source_dest_check = false` and one iptables masquerade rule does the same job inside the free tier. This is the one decision I kept identical to the team project, because it was right there too.',
+        text: 'Lock‑N‑Lock used a NAT instance to keep costs down, and I kept that choice. A managed NAT gateway costs about **$43 a month** in Seoul even when no traffic passes through it. A `t3.micro` with one iptables rule does the same job.',
       },
       {
-        tool: 'Why replicate to my own server?',
-        icon: 'Tailscale',
-        text: 'RDS is the write primary and a PostgreSQL container on my on-premises `proj-ubuntu01` subscribes to it over Tailscale. The application holds **two engines, one write and one read**, so the hybrid half of the brief is a real data path rather than a line on a diagram.',
+        tool: 'Why Cloudflare for DNS only?',
+        icon: 'Cloudflare',
+        text: 'My domain already lived on **Cloudflare**, and the ShimonVault record stays DNS only. Browsers connect straight to the ALB, which serves HTTPS with its own **ACM** certificate. The deploy script points the record at the new ALB every session.',
       },
     ],
     // Nine files, and the section reads them in that order as an argument:
@@ -7991,14 +8255,14 @@ project1-on-premise-self-build/
     //
     // Every label traces to the repository. The CIDRs, instance classes and
     // the ALB health check come from terraform/, the counters and thresholds
-    // from app/middleware/audit_middleware.py and app/services/rate_limiter.py,
+    // from app/middleware/audit_middleware.py and app/routers/auth_router.py,
     // and the job order in the third view from .github/workflows/cd.yml.
     architecture: [
       {
         tab: 'Platform',
         caption:
-          'AWS and on-premises joined into one Tailscale network',
-        alt: 'An AWS VPC in ap-northeast-2 on 10.0.0.0/16. Traffic arrives at shimonvault.junhanshin.com, a DNS-only Cloudflare record, so the load balancer terminates TLS itself with an ACM certificate. Public subnets across two availability zones hold that application load balancer, serving port 80 and port 443 with a health check on /health every 30 seconds, a bastion reachable only from the operator IP, and a NAT instance running iptables masquerade on a t3.micro. Private subnets hold the blue application instance, the green instance created only during a deploy, and an RDS PostgreSQL 16 instance on db.t3.micro with logical replication enabled. Below the VPC, a serverless band holds the S3 docs and reports buckets, five Lambda functions, the SNS topics with EventBridge, and three DynamoDB tables. Below AWS, a Tailscale mesh on 100.64.0.0/10 joins two on-premises hosts: proj-mgmt running Prometheus, Grafana and Alertmanager, and proj-ubuntu01 running the PostgreSQL read replica on port 5433.',
+          'Hybrid Platform',
+        alt: 'An AWS VPC in ap-northeast-2 on 10.0.0.0/16. Traffic arrives at shimonvault.junhanshin.com, a DNS-only Cloudflare record, so the load balancer terminates TLS itself with an ACM certificate. Public subnets across two availability zones hold that application load balancer, serving port 80 and port 443 with a health check on /health every 30 seconds, a bastion reachable only from the operator IP, and a NAT instance running iptables masquerade on a t3.micro. Private subnets hold the blue application instance, the green instance created only during a deploy, and an RDS PostgreSQL 16 instance on db.t3.micro with logical replication enabled. Below the VPC, a serverless band holds the S3 docs and reports buckets, five Lambda functions, the SNS topics with EventBridge, and three DynamoDB tables. Below AWS, a Tailscale mesh on 100.64.0.0/10 joins two on-premises hosts: proj-mgmt running Prometheus, Grafana, and Alertmanager, and proj-ubuntu01 running the PostgreSQL read replica on port 5433. RDS gets no public address. The replica subscribes through a socat relay on the blue instance, and the relay forwards port 5432 to RDS over Tailscale.',
         diagram: {
           width: 1000,
           // 836 before the captions were broken into four lines instead of two.
@@ -8026,7 +8290,7 @@ project1-on-premise-self-build/
             { id: 'bastion', label: 'Bastion', sub: 'SSH from my IP only', glyph: 'key', x: 470, y: 240, w: 220, h: 52 },
             { id: 'nat', label: 'NAT instance', sub: 't3.micro · masquerade', glyph: 'cloud', x: 800, y: 240, w: 230, h: 52 },
 
-            { id: 'blue', label: 'App EC2 blue', sub: 'Docker · uvicorn :8000', glyph: 'server', x: 180, y: 360, w: 210, h: 52 },
+            { id: 'blue', label: 'App EC2 blue', sub: 'Docker · uvicorn :8000 · socat :5432', glyph: 'server', x: 180, y: 360, w: 210, h: 52 },
             { id: 'green', label: 'App EC2 green', sub: 'created on deploy only', glyph: 'server', x: 440, y: 360, w: 210, h: 52 },
             { id: 'rds', label: 'RDS PostgreSQL 16', sub: 'db.t3.micro · logical replication', glyph: 'database', x: 780, y: 360, w: 290, h: 52 },
 
@@ -8052,41 +8316,41 @@ project1-on-premise-self-build/
             { from: 'blue', to: 'ddb', label: 'audit rows', labelAt: [520, 466], via: [[180, 475], [840, 475]] },
             { from: 's3', to: 'lam', label: 'PUT' },
             { from: 'sns', to: 'lam', label: 'invoke' },
-            // Down the right-hand gutter, between the VPC boundary and the
-            // provider boundary, which is the only lane clear of both rows.
-            { from: 'rds', to: 'replica', label: 'logical replication', labelAt: [956, 545], labelAnchor: 'end', via: [[966, 360], [966, 726]] },
             // The mesh reaches the private instance directly, so Prometheus
             // scrapes it with no jump host in the path.
-            { from: 'tailnet', to: 'blue', label: 'scrape :9100 · :8000', labelAt: [44, 500], labelAnchor: 'start', dash: true, dir: 'both', via: [[280, 616], [34, 616], [34, 360]] },
+            // Labelled below the AWS box: higher up, the label sat on top of
+            // the "Managed services" zone label.
+            { from: 'tailnet', to: 'blue', label: 'scrape :9100 · :8000', labelAt: [44, 606], labelAnchor: 'start', dash: true, dir: 'both', via: [[280, 616], [34, 616], [34, 360]] },
             { from: 'mgmt', to: 'tailnet', dash: true, dir: 'both' },
-            { from: 'replica', to: 'tailnet', dash: true, dir: 'both' },
+            // Replication rides the mesh. RDS is private, so the replica's
+            // subscription reaches it through a socat relay on the blue
+            // instance (app_user_data.sh.tpl), never on a direct line.
+            { from: 'replica', to: 'tailnet', label: 'replication', labelAt: [730, 690], labelAnchor: 'start', dash: true, dir: 'both' },
           ],
-          // A caption is one SVG <text> at a fixed baseline with no wrapping, so
-          // anything past the 1000-unit viewBox is clipped and simply never
-          // read. Every caption below is therefore hand-broken at roughly 135
-          // characters, which is where the 11px monospace runs out of canvas.
+          // One caption per line. The renderer splits anything over about
+          // 148 characters into two balanced lines, which reads as an early
+          // wrap, so every caption is written to fit one line.
           captions: [
             {
               x: 20,
               y: 808,
               tone: 'accent',
-              text: 'Security groups reference each other rather than CIDR ranges.',
+              text: 'The app security group accepts port 8000 from the ALB. The RDS security group accepts port 5432 from the app and the bastion.',
             },
             {
               x: 20,
               y: 830,
-              tone: 'accent',
-              text: 'The app group accepts 8000 only from the ALB group, and the RDS group accepts 5432 only from the app group.',
+              text: 'Private instances reach the internet through a NAT instance. A t3.micro with one iptables rule replaces a managed NAT gateway.',
             },
             {
               x: 20,
               y: 852,
-              text: 'Outbound traffic from the private subnets leaves through the NAT instance, a t3.micro running one iptables masquerade rule in place of a',
+              text: 'Ports 9100, 2376, 2049, and 5432 on the app instance accept traffic from the Tailscale range only.',
             },
             {
               x: 20,
               y: 874,
-              text: 'managed NAT gateway. Ports 9100, 2376 and 2049 are open to the Tailscale range and to nothing else.',
+              text: 'RDS gets no public address. The replica connects to a socat relay on the blue instance, and the relay forwards port 5432 to RDS.',
             },
           ],
         },
@@ -8094,12 +8358,11 @@ project1-on-premise-self-build/
       {
         tab: 'Attack to response',
         caption:
-          'One middleware sees it and three counters decide the response',
-        alt: 'A four-band flow. Detect: every request except /health and /metrics passes through AuditMiddleware, which maps the status code to an event type and writes one row to the DynamoDB audit log. Decide: three counters, 5 login failures per address with an incident at 8, 5 access denials per account, and 10 downloads in 60 seconds per address. Respond: an incident record in the incidents table, the account suspended in the users table, and an incident report written to the reports bucket, all three converging on one notify_all call, with a dashed edge to the SNS security-alert topic marked as still to do, and the block_ip Lambda inserting a network ACL deny rule. Report: Slack and Telegram, and the AuditStream feed in the admin console polled every four seconds.',
+          'Attack Response Flow',
+        alt: 'A four-band flow. Detect: every request except /health and /metrics passes through AuditMiddleware, which maps the status code to an event type and writes one row to the DynamoDB audit log. Decide: three counters, 5 login failures per address counted in the login route with an incident at 8, 5 access denials per account, and 10 downloads in 60 seconds per address. Respond: an incident record in the incidents table, the account suspended in the users table, and an incident report written to the reports bucket, all three converging on one notify_all call, with a dashed edge to the SNS security-alert topic marked as still to do, and the block_ip Lambda inserting a network ACL deny rule. Report: Slack and Telegram, and the AuditStream feed in the admin console polled every four seconds.',
         diagram: {
           width: 1000,
-          // 730 before the captions were broken into four lines instead of two.
-          height: 786,
+          height: 742,
           // Four bands rather than four columns: a phase is a horizontal slice
           // of the flow, and a band says so without spending a column on it.
           zones: [
@@ -8129,13 +8392,15 @@ project1-on-premise-self-build/
             { id: 'snstopic', label: 'SNS security-alert', sub: 'two subscribed functions', glyph: 'queue', x: 500, y: 464, w: 270, h: 48 },
             { id: 'block', label: 'block_ip Lambda', sub: 'NACL DENY · rule 1 to 99', glyph: 'pipeline', x: 825, y: 464, w: 270, h: 48 },
 
-            { id: 'chans', label: 'Slack + Telegram', sub: 'every severity', glyph: 'chat', x: 230, y: 612, w: 300, h: 48 },
+            { id: 'chans', label: 'Slack + Telegram', sub: 'at each threshold', glyph: 'chat', x: 230, y: 612, w: 300, h: 48 },
             { id: 'feed', label: 'AuditStream feed', sub: 'admin console · polled every 4s', glyph: 'monitor', x: 660, y: 612, w: 340, h: 48 },
           ],
           edges: [
             { from: 'req', to: 'mw' },
             { from: 'mw', to: 'log' },
-            { from: 'mw', to: 'f401', label: '401' },
+            // The login route counts its own failures. The middleware only logs
+            // the 401, so the counter is fed from the request, not from it.
+            { from: 'req', to: 'f401', label: 'login route', labelAt: [184, 202], labelAnchor: 'start' },
             { from: 'mw', to: 'f403', label: '403' },
             { from: 'mw', to: 'f429', label: '429' },
             // Each counter drops straight into the action it triggers, which is
@@ -8161,23 +8426,12 @@ project1-on-premise-self-build/
               x: 20,
               y: 692,
               tone: 'accent',
-              text: 'A security group has allow rules only, so the automatic block had to move to a network ACL. block_ip takes the lowest free rule number',
+              text: 'Security groups only allow traffic. The automatic block uses a network ACL and adds a DENY rule at the lowest free number from 1 to 99.',
             },
             {
               x: 20,
               y: 714,
-              tone: 'accent',
-              text: 'between 1 and 99 and inserts a DENY for that address.',
-            },
-            {
-              x: 20,
-              y: 736,
-              text: 'The dashed edge is honest. The SNS publish that would invoke block_ip from the login path is still a TODO in auth_router.py, so the',
-            },
-            {
-              x: 20,
-              y: 758,
-              text: 'function is deployed, subscribed and authorised with no live trigger. The alert text it sends still claims the block fired.',
+              text: 'The login route does not publish to SNS yet. block_ip is deployed and subscribed with no live trigger, and its alert still reports a block.',
             },
           ],
         },
@@ -8185,14 +8439,15 @@ project1-on-premise-self-build/
       {
         tab: 'Blue/green deploy',
         caption:
-          'Checks on every push and a deploy that waits for green',
-        alt: 'Two workflows run from two different triggers. On the left, every push runs the CI workflow: flake8 over app/ at 120 columns, then pytest against SQLite in memory with a 50 percent coverage floor, then a Docker build that verifies the image and is never pushed. On the right, a manual workflow_dispatch runs the CD workflow, which builds and pushes the green image for amd64 and arm64 tagged by commit sha, applies Terraform with deploy_green set to true while the listener stays on blue, polls the green target group health up to 40 times at 15 second intervals, applies again with active_color set to green to move the listener, retags the green image as blue, and posts the result to Slack. A dashed edge runs from the health poll directly to the Slack step for the case where green never becomes healthy.',
+          'Blue/Green Deployment',
+        // The address bar greys everything up to the last "/" as a folder, so
+        // the bar takes a division slash (U+2215) that looks the same and does
+        // not split the title.
+        address: 'Blue\u2215Green Deployment',
+        alt: 'Two workflows run from two different triggers. On the left, every push runs the CI workflow: flake8 over app/ at 120 columns, then pytest against a SQLite file with a 50 percent coverage floor, then a Docker build that verifies the image and is never pushed. On the right, a manual workflow_dispatch runs the CD workflow, which builds and pushes the green image for amd64 and arm64 tagged by commit sha, applies Terraform with deploy_green set to true while the listener stays on blue, polls the green target group health up to 40 times at 15 second intervals, applies again with active_color set to green to move the listener, retags the green image as blue, and posts the result to Slack. A dashed edge runs from the health poll directly to the Slack step for the case where green never becomes healthy.',
         diagram: {
           width: 1000,
-          // 700 before the third caption, and 722 before all three were broken
-          // into six lines. Captions are single <text> baselines with no
-          // wrapping, so the canvas has to grow under every line added.
-          height: 788,
+          height: 722,
           zones: [
             { id: 'ci', label: 'ci.yml', note: 'every push and pull request', x: 20, y: 110, w: 460, h: 260, tone: 'region' },
             // A zone note is one unwrapped line like a caption, so it is held
@@ -8207,7 +8462,7 @@ project1-on-premise-self-build/
             { id: 'push', label: 'git push · gh workflow run', sub: 'two triggers, two workflows', glyph: 'git', x: 500, y: 52, w: 340, h: 44 },
 
             { id: 'lint', label: 'flake8', sub: 'app/ · 120 columns', glyph: 'scan', x: 250, y: 176, w: 380, h: 44 },
-            { id: 'test', label: 'pytest', sub: 'SQLite in memory · 50% floor', glyph: 'shield', x: 250, y: 242, w: 380, h: 44 },
+            { id: 'test', label: 'pytest', sub: 'SQLite file · 50% floor', glyph: 'shield', x: 250, y: 242, w: 380, h: 44 },
             { id: 'buildcheck', label: 'docker build', sub: 'verify only, never pushed', glyph: 'container', x: 250, y: 308, w: 380, h: 44 },
 
             { id: 'image', label: 'build and push :green', sub: 'amd64 and arm64 · tagged by sha', glyph: 'container', x: 746, y: 176, w: 400, h: 44 },
@@ -8236,76 +8491,64 @@ project1-on-premise-self-build/
               x: 20,
               y: 650,
               tone: 'accent',
-              text: 'The switch is a Terraform variable rather than an `aws elbv2 modify-listener` call. A CLI switch is drift, and the next apply would',
+              text: 'A Terraform variable moves the listener to green. A CLI switch would drift, and the next apply would send traffic back to blue.',
             },
             {
               x: 20,
               y: 672,
-              tone: 'accent',
-              text: 'quietly put traffic back on blue.',
+              text: 'The deploy-production group runs one deploy at a time and never cancels one in progress. Blue serves traffic until green is healthy.',
             },
             {
               x: 20,
               y: 694,
-              text: 'A concurrency group named deploy-production with cancel-in-progress false means two deploys never run at once and none is ever',
-            },
-            {
-              x: 20,
-              y: 716,
-              text: 'cancelled mid-flight. Blue keeps serving until the green target group reports healthy on its own health check.',
-            },
-            {
-              x: 20,
-              y: 738,
-              text: 'CD is `workflow_dispatch` only. It used to run on every push to `main`, which rebuilt live AWS infrastructure after every commit,',
-            },
-            {
-              x: 20,
-              y: 760,
-              text: 'including the commit right after a `terraform destroy`. That put the billing back on and nobody asked for it.',
+              text: 'CD runs only on manual dispatch. The earlier push trigger rebuilt AWS after every commit. One of those rebuilds followed a terraform destroy.',
             },
           ],
         },
       },
     ],
-    // The same four weeks as Lock-N-Lock, split by what this repository was
-    // actually built in the order of: the ground first, then the product on
-    // top of it, then the things that watch it, then the pipeline over all of it.
+    // The same four weeks as Lock-N-Lock, the period this ran alongside. Each
+    // week holds what the public repository's weekly commits added: the network
+    // and schema first, then the services and the app, then detection inside
+    // the app, then the demo. The commits landed between Jun 1 and Jul 4, so the
+    // ranges follow the project period rather than the commit dates. The last
+    // week names the IP block as the next step: the login route never publishes
+    // to SNS (auth_router.py still carries the TODO), so block_ip never runs.
     implementation: {
       months: ['2026-05', '2026-06'],
       span: { from: '2026-05-27', to: '2026-06-24' },
       phases: [
         {
           id: 'foundation',
-          title: 'Foundation',
+          title: 'Infrastructure Layer',
           range: 'May 27 – Jun 2',
           from: '2026-05-27',
           to: '2026-06-02',
-          text: 'The S3 state backend and its lock table, then the VPC, four subnets, the NAT instance, the bastion, RDS, the two S3 buckets and the five security groups that reference each other rather than CIDR ranges. The FastAPI skeleton went up in the same week, with `/health` answering 200 before the database exists.',
+          text: 'I aimed to establish a network foundation before any application code existed. Working in **Terraform**, I placed the app servers and the database in private subnets and limited SSH to a single bastion host. A NAT instance replaced the managed gateway to keep the cost of a practice build low. I also designed the **PostgreSQL** schema with random UUID keys to keep record IDs from being guessed.',
         },
         {
           id: 'modules',
-          title: 'The Three Modules',
+          title: 'Application Layer',
           range: 'Jun 3 – Jun 9',
           from: '2026-06-03',
           to: '2026-06-09',
-          text: 'SecureDocs on S3 with presigned URLs and soft deletes, ShimonMeet with join tokens and the EventBridge rules that fire around each meeting, the audit middleware writing every request to DynamoDB, and the React console on top of all three.',
+          text: 'This week I worked toward the first complete version of the platform. I prepared blue and green target groups behind the load balancer to support releases without downtime. Inside the **FastAPI** app I introduced role‑based access and an audit middleware that logged every request to **DynamoDB**. Five **Lambda** functions then took over file checks and meeting reminders. Connecting **Ansible** and **GitHub Actions** to this stack required many rounds of fixes.',
         },
         {
           id: 'response',
-          title: 'Detection and Response',
+          title: 'Detection & Alert Rules',
           range: 'Jun 10 – Jun 17',
           from: '2026-06-10',
           to: '2026-06-17',
-          text: 'The three counters, the two SNS topics, the five Lambda functions, and the on-premises Prometheus, Grafana and Alertmanager stack with the Telegram relay beside it. Logical replication from RDS to `proj-ubuntu01` landed at the end of the week, which is what made the read path real.',
+          text: 'I then brought detection into the application to see the account behind each request. The audit middleware began suspending an account after five denied requests. I also adjusted the access checks to answer viewers with a 403 response that never revealed if a document existed. Four **Prometheus** alert rules and a reworked **PostgreSQL** replication setup completed the work of this week.',
         },
         {
           id: 'pipeline',
-          title: 'Pipeline and Demo',
+          title: 'Live Attack Demo',
           range: 'Jun 18 – Jun 24',
           from: '2026-06-18',
           to: '2026-06-24',
-          text: 'The CI workflow, the blue/green CD workflow that owns the listener through a Terraform variable, the five in-product attack simulations, and `deploy.sh` and `destroy.sh` so a whole session is two commands.',
+          text: 'In the final week I focused on making each defense visible during the demo. I was able to enforce a **slowapi** download limit and turn the first burst from an address into an S3 incident report and a chat alert. The **React** admin console let me launch each attack against the live system with one button. The login alerts and the account suspension worked as planned. The automatic IP block for repeat attackers is the next step on the roadmap.',
         },
       ],
     },
@@ -8339,16 +8582,16 @@ project1-on-premise-self-build/
     // monospace output survives the downscale.
     media: {
       clipNote:
-        'Cut from my own screen recordings of the live environment, silent and looping. Where a clip shows four windows they are the admin console, the Grafana AuditStream dashboard, Telegram and Slack, so one button press can be watched landing in all four.',
+        'These clips come from my screen recordings of the live platform. Each four‑window clip follows one button press through the admin console, Grafana, Telegram, and Slack.',
       stillsNote:
-        'Full-resolution captures from a separate session the following day, so their counters do not line up with the clips above. Click one to open it at full size.',
+        'These full‑resolution captures come from a separate session the following day, and their counters do not match the clips above. Click any image to open it at full size.',
       scenarios: [
         {
           id: 'normal',
           tab: 'Normal operation',
           label: 'Scenario 1: Signing in and using the platform',
           lead:
-            'An admin signs in, reads the console, and uploads a file to **SecureDocs**. Downloads leave as **15-minute pre-signed S3 URLs**, and every request on the way through is already in the audit trail by the time the page finishes rendering.',
+            'I start by using the platform the way a normal admin would. I sign in, check the security console, and upload a file to **SecureDocs**. Anyone who downloads that file gets a private link that **stops working after 15 minutes**.',
           clip: {
             src: '/projects/shimon-vault/clip-01-console.mp4',
             width: 1280,
@@ -8359,12 +8602,12 @@ project1-on-premise-self-build/
           },
           before: {
             src: '/projects/shimon-vault/demo-01-securedocs.png',
-            state: 'SecureDocs holds two documents at version 1',
+            state: 'Uploaded Documents',
             alt: 'The SecureDocs page: a browse and upload row above a Documents card listing act1.txt at 55 bytes and contract_q3.txt at 56 bytes, each text/plain, dated 9 September 2026, at version 1, with a Download and a delete control, under a line reading that downloads use 15-minute pre-signed URLs and every action is audited',
           },
           after: {
             src: '/projects/shimon-vault/demo-02-meetings.png',
-            state: 'ShimonMeet lists three meetings with join tokens',
+            state: 'Scheduled Meetings',
             alt: 'The ShimonMeet page: a new-meeting form with title, description, start and end times and participant ids, above three scheduled meetings named Q3 Security Review, Infra Sync Blue/Green and Vendor Access Renewal, each with a Join control, a Token control and a cancel control',
           },
         },
@@ -8373,7 +8616,7 @@ project1-on-premise-self-build/
           tab: 'Credential stuffing',
           label: 'Scenario 2: Credential stuffing against /auth/login',
           lead:
-            'Act 2 fires **30 login attempts** from `203.0.113.42`, the RFC 5737 documentation address the demo defaults to. The fifth failure raises the first alert, the eighth writes an incident, and slowapi refuses the rest of the burst at **10 a minute**. Slack and Telegram both have the message before the run finishes. The alert text reads `Action: IP block Lambda triggered`, and that line is the one thing on screen that is not true: the SNS publish that would invoke `block_ip` is still a `TODO` one line below it in `auth_router.py`.',
+            'Here, I play an attacker who tries **30 passwords in a row** against the login page from one address. After five wrong passwords, the platform warns Slack and Telegram, and after eight, it records a security incident. Once the address passes **10 tries in a minute**, the remaining attempts are turned away before they reach the password check.',
           clip: {
             src: '/projects/shimon-vault/clip-02-credential-stuffing.mp4',
             width: 1280,
@@ -8387,15 +8630,15 @@ project1-on-premise-self-build/
           // at a readable size: the Grafana dashboard the on-premises stack
           // draws from the same requests.
           stillsNote:
-            'Two different runs of the same act. The Grafana window closes about a quarter of an hour before the feed was captured, so the numbers in them are not the same burst.',
+            'The two images come from different runs of the same act. The Grafana window closes roughly fifteen minutes before the feed capture, and each one shows its own burst.',
           before: {
             src: '/projects/shimon-vault/demo-03-stuffing-grafana.png',
-            state: 'Failures and refusals both run at 32.3 a minute',
+            state: 'Login Failures in Grafana',
             alt: 'The ShimonVault AuditStream dashboard in Grafana over the last 30 minutes: login failures 32.3, access denied 0, rate limited 4xx 32.3, 5xx server errors 0 and 341 total requests, above a login-failure-rate panel spiking to just over 40 a minute, a request-rate-by-endpoint panel whose legend includes /demo/credential-stuffing and /auth/login, and an HTTP status distribution where a 4xx block rises out of an otherwise flat 2xx line',
           },
           after: {
             src: '/projects/shimon-vault/demo-04-stuffing-feed.png',
-            state: 'The tail of the burst lands as rate limit hits in one second',
+            state: 'Blocked Attempts in the Feed',
             alt: 'The AuditStream feed filled with rate limit hit rows from 203.0.113.42 against /auth/login, all stamped 12:31:27 PM, under the successful sign-ins that preceded them',
           },
         },
@@ -8404,7 +8647,7 @@ project1-on-premise-self-build/
           tab: 'Broken access control',
           label: 'Scenario 3: Forbidden reads and account suspension',
           lead:
-            'Act 3 signs in as the seeded **viewer** account and asks six times for a document that account may not read. Every refusal is a 403 counted by the middleware, and the **fifth one suspends the account**. That is also why Act 5 will not start afterwards: the traffic flood signs in as the same viewer account, so the defence that worked is the reason the next demo is refused at the door.',
+            'Next, I sign in as a **viewer** and try six times to open a document that a viewer is not allowed to see. Each attempt is refused, and on the **fifth refusal, the platform suspends the account** by itself.',
           clip: {
             src: '/projects/shimon-vault/clip-03-access-control.mp4',
             width: 1280,
@@ -8415,12 +8658,12 @@ project1-on-premise-self-build/
           },
           before: {
             src: '/projects/shimon-vault/demo-05-access-control-feed.png',
-            state: 'The 403 lands directly below a live scanner',
+            state: 'Refused Request Beside a Scanner',
             alt: 'The AuditStream feed showing a doc access denied row from 203.0.113.42 at 12:32:46, and directly above it an unrelated address, 216.180.246.224, walking a list of login paths including /cgi-bin/login.cgi, /+CSCOE+/logon.html, /manage/account/login and /admin/index.html',
           },
           after: {
             src: '/projects/shimon-vault/demo-06-audit-scanner.png',
-            state: 'The same feed keeps filling with no demo running',
+            state: 'Scanners Between Demos',
             alt: 'The AuditStream feed with no demo running: an address at 136.118.157.110 requesting /llm_config.json, /config/anthropic.json, /openai.json, /.codex/config.toml, /.claude/mcp.json, /.cursor/settings.json and /.windsurf/mcp.json in the same second, every row labelled login success by the middleware path heuristic',
           },
         },
@@ -8429,7 +8672,7 @@ project1-on-premise-self-build/
           tab: 'Bulk exfiltration',
           label: 'Scenario 4: Download rate limiting and incident reporting',
           lead:
-            'Act 4 signs in as the **editor** account and asks for the same document 15 times in a row. The route allows **10 downloads in 60 seconds** and refuses the rest with a 429. The first 429 from an address writes an incident report to S3 and posts it once to Slack and Telegram, report key included, and every 429 after that is logged and stays quiet.',
+            'This time, I sign in as an **editor** and download the same document 15 times in a row to imitate someone stealing files in bulk. The platform allows **10 downloads a minute**, blocks the rest, and files one incident report in S3 with a single alert.',
           clip: {
             src: '/projects/shimon-vault/clip-04-exfiltration.mp4',
             width: 1280,
@@ -8440,7 +8683,7 @@ project1-on-premise-self-build/
           },
           before: {
             src: '/projects/shimon-vault/demo-07-exfiltration-feed.png',
-            state: 'Ten downloads pass before the limiter refuses the rest',
+            state: 'Downloads Stopped at Ten',
             alt: 'The AuditStream feed reading upward from 12:33:20: a run of doc download rows against one document id, then a red suspicious row reading incident:bulk_file_exfiltration from 203.0.113.42 at 12:33:21, then rate limit hit rows against the same document id at 12:33:22',
           },
         },
@@ -8459,16 +8702,16 @@ project1-on-premise-self-build/
           tab: 'Monitoring stack',
           label: 'Scenario 5: Monitoring from outside the platform',
           lead:
-            'Everything above is the application catching things about itself. This is the other half. Prometheus, Grafana and Alertmanager run on `proj-mgmt`, **my own machine on-premises**, and scrape across the Tailscale mesh, so the thing watching the platform is not part of it. Four scrape pools cover both sides: the node exporter and the FastAPI `/metrics` endpoint on the AWS instance, and cAdvisor and a node exporter on the on-premises host itself.',
-          stillsNote: 'Both from the 9 September session, with the rest of the stills.',
+            'The scenarios above show the platform watching itself. For this half, I placed the monitoring tools on `proj-mgmt`, **my own on‑premises machine**, and connected them to AWS through a private Tailscale network.',
+          stillsNote: 'Both images come from the September 9 session with the rest of the screenshots.',
           before: {
             src: '/projects/shimon-vault/demo-08-prometheus-targets.png',
-            state: 'Four scrape pools report up across both sides',
+            state: 'Data Sources on Both Machines',
             alt: 'The Prometheus target-health page with four scrape pools, each reading 1 of 1 up: ec2-nodes and fastapi-app both scraping 100.85.130.38, the app instance reached over Tailscale and labelled shimonvault-app-blue, and onprem-cadvisor and onprem-node scraping containers on onprem-proj-mgmt, the last of them carrying an environment on-prem label',
           },
           after: {
             src: '/projects/shimon-vault/demo-09-grafana-infra.png',
-            state: 'One chart plots both machines on the same axis',
+            state: 'One Chart for Both Machines',
             alt: 'The ShimonVault infra health dashboard in Grafana over the last hour: CPU usage 2.29 percent, memory usage 61.0 percent, 8 running containers and 0.222 requests a second, above a CPU Over Time panel plotting two series on one axis, onprem-proj-mgmt and shimonvault-app-blue, and an HTTP request rate panel split into 2xx, 4xx and 5xx',
           },
         },
@@ -8477,17 +8720,17 @@ project1-on-premise-self-build/
           tab: 'Alert lifecycle',
           label: 'Scenario 6: NodeDown firing and resolving',
           lead:
-            'Four rules cover high CPU, high memory, a dead node exporter and a dead FastAPI, and `NodeDown` is `up{job="ec2-nodes"} == 0` held for a minute. One Alertmanager receiver posts to Slack and to the Telegram relay with `send_resolved: true`, so **the recovery arrives on the same two channels as the alarm** rather than leaving somebody to notice it stopped. A `NodeDown` on an instance also inhibits the other three for that instance, because a machine that is gone trips all four and only one of them is the news.',
+            'I wrote four alert rules for the failures that matter most, and the screenshots follow one of them. A server went silent, an alert reached Slack and Telegram a minute later, and a **recovery message arrived on the same two channels** when it came back.',
           stillsNote:
-            'These two are from different sittings. The rule list is from the 9 September session, and the Slack channel is from the same evening as the clips, twenty minutes after the last of them.',
+            'These two come from different sittings. The rule list is from the September 9 session, and the Slack channel is from the evening of the clips, twenty minutes after the last one.',
           before: {
             src: '/projects/shimon-vault/demo-10-prometheus-rules.png',
-            state: 'Four rules are loaded and none of them is active',
+            state: 'Loaded Alert Rules',
             alt: 'The Prometheus alerts page showing a single rule group named shimonvault, loaded from /etc/prometheus/rules/shimonvault.yml and badged INACTIVE with a count of 4, listing HighCPU, HighMemory, NodeDown and FastAPIDown',
           },
           after: {
             src: '/projects/shimon-vault/demo-11-infra-alert.png',
-            state: 'NodeDown fires at 7:53 and resolves itself by 8:03',
+            state: 'Alert and Recovery in Slack',
             alt: 'The shimonvault-alerts Slack channel: a red [ALERT] EC2 node down on shimonvault-app-blue posted at 7:53 PM, reading that the node exporter has been unreachable for one minute at critical severity, then a green [RESOLVED] of the same alert at 8:03 PM, and under both a TEST NOTIFICATION triggered by admin reading that if you can read this in Slack and Telegram, alerting works',
           },
         },
@@ -8496,15 +8739,15 @@ project1-on-premise-self-build/
           tab: 'Deploy',
           label: 'Scenario 7: One-command provisioning and blue/green deploy',
           lead:
-            '`scripts/deploy.sh` is one command: Terraform apply, the Cloudflare record, the ALB health gate, the on-premises replica, the seeded accounts, then an Ansible pass that checks the stack from the inside. It ends by printing every Terraform output. Shipping a change afterwards is the CD workflow, which runs on `workflow_dispatch` **and nothing else**, because on `push` it used to rebuild live infrastructure after every commit.',
+            'I wrote one script, `scripts/deploy.sh`, that builds the whole platform from nothing and checks every service before it finishes. I ship later updates with a GitHub workflow that runs only when I start it by hand.',
           // These two stills are not from the separate session the section
           // note describes. The outputs shot is a frame of this very clip, and
           // the CD run is a GitHub page, so the section's caveat would be wrong
           // on both of them.
           stillsNote:
-            'The first of these is a full-resolution frame of the run above rather than a separate capture. The second is the GitHub Actions run for a later deploy.',
+            'The first image is a full‑resolution frame of the run above. The second is the GitHub Actions run for a later deploy.',
           clipNote:
-            'The terminal panel from one full `scripts/deploy.sh` run, 6 minutes 32 seconds of it. Kept at 1440 wide so the output survives the downscale.',
+            'This is the terminal panel from one full `scripts/deploy.sh` run that took 6 minutes 32 seconds. It stays 1440 pixels wide to keep the output readable.',
           clip: {
             src: '/projects/shimon-vault/clip-05-provision.mp4',
             width: 1440,
@@ -8515,12 +8758,12 @@ project1-on-premise-self-build/
           },
           before: {
             src: '/projects/shimon-vault/demo-12-deploy-outputs.jpg',
-            state: 'The run ends on the Terraform outputs with nothing degraded',
+            state: 'Final Deploy Output',
             alt: 'The tail of a deploy.sh run: Terraform outputs listing the ACM certificate ARN, the ALB DNS name and listener ARN, the blue and green target group ARNs, app_fqdn as shimonvault.junhanshin.com, app_green_private_ip as not deployed, the bastion IP, the Lambda and SNS ARNs and the RDS endpoint, followed by a line reading deployment finished with no degraded steps',
           },
           after: {
             src: '/projects/shimon-vault/demo-13-cd-run.png',
-            state: 'The CD run switches the ALB and retags in 12m 28s',
+            state: 'GitHub Release Run',
             alt: 'A successful GitHub Actions run of CD Blue/Green Deploy on the ShinJunhan/shimon-vault repository, total duration 12 minutes 28 seconds, with the job named Build, Push, Deploy Green, Switch ALB (terraform), Retag, three deprecation warnings and one build artifact',
           },
         },
@@ -8545,7 +8788,7 @@ shimon-vault/
 │   │   ├── meetings_router.py    create, list, update, cancel, join, archive
 │   │   ├── audit_router.py       feed, incidents, my-activity
 │   │   ├── admin_router.py       dashboard summary, timeseries, infra
-│   │   └── demo_router.py        the 5 one-click attack simulations
+│   │   └── demo_router.py        4 attack simulations and a notification test
 │   ├── services/                 S3, DynamoDB, EventBridge, Prometheus, notify
 │   ├── middleware/
 │   │   └── audit_middleware.py   logs every request, counts, suspends, alerts
@@ -8553,19 +8796,19 @@ shimon-vault/
 ├── frontend/                     React SPA, built into the image
 │   └── src/                      Login, Docs, Meetings, Console, api.js
 ├── terraform/                    27 files, 90 resource blocks
-│   ├── vpc.tf                    VPC, 4 subnets, IGW, route tables
-│   ├── alb.tf                    ALB, blue and green target groups, 80 and 443
+│   ├── vpc.tf                    VPC, 3 subnets, IGW, route tables
+│   ├── alb.tf                    ALB, second public subnet, target groups, 80 and 443
 │   ├── acm.tf                    the cert the 443 listener serves, DNS-validated
 │   ├── app_ec2_blue.tf           the live instance
 │   ├── app_ec2_green.tf          created only when deploy_green = true
 │   ├── asg.tf                    launch template, scale policies, CPU alarms
 │   ├── rds.tf                    PostgreSQL 16, logical replication parameters
-│   ├── s3.tf                     docs and reports, encrypted, versioned
+│   ├── s3.tf                     docs versioned, reports expire in 30 days
 │   ├── dynamodb.tf               audit-log, incidents, meetings
 │   ├── lambda.tf                 5 functions, zipped at apply time
 │   ├── sns.tf                    security-alert, infra-alert, meeting-reminders
 │   ├── eventbridge.tf            the static warm-up rule
-│   ├── iam.tf                    2 roles, one inline policy per Lambda
+│   ├── iam.tf                    2 roles, 4 inline policies for 5 Lambdas
 │   ├── security_groups.tf        5 groups, referencing each other
 │   ├── nat_instance.tf           t3.micro with iptables masquerade
 │   ├── bastion.tf                SSH from my IP only
@@ -8582,7 +8825,7 @@ shimon-vault/
 │   └── shared/notification.py    the Slack and Telegram helper
 ├── monitoring/                   on-premises stack, docker compose
 │   ├── prometheus/rules/         4 alert rules
-│   ├── prometheus/targets/       file_sd JSON, rewritten by deploy.sh
+│   ├── prometheus/targets/       file_sd JSON, rewritten by fetch_docker_certs.sh
 │   ├── alertmanager/             Slack receiver plus the Telegram webhook
 │   ├── grafana/dashboards/       infra_health, auditstream
 │   └── telegram_relay/           the bridge Alertmanager posts to
@@ -8592,7 +8835,7 @@ shimon-vault/
 │   └── roles/                    docker_app, monitoring_stack, cloudwatch_agent
 ├── scripts/
 │   ├── deploy.sh                 apply to healthy in one command
-│   ├── destroy.sh                teardown, then verify 9 resource types
+│   ├── destroy.sh                teardown, then 7 leftover checks
 │   ├── generate_env.sh           app/.env from Terraform outputs
 │   ├── setup_replica.sh          RDS to on-premises logical replication
 │   ├── fetch_docker_certs.sh     the Docker TLS certs Portainer connects with
@@ -8600,73 +8843,77 @@ shimon-vault/
 │   ├── package_lambdas.sh        zips the five functions with dependencies
 │   └── simulate_*.sh|.py         four of the five demos, from a terminal
 ├── db/                           schema.sql, schema_from_rds.sql, seed.sql
-├── tests/                        pytest, SQLite in memory, no AWS needed
+├── tests/                        pytest on a SQLite file, no AWS needed
 └── .github/workflows/            ci.yml and cd.yml
 `,
+    // Eight decisions, each checked against the repository: two Lambdas subscribe
+    // to SNS (block_ip, log_incident) and three run on S3 or EventBridge; the console
+    // polls four endpoints every 4s; the demo is four attacks plus a test
+    // notification. Each Why opens with what the decision taught.
     decisions: [
       {
         keyword: 'Response in Lambda',
-        title: 'The automated response runs in Lambda behind SNS rather than in a service on a machine.',
+        title: 'Lambda functions handle each automated response to keep it off the servers it protects.',
         glyph: 'pipeline',
-        chose: 'Five **Lambda functions** subscribed to two SNS topics',
-        over: 'a long-running recovery controller on a VM, the way the team project did it',
-        why: 'The thing that responds to a failure should not share a failure domain with the thing that failed. A controller on the monitoring host is one more process that can be down at exactly the moment it is needed. The trade is real: five cold starts, five inline IAM policies, and no shell to open when a handler misbehaves, so **CloudWatch Logs is the only way to see what happened**.',
+        chose: 'Five **Lambda** functions on events',
+        over: 'A recovery service on a server',
+        why: 'This decision gave me practice with event‑driven design on AWS. S3 and EventBridge trigger three functions directly, and two more subscribe to SNS alert topics. Debugging taught me to rely on **CloudWatch Logs** because a Lambda function offers no shell.',
       },
       {
-        keyword: 'Security groups cannot deny',
-        title: 'The automatic IP block is a network ACL rule, because a security group has no way to express one.',
+        keyword: 'Network ACL block',
+        title: 'A network ACL holds the automatic IP block because it can deny an address.',
         glyph: 'route',
-        chose: 'A **DENY entry in a network ACL**, at the lowest free rule number between 1 and 99',
-        over: 'adding a deny rule to the application security group',
-        why: 'A security group has allow rules only. There is no such thing as a security group deny, which I found out by writing the first version of this handler as though there were. Network ACLs are **stateless and ordered by rule number**, which is exactly what an automatic block needs, and reserving 1 to 99 for auto-blocks keeps them clear of the ordinary allow rules at 100 and above.',
+        chose: 'A **DENY** rule in the network ACL',
+        over: 'A deny rule in a security group',
+        why: 'Writing this handler taught me how security groups and network ACLs differ. A security group only allows traffic. A network ACL evaluates numbered rules in order and can deny an address.',
       },
       {
-        keyword: 'One writer, one exception',
-        title: 'Every request is logged by one middleware, with a named exception for the console watching itself.',
+        keyword: 'One audit middleware',
+        title: 'A single middleware logs every request to keep the audit trail consistent.',
         glyph: 'channels',
-        chose: 'An `AuditMiddleware` added last, so it wraps **every route as the outermost layer**',
-        over: 'a logging call inside each handler',
-        why: 'Routes forget. Middleware cannot. It also gets the status code and the `X-Forwarded-For` address for free, which is what turns 401, 403 and 429 into security events with no extra work anywhere. The exception arrived later and is written down as `_OBSERVER_PATHS`. The console polls four read-only endpoints every four seconds to draw itself, which put **around 40 self-generated rows a minute** into the trail and pushed a real attack burst out of the live feed within a couple of minutes, so a **successful** poll on those four paths is no longer audited. A failed one still is, because a 401 or a 429 against admin telemetry is exactly the event this trail exists to catch. The older cost is unchanged: a successful request has no status code to classify it by, so the middleware **guesses an event type from the path**, which is why a scanner asking for `/openai.json` is filed in the screenshots above as a login success.',
+        chose: 'One **AuditMiddleware** for all routes',
+        over: 'A logging call in each route',
+        why: 'This choice taught me to put shared logic in one place. The middleware records every request and turns 401, 403, and 429 responses into security events. I later excluded successful console polls because they flooded the feed every four seconds.',
       },
       {
-        keyword: 'Green before ready',
-        title: 'The health endpoint returns 200 before the database is reachable, and says so in the body.',
+        keyword: 'Health before database',
+        title: 'The health check stays green while the database finishes starting up.',
         glyph: 'process',
-        chose: '`/health` answering **200 immediately**, with `init_db()` retrying in a daemon thread',
-        over: 'initialising the schema during application startup',
-        why: 'RDS takes 30 to 60 seconds to answer after the instance boots, and the ALB marks a target unhealthy long before that. Blocking startup on the database meant a deploy **never went green**. The retry runs 20 times at 15 seconds and the health body carries a `db` field that reads `initialising`, then `ok`. The load balancer reads the status code and a person reads the body, which keeps the compromise visible instead of hidden.',
+        chose: '`/health` returns 200 at startup',
+        over: 'Waiting for the database first',
+        why: 'This problem taught me how startup order affects a deploy. The load balancer gave up on each new instance before RDS answered. A background retry and a `db` field in the health response solved the problem without hiding the real state.',
       },
       {
-        keyword: 'Switch is a variable',
-        title: 'Blue/green traffic moves by re-applying Terraform, not by calling the AWS CLI.',
+        keyword: 'Terraform traffic switch',
+        title: 'Terraform owns the blue/green switch to keep the listener in state.',
         glyph: 'branch',
-        chose: '`terraform apply -var active_color=green`, with the listener target **held in state**',
-        over: '`aws elbv2 modify-listener` from the workflow',
-        why: 'A CLI switch is drift. The next `terraform apply` puts traffic back on blue and nobody knows why, which is the kind of failure that shows up a week later. Making the listener target a variable means the switch is **recorded where the infrastructure is recorded**, and the pipeline only reaches that step after the green target group has reported healthy on its own health check.',
+        chose: 'The `active_color` variable',
+        over: 'An `aws elbv2` CLI call',
+        why: 'This decision taught me to treat drift as a real risk. A CLI change to the listener would vanish on the next apply. Moving traffic through a Terraform variable keeps the state and the live setup in agreement.',
       },
       {
-        keyword: 'Deploy on purpose',
-        title: 'The deploy workflow runs only when somebody asks for it, while the checks still run on every push.',
+        keyword: 'Manual deploys',
+        title: 'Releases start by hand to keep every AWS change deliberate.',
         glyph: 'note',
-        chose: '`workflow_dispatch` on `cd.yml`, with `ci.yml` left on **every push to every branch**',
-        over: 'the `on: push` to `main` trigger it shipped with',
-        why: 'CD runs `terraform apply`, so an automatic push trigger meant every commit to `main` rebuilt live AWS infrastructure. The commit that hurt was the one right after a `terraform destroy`: the environment came back on its own and **started billing again with nobody watching**. Linting and testing cost nothing per push and belong there, and applying infrastructure costs money and belongs behind a decision, so the two triggers were separated rather than the pipeline being slowed down.',
+        chose: '`workflow_dispatch` for CD',
+        over: 'A deploy on every push to `main`',
+        why: 'This change taught me to separate cheap checks from costly actions. Linting and tests still run on every push. A deploy now starts by hand after one commit rebuilt AWS right after a teardown.',
       },
       {
         keyword: 'Demo inside the app',
-        title: 'The five attack scenarios are endpoints in the product rather than scripts on my laptop.',
+        title: 'The attack demos live inside the app to prove the audit trail is real.',
         glyph: 'inject',
-        chose: 'Admin-only `/demo/*` routes, master-switched by `DEMO_ENABLED`',
-        over: 'load-testing profiles and shell scripts run from outside, the way the team project did it',
-        why: 'A button that fires real logins at the real login endpoint proves the audit trail on screen is the application running rather than a fixture. It is also **a vulnerability shaped like a feature**, which is why every route requires the admin role on top of the master switch, and why the attacker address defaults to the RFC 5737 documentation range. The shell versions stay in `scripts/` for when the app itself is the thing that is broken.',
+        chose: 'Admin‑only `/demo` routes',
+        over: 'Attack scripts from a laptop',
+        why: 'Building the demos into the app taught me to treat a test feature as an attack surface. Every demo route requires the admin role, and one setting turns them all off. The shell versions in `scripts/` remain for runs from a terminal when the app itself is down.',
       },
       {
-        keyword: 'Read the file, not the name',
-        title: 'Uploads are validated by their magic bytes rather than by their extension.',
+        keyword: 'Magic‑byte upload check',
+        title: 'A Lambda function checks the content of each upload instead of its name.',
         glyph: 'depth',
-        chose: 'A Lambda reading the **first 512 bytes** on every S3 `ObjectCreated:Put`',
-        over: 'trusting the file extension or the Content-Type header',
-        why: 'Renaming `malware.exe` to `report.pdf` costs an attacker nothing. A single ranged GET costs me one S3 call and catches **PE headers, ELF headers, shebangs and tar archives** regardless of what the file claims to be. The trade is a gap I left open on purpose: the file is already in the bucket when the check runs, so the Lambda deletes it afterwards where a quarantine bucket would have stopped it landing at all.',
+        chose: 'First **512 bytes** read by a Lambda',
+        over: 'Trusting the file extension',
+        why: 'This check taught me that a file name proves nothing about its content. The Lambda reads the first 512 bytes of each upload and deletes any file with an executable or archive signature.',
       },
     ],
     links: {
@@ -8676,13 +8923,12 @@ shimon-vault/
     },
     reflection: {
       learned: [
-        'Building the same brief twice showed me which parts of Lock-N-Lock I understood and which parts I had only approved. The **architecture** I could redraw from memory. The **AWS specifics** I could not. A security group has no deny rule, which is why the automatic block ended up in a network ACL. bcrypt silently stops at 72 bytes, so every password is hashed once before it is hashed. `asyncpg` and the synchronous SQLAlchemy engine fail at runtime rather than at import, with a `MissingGreenlet` error that says nothing about the driver. Alertmanager will not expand an environment variable inside its own config file, so the compose entrypoint writes the Slack URL to a file first. The larger lesson was about **startup order**: the load balancer decides an instance is dead long before RDS is ready to answer, so `/health` had to stop depending on the database and start reporting on it instead. The last one was about **who ends TLS**. A proxied Cloudflare record terminates HTTPS itself and lets the load balancer stay on port 80. A DNS-only record does not, so the ALB has to present a certificate of its own, which is the whole of `acm.tf`: an ACM certificate, a validation record written into the same Cloudflare zone, and a 443 listener that depends on the **validation** resource rather than on the certificate, so it is never created pointing at a certificate AWS has not confirmed.',
-        "The other half of it came from my own tooling rather than from AWS. A shell script reports whatever I tell it to report, and for most of this build I told it to report success. `fetch_docker_certs.sh` wrote the Prometheus scrape targets through a heredoc that left the host address out of the JSON and printed it in the green check mark underneath, so every run wrote an empty target and announced the correct one. `deploy.sh` guards most of its steps so that one failure does not abandon the bring-up, and it used to exit `0` on a run where the application was down, seeding had failed and replication had failed. Both are repaired: the certificate script reads the target file back, and a `WARNINGS` array collects every degraded step, names each one and exits non-zero. The script that had it right from the start is `setup_replica.sh`, which runs a **verification query after every statement** and retries ten times before it gives up, which is why a replication failure was visible the day it happened while the monitoring corruption stayed quiet for hours. **A success message is a claim, and it needs evidence**, starting with the messages I wrote myself.",
-      ],
-      differently: [
-        'The download limiter looked correct for days and counted the wrong thing. slowapi keys on the **resolved URL** by default, so `/docs/download/doc-0001` and `/docs/download/doc-0002` are different counters and a bulk download across 50 ids never reaches 2. `key_style="endpoint"` keys on the route function instead, and I only found it because repeating one id tripped the limit instantly. The next thing I would fix is that **all three counters live in module-level dictionaries**, so two application instances count separately and a restart forgets everything. The SNS publish that would invoke `block_ip` from the login path is still a `TODO`, which leaves that function deployed, subscribed and authorised with no live trigger. And two of the four files in `tests/` are copies of router source rather than tests, so the real suite is **15 tests over auth and audit** and the 50 percent coverage floor is doing more work than it should have to. The demo has an ordering bug of its own. Act 3 suspends the seeded **viewer** account on purpose, and Act 5 signs in as that same account, so running the scenarios in order leaves the traffic flood refused at the door and the console reporting `Could not start simulation`. The defence is working. The seed data is what is wrong, and giving each act its own account is a few lines in `db/seed.sql` that I have not written.',
-        "The infrastructure gaps that are still open all sit outside the request path. `app_user_data.sh.tpl` opens with `set -euo pipefail` and calls `tailscale up` on **line 25**, so an expired auth key aborts every step below it and leaves the instance with no Docker TLS certificates, no environment file, no Swarm and no container, and the load balancer answering **502**. Tailscale earns a certificate subject alternative name and an optional mount, and the application serves traffic without either, so that line belongs behind a warning rather than a hard stop. `prometheus_url` is the same fault from the other direction: `variables.tf` carries a default address, my tfvars carries the live one, and `cd.yml` passes neither, so a pipeline deploy bakes the default into the image while a local run bakes in the truth. With two instances behind the listener, the console read Prometheus correctly on roughly **half of all page loads**, depending on which one answered. The third is identity: the scrape targets, the Portainer endpoint and the replica lookup are keyed to a mesh address that is reassigned whenever an instance is replaced, and the template joins the mesh as `${project_name}-app-blue` whichever colour renders it, so a blue and green release points monitoring at a terminated machine every time it succeeds.",
-        "The console reads its own audit trail two different ways, and only one of them is right. `audit_router._recent_events` asks the `event_type-index` GSI for the newest rows per event type with `ScanIndexForward=False` and merges them, because the base table is keyed on a random uuid and cannot be range-queried by time at all. `admin_router._scan_recent_events` still calls `scan(Limit=500)` and sorts what comes back, which is **the first 500 rows DynamoDB happens to walk** rather than the newest 500. So the live feed is trustworthy, and the six counters above it and the time series beside them are computed from an arbitrary page. Pointing both readers at the same query is the fix, and it is the last piece of making the demo show what actually happened.",
+        'ShimonVault gave me hands-on practice with tools I had mostly watched others demonstrate. The lessons that stuck came from the moments when something broke and had to be traced back to its cause.',
+        "One of the first skills I practiced was **blue/green deployment**. The idea is to keep two identical copies of the app running. Visitors use one copy while the new version goes onto the other, and traffic moves only after the new version is ready. In my first version, two different tools could move that traffic. A small script changed the setting by hand, and Terraform kept its own record of the same setting. Each time Terraform ran, it restored its record and undid the script's change. After tracing the problem to that overlap, I deleted the script and let Terraform make every switch. Releases became predictable, and going back to the old version takes one command.",
+        '**Application security** was where I had the least practice. The audit trail saves every request as an event in DynamoDB and shows the newest ones in a live feed. At first, the feed pulled a batch of events and sorted that batch by time. DynamoDB returns an arbitrary batch, and an attack in progress could be missing from it. An index sorted by time now gives the feed the newest events of each type. The admin console caused a second problem by checking for updates every four seconds. Each check was saved as an event, and about 40 rows a minute buried the real attacks. Successful checks are skipped now, and failed ones are still recorded.',
+        'Some of the hardest bugs were in my own scripts. `deploy.sh` finished with a success message on runs where the app was down. The monitoring setup script printed the right Tailscale address on screen and wrote a blank one into the Prometheus settings. Every Grafana dashboard went empty while the script reported success. Both scripts now record any step that fails and end with an error when that list is not empty.',
+        '**Hybrid networking** carried over from the previous project and grew much larger here. Tailscale links AWS to the on-prem server for both monitoring and database replication. At one point, the firewall rule for the replication link vanished on every Terraform run. Terraform treated the rules written inside the security group as the full list and removed the one defined separately. Moving all the rules into one block fixed it, and a comment now explains why for the next reader.',
+        'Each of these problems ended with a fix and a clear reason behind it. This individual project deepened my understanding of blue/green releases and application security. Hybrid networking is where my confidence grew the most.',
       ],
     },
   },

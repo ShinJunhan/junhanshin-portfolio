@@ -1793,6 +1793,134 @@ button:focus-visible {
   }
 }
 
+/* `metricsStyle: 'rows'`: rows of uneven widths (each row's template comes
+   from `metricsRows`). Every tile leads with its number and label on one
+   baseline, the label kept to one line, and the sentence pinned to the
+   bottom so a short one leaves no blank band. Sentences are justified by
+   spacing only. */
+.mrows {
+  display: grid;
+  gap: 14px;
+}
+
+.mrows__row {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: var(--mrows-cols);
+  gap: 14px;
+}
+
+.mrows__tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px;
+  border-radius: 5px;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.mrows__head {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.mrows__value {
+  flex: none;
+  font: 700 64px/0.8 var(--font-mono);
+  letter-spacing: -0.06em;
+  color: var(--accent);
+}
+
+.mrows__label {
+  font: 500 15px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.mrows__detail {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text-secondary);
+  text-align: justify;
+  hyphens: none;
+}
+
+.mrows__tile--accent {
+  background: var(--accent);
+  box-shadow: none;
+}
+
+.mrows__tile--accent .mrows__value {
+  font-size: 96px;
+}
+
+.mrows__tile--accent .mrows__value,
+.mrows__tile--accent .mrows__label {
+  color: #fff;
+}
+
+.mrows__tile--accent .mrows__detail {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mrows__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.mrows__card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.mrows__card-title {
+  font: 600 14px/1.2 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.mrows__card-text {
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Two columns on a tablet with the accent tile and the card tile across both;
+   one column on a phone. Labels may wrap once the tiles get narrow. */
+@media (max-width: 860px) {
+  .mrows__row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .mrows__tile--accent,
+  .mrows__tile:has(.mrows__cards) {
+    grid-column: 1 / -1;
+  }
+  .mrows__label {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 520px) {
+  .mrows__row,
+  .mrows__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* The split bar under a wide tile's sentence. */
 .bento__split {
   display: block;
@@ -6667,6 +6795,469 @@ button:focus-visible {
   }
 }
 
+/* ---------- Glance weeks and meters (ShimonVault) ---------- */
+
+/* How as the build by week: the week and its title on one line, then logo
+   pills stretched across the full width so every row ends flush. */
+.glance-weeks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.glance-weeks__week {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: baseline;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.glance-weeks__label {
+  font: 600 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.glance-weeks__title {
+  font: 600 var(--t-small) / 1.2 var(--font-heading);
+  color: var(--ink);
+}
+
+.glance-weeks__tools {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.glance-weeks__tool {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 6px 3px 4px;
+  font: 600 11.5px / 1 var(--font-label);
+  color: var(--accent);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 2px;
+}
+
+.glance-weeks__mark {
+  display: inline-flex;
+}
+
+.glance-weeks__mark img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+/* Result as thresholds on one shared scale. A row's squares end where its
+   count ends; a marked square names what happens at that count. */
+.glance-meters {
+  display: grid;
+  gap: 20px;
+  padding: 12px 14px 22px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.glance-meters__row {
+  display: grid;
+  grid-template-columns: 8.4rem 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.glance-meters__name {
+  font: 600 var(--t-small) / 1.2 var(--font-heading);
+  color: var(--ink);
+}
+
+.glance-meters__scale {
+  display: grid;
+  gap: 5px;
+}
+
+.glance-meters__step {
+  position: relative;
+  height: 14px;
+  background: color-mix(in srgb, var(--accent) 18%, var(--card-bg));
+  border-radius: 2px;
+}
+
+.glance-meters__step--mark {
+  background: var(--accent);
+}
+
+.glance-meters__step--block {
+  background: var(--ink);
+}
+
+.glance-meters__step span {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font: 600 12px / 1 var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+.glance-meters__step--block span {
+  color: var(--ink);
+}
+
+/* A label on the last step would hang past the card's edge if centred. */
+.glance-meters__step--end span {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+/* A phone: each name above its scale, so the scale gets the full width. */
+@media (max-width: 560px) {
+  .glance-meters__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}
+
+/* ---------- Workspace stack (ShimonVault) ---------- */
+
+/* An event map across the top, Console and Network side by side beneath it.
+   The pair takes whatever height is left, and each card spreads its rows
+   across it, so the column ends where At a Glance does. */
+.wst {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.wst__pair {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.wst-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: var(--shadow-card);
+}
+
+.wst-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.wst-card h3 {
+  margin: 0;
+  font: 700 var(--t-base) / 1.2 var(--font-heading);
+  color: var(--ink);
+}
+
+.wst-card__top p {
+  margin: 3px 0 0;
+  font: 500 var(--t-mini) / 1.3 var(--font-label);
+  color: var(--text-secondary);
+}
+
+.wst-card__figure {
+  text-align: right;
+}
+
+.wst-card__figure strong {
+  display: block;
+  font: 700 1.6rem / 1 var(--font-mono);
+  letter-spacing: -0.5px;
+  color: var(--accent);
+}
+
+.wst-card__figure span {
+  font: 500 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.wst-card__foot {
+  display: flex;
+  justify-content: space-between;
+  margin: auto 0 0;
+  padding-top: 10px;
+  font: 500 var(--t-mini) / 1.2 var(--font-label);
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.wst-card__foot a {
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.wst-arrow {
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* Event map: each source points at the functions it invokes. */
+.wst-events {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wst-events__row {
+  display: grid;
+  gap: 7px;
+  padding: 9px 11px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.wst-events__line {
+  display: grid;
+  grid-template-columns: 8.4rem 14px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.wst-events__source {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.wst-events__logo img {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+
+.wst-events__source b {
+  display: block;
+  font: 600 var(--t-small) / 1.15 var(--font-heading);
+  color: var(--ink);
+}
+
+.wst-events__source span {
+  display: block;
+  font: 500 var(--t-micro) / 1.1 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.wst-events__functions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wst-events__function {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  font: 600 var(--t-micro) / 1 var(--font-mono);
+  color: var(--accent);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 2px;
+}
+
+.wst-events__fn-logo img {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+.wst-events__function--idle {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px dashed var(--text-secondary);
+}
+
+.wst-events__function--idle img {
+  opacity: 0.5;
+}
+
+.wst-events__row p {
+  margin: 0;
+  font-size: var(--t-tiny);
+  line-height: 1.45;
+  text-align: left;
+  color: var(--text-secondary);
+}
+
+/* Console: each attack over the endpoint it hits, spread down the card. */
+.wst-attacks {
+  flex: 1;
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wst-attacks li {
+  display: grid;
+  gap: 3px;
+}
+
+.wst-attacks__button {
+  padding: 7px 9px;
+  font: 600 var(--t-micro) / 1.2 var(--font-label);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 2px;
+}
+
+.wst-attacks code {
+  padding-left: 8px;
+  font: 500 10.5px / 1.2 var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.wst-attacks code::before {
+  content: '→ ';
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.wst-alerts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-top: 7px;
+  font: 500 var(--t-micro) / 1 var(--font-label);
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+
+.wst-alerts > span {
+  flex-basis: 100%;
+}
+
+.wst-alerts b {
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 7px;
+  font: 600 var(--t-micro) / 1 var(--font-label);
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.wst-alerts__logo img {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+/* Network: a From / To / Port table, the service captioned under each row. */
+.wst-routes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font: 600 var(--t-micro) / 1 var(--font-mono);
+}
+
+.wst-routes__head,
+.wst-routes__route {
+  display: grid;
+  grid-template-columns: 3.75rem minmax(0, 1fr) 3rem;
+  gap: 4px 5px;
+}
+
+.wst-routes__head {
+  padding-bottom: 6px;
+  font: 600 12px / 1 var(--font-mono);
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.wst-routes__head span:last-child {
+  text-align: center;
+}
+
+.wst-routes__from {
+  align-self: center;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+.wst-routes__to {
+  padding: 6px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: 2px;
+}
+
+.wst-routes__port {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 2px;
+  white-space: nowrap;
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.wst-routes__service {
+  grid-column: 2 / -1;
+  font: 600 12px / 1 var(--font-label);
+  color: var(--text-secondary);
+}
+
+/* A phone: Console and Network one above the other. */
+@media (max-width: 560px) {
+  .wst__pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---------- Workspace tiles ---------- */
 
 /* The tiles layout: the heading across both columns, At a Glance on the
@@ -7596,6 +8187,12 @@ a.link-tile:hover .link-tile__mark {
 .markdown th {
   background: var(--bg-alt);
   font-weight: 700;
+}
+
+/* A code name inside a table cell stays on one line. The wrapper above
+   scrolls sideways when a cell runs out of room. */
+.markdown td code {
+  white-space: nowrap;
 }
 
 /* ---------- Slide deck ---------- */
@@ -9028,6 +9625,71 @@ a.link-tile:hover .link-tile__mark {
   hyphens: none;
 }
 
+/* The compare board (`layout: 'compare'`, ShimonVault): one note per
+   Lock‑N‑Lock track, two across. The team's approach sits on a faint band in
+   the small grey size; the setup and the practice focus follow under accent
+   captions, the practice focus at the reading size. */
+.board--compare {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.compare__team {
+  margin: 8px -4px 0;
+  padding: 8px 10px 10px;
+  background: color-mix(in srgb, var(--note-tint) 7%, transparent);
+  border-radius: 2px;
+}
+
+.compare__cap {
+  margin: 12px 0 4px;
+  font: 600 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.compare__team .compare__cap {
+  margin-top: 0;
+}
+
+.compare__cap--accent {
+  color: var(--accent);
+}
+
+.compare__text {
+  margin: 0;
+  text-align: justify;
+  text-align-last: left;
+  hyphens: none;
+  line-height: 1.5;
+}
+
+.compare__text--team {
+  font-size: var(--t-small);
+  color: var(--text-secondary);
+}
+
+.compare__text--team .mark {
+  color: var(--text-secondary);
+}
+
+.compare__text--setup {
+  font-size: var(--t-small);
+  color: var(--text-primary);
+}
+
+.compare__text--focus {
+  font-size: var(--t-prose);
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+@media (max-width: 760px) {
+  .board--compare {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .board__track {
   grid-column: 1 / -1;
   display: grid;
@@ -9990,6 +10652,104 @@ a.link-tile:hover .link-tile__mark {
   margin-top: auto;
 }
 
+/* A medium tile whose row is taller than its content shares the spare height
+   above, between, and below, instead of leaving it as one strip at the end. */
+.bento--role-areas .bento__tile--even {
+  justify-content: space-evenly;
+}
+
+/* The track strip (ShimonVault), in the figures band's place: a project per
+   row, the five tracks as segments, the owned ones filled. */
+.role-tracks {
+  display: grid;
+  gap: 10px;
+  padding: 16px 22px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-shadow: var(--shadow-card);
+}
+
+.role-tracks__row {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr) 4.5rem;
+  align-items: center;
+  gap: 18px;
+}
+
+.role-tracks__name {
+  margin: 0;
+  display: grid;
+  gap: 3px;
+  font: 700 var(--t-base) / 1.1 var(--font-heading);
+  color: var(--ink);
+}
+
+.role-tracks__name span {
+  font: 600 var(--t-micro) / 1 var(--font-mono);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.role-tracks ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.role-tracks li {
+  padding: 7px 0;
+  text-align: center;
+  font: 600 var(--t-mini) / 1 var(--font-label);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--accent) 7%, var(--card-bg));
+  white-space: nowrap;
+}
+
+.role-tracks li.role-tracks__on {
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+.role-tracks__count {
+  margin: 0;
+  text-align: right;
+  font: 800 1.6rem / 1 var(--font-heading);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* A phone: the name above its segments, the count beside the name. */
+@media (max-width: 640px) {
+  .role-tracks {
+    padding: 14px 16px;
+  }
+  .role-tracks__row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+  }
+  .role-tracks ol {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .role-tracks li {
+    font-size: var(--t-micro);
+    padding: 6px 2px;
+  }
+  /* Five segments are about 58px each here; "Infrastructure" needs more, so
+     a project can give `short` labels for this width. */
+  .role-tracks li[data-short] span {
+    display: none;
+  }
+  .role-tracks li[data-short]::after {
+    content: attr(data-short);
+  }
+}
+
 /* The one result the section leads with, on the same accent tint the page
    gives its other highlighted cards. Kept on hover: a lift to --bg would
    strip the only tile that is meant to stand apart. */
@@ -10499,6 +11259,165 @@ a.link-tile:hover .link-tile__mark {
 .rv-cal__page--hot small {
   background: var(--accent);
   color: #FFFFFF;
+}
+
+/* Four-digit counts (ShimonVault's lines per folder) need a wider name and
+   count column than the review bars were drawn for. */
+.rv-reviews--wide .rv-bars__row {
+  grid-template-columns: 5.6rem minmax(0, 1fr) 3.2rem;
+}
+
+.rv-reviews--wide .rv-bars__row em {
+  white-space: nowrap;
+}
+
+/* The span: two systems pinned to the tile's edges, what joins them centred
+   between. Labels never wrap, because a half-word under a logo reads as a
+   different name. */
+.rv-span {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px;
+}
+
+.rv-span__end {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.rv-span__end:first-child {
+  justify-self: start;
+}
+
+.rv-span__end:last-child {
+  justify-self: end;
+}
+
+.rv-span b {
+  font: 700 var(--t-mini) / 1.2 var(--font-mono);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.rv-span__end span,
+.rv-span__note {
+  font: 500 var(--t-mini) / 1.2 var(--font-label);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rv-span__logo {
+  display: grid;
+  place-items: center;
+}
+
+.rv-span__logo img {
+  object-fit: contain;
+}
+
+.rv-span__logo--lg img {
+  width: 42px;
+  height: 42px;
+}
+
+.rv-span__logo--sm img {
+  width: 20px;
+  height: 20px;
+}
+
+.rv-span__mid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rv-span__mid--via {
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 18px;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 35%, var(--card-bg));
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 35%, var(--card-bg));
+}
+
+.rv-span__via {
+  font: 600 var(--t-mini) / 1.2 var(--font-label);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* The tools as a small triangle of round badges, the first one on top. */
+.rv-span__tools {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px;
+  justify-items: center;
+}
+
+.rv-span__tools > :first-child {
+  grid-column: 1 / -1;
+}
+
+.rv-span__logo--tool img {
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 9%, var(--card-bg));
+  border: 1.5px solid color-mix(in srgb, var(--accent) 28%, var(--card-bg));
+}
+
+.rv-span__logo--hot img {
+  background: var(--card-bg);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.rv-span__switch {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.rv-span__toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--card-bg));
+}
+
+.rv-span__toggle span {
+  padding: 4px 11px;
+  border-radius: 999px;
+  font: 700 var(--t-micro) / 1 var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rv-span__toggle .rv-span__on {
+  background: var(--accent);
+  color: #FFFFFF;
+}
+
+/* A phone: the two systems share the first row, the link or switch takes
+   the full width under them. Three across needed about 360px. */
+@media (max-width: 560px) {
+  .rv-span {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 14px;
+    padding: 2px 0;
+  }
+  .rv-span__mid {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+  }
 }
 
 /* ---------- Implementation steps: calendar pair + phase list ---------- */

@@ -1,12 +1,13 @@
 """
 lambda/block_ip/handler.py
 
-Triggered by SNS topic: shimonvault-credential-stuffing-alert
-What it does:
-  1. Parses the attacking IP from the SNS message
-  2. Adds a DENY ingress rule to the app EC2 Security Group
-  3. Writes an incident record to DynamoDB
-  4. Notifies Slack + Telegram
+Blocks an attacking IP in the network ACL when an SNS alert arrives.
+Subscribed to shimonvault-security-alert; no publisher is wired up yet.
+
+  1. Parse the IP from the SNS message
+  2. Add a NACL DENY entry (rules 1-99; warn and skip if NACL_ID is unset)
+  3. Record the incident in DynamoDB
+  4. Notify Slack and Telegram
 """
 
 import json
@@ -40,7 +41,7 @@ def process(payload: dict):
     window_minutes: int = payload.get("window_minutes", 5)
     timestamp: str = datetime.now(timezone.utc).isoformat()
 
-    # ── 1. Block IP in Security Group ────────────────────────────────────────
+    # ── 1. Block IP in the network ACL ──────────────────────────────────────
     sg_id = os.environ["APP_SECURITY_GROUP_ID"]
     block_ip_in_sg(sg_id, attacking_ip)
 
@@ -71,12 +72,7 @@ def process(payload: dict):
 
 
 def block_ip_in_sg(sg_id: str, ip: str):
-    """Add a DENY-equivalent rule (revoke or add explicit deny via NACL is
-    not supported on SGs — we add a lower-priority allow rule is wrong approach.
-    Correct approach: add NO ingress rule for the IP (i.e. just don't allow it)
-    by revoking any existing allow or simply leaving SG as-is and blocking at
-    the NACL level. For simplicity and speed we add an ICMP block isn't needed —
-    the real approach is to add the IP to a blocklist NACL rule."""
+    """Block `ip` in the network ACL. SGs are allow-only. No NACL_ID: warn and skip."""
 
     nacl_id = os.environ.get("NACL_ID")
 
